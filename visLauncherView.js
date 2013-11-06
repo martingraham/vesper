@@ -1,0 +1,160 @@
+/**
+ * Created with JetBrains WebStorm.
+ * User: cs22
+ * Date: 02/10/13
+ * Time: 16:05
+ * To change this template use File | Settings | File Templates.
+ */
+
+VESPER.VisLauncher = function (divid) {
+
+    var model;
+    var self = this;
+    var keyField, nameField, dims, choiceData;
+
+    this.set = function (fields, mmodel) {
+        keyField = fields.identifyingField;
+        nameField = fields.nameField;
+        choiceData = fields.visChoiceData;
+        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        model = mmodel;
+    };
+
+
+    this.go = function () {
+        var buttonVisBlockSel = d3.select(divid);
+        setVisChoices (choiceData, buttonVisBlockSel);
+        showButtons (buttonVisBlockSel);
+        setSelectionOps ();
+    };
+
+    this.update = function () {};
+
+    this.updateVals = this.update;
+
+
+    function setVisChoices (data, parentDivSel) {
+        var visChoices = parentDivSel.selectAll("button").data (data);
+        visChoices.enter()
+            .append ("button")
+            .attr ("class", "visChoice")
+            .attr ("type", "button")
+            .attr ("id", function(d) { return d.title;})
+            .text (function(d) { return d.title; })
+            .on ("click", function(d) {
+                self.makeVis (d, model);
+                return false;
+            })
+        ;
+    }
+
+    function setSelectionOps () {
+        d3.select(divid).append("hr");
+        d3.select(divid).append ("h4").text("Selection Ops");
+
+
+        if (window.requestFileSystem) {
+            d3.select(divid).append("button")
+                .attr ("type", "button")
+                //.attr ("id", "save")
+                .text ("SAVE")
+                .on ("click", function(d) {
+                    NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
+                })
+            ;
+        } else {
+            NapVisLib.html5Lacks(d3.select(divid), "[Browser does not support FileWriter]");
+        }
+
+        d3.select(divid).append("button")
+            .attr ("type", "button")
+            //.attr ("id", "compareSel")
+            .text ("COMPARE MODEL")
+            .on ("click", function() {
+                VESPER.modelBag.push ({"model":model, "name":nameField});
+                console.log ("ModelBag", VESPER.modelBag);
+                if (VESPER.modelBag.length > 1) {
+                    VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model, VESPER.modelBag[0].name, VESPER.modelBag[1].name);
+                    VESPER.modelBag.length = 0;
+                }
+            })
+        ;
+
+        d3.select(divid).append("button")
+            .attr ("type", "button")
+            //.attr ("id", "clearSel")
+            .text ("CLEAR")
+            .on ("click", function(d) {
+            model.getSelectionModel().clear();
+            model.getSelectionModel().update();
+        })
+        ;
+    }
+
+    function showButtons (divSel) {
+        var visChoices = divSel.selectAll("button.visChoice");
+        visChoices.style("display", function(d) {
+            var fileData = model.getMetaData().fileData;
+            var indices = VESPER.DWCAParser.findFields (fileData, d.attList, "filteredFieldIndex");
+            var nullCount = NapVisLib.countNulls (indices);
+            //console.log (d.title, nullCount);
+            return (indices.length == 0 || (d.matchAll && nullCount === 0) || (!d.matchAll && nullCount < indices.length))
+                ? "block" : "none"
+                ;
+        })
+    }
+
+    this.makeVis = function (details, aModel) {
+        var id = aModel.name + "view" + (details.multiple ? aModel.getNextSessionModelViewID() : "");
+        id = id.replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
+        var vid = details.title + " " + aModel.name;
+
+        if (d3.select("#"+id).empty()) {
+            var newDiv = d3.select("#allVisDiv")
+                .append("div")
+                .attr("class", "visWrapper")
+                .attr ("id", id+"container")
+                .style("width", details.width ? details.width : "50%")
+            ;
+            newDiv.append("h3").text(vid);
+            var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height);
+
+            var coreType = aModel.getMetaData().coreRowType;
+            var fileData = aModel.getMetaData().fileData;
+            var coreFieldIndex = fileData[coreType].filteredFieldIndex;
+
+            var newVis = details.newVisFunc ("#"+id);
+            console.log ("newvis", newVis, newVis.set);
+            var keyFields = details.setupFunc (coreFieldIndex) || {};
+            keyFields.identifyingField = VESPER.DWCAParser.getFilteredIdIndex (aModel.getMetaData());
+            newVis.set (keyFields, aModel);
+            aModel.addView (newVis);
+            newVis.go (aModel);
+
+            DWCAHelper.addKillViewButton (newDiv.select("h3"), newDiv, newVis);
+            if (details.title != "Map") { // map selection goes funny if I make it draggable
+                $(function() {
+                    $("#"+id+"container").draggable();
+                });
+            }
+        }
+    };
+
+    this.destroy = function () {
+        var vizzes = model.getSelectionModel().getVis();
+        for (var n = 0; n < vizzes.length; n++) {
+            if (vizzes[n] !== self) {
+                if (vizzes[n].destroy) {
+                    vizzes[n].destroy ();
+                }
+                model.removeView (vizzes[n]);
+            }
+        }
+
+        DWCAHelper.recurseClearEvents (d3.select(divid));
+
+        model.removeView (self);
+        model = null;
+        DWCAHelper.twiceUpRemove(divid);
+    }
+};

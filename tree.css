@@ -1,0 +1,94 @@
+td.value {
+	font-weight:bold;
+}
+
+
+table {
+	border-collapse:collapse;
+	margin-top: 20px;
+	margin-left: 5px;
+	cellspacing: 0px;
+}
+
+th {
+	border: 1px solid gray;
+	margin-left: 3px;
+}
+
+
+.extDetailTable td {
+	border: 1px solid gray;
+}
+
+.extDetailTable th {
+	background: #d0d0d0;
+}
+
+
+.detailTable td {
+	border: 1px solid gray;
+}
+
+.detailTable tr:nth-child(2n+1) {
+	background: #d0d0d0;
+}
+
+
+.dwcalist {
+	background: #d0d0d0;
+}
+
+.dwcalist td {
+	border: 1px solid gray;
+}
+
+
+
+
+.label {
+	font-size: 12pt;
+	color: #a040d0;
+}
+
+.treeNode, .treeNode rect {
+    fill-rule: evenodd;
+    /*fill: #b0b0f0;*/
+    stroke: #fff;
+}
+
+.treeNode text {
+	fill: #000;
+    stroke: none;
+	font-size: 14px;
+	pointer-events: none;
+    text-anchor: start;
+}
+
+.timeLineAxis {
+    font-size: 10px;
+    fill: #666;
+}
+
+
+tr.sanityText:nth-child(2n+1) {
+    background: #d0d0d0;
+}
+
+tr.sanityText td {
+    border: 1px solid darkgray;
+    padding: 0px 2px;
+    font-size: 9pt;
+}
+
+th.sanityTableHeading {
+    background: #aaddaa;
+    font-size: 9pt;
+    border: 1px solid darkgray;
+    padding: 0px 2px;
+}
+
+.visHeader {
+    font-size: 16pt;
+    padding: 0px 2px;
+    background: #cfc;
+}

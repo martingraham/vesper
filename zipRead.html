@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<title>Zip Read</title>
+
+<!-- D3's includes -->
+<script type="text/javascript" src="../lib/d3/d3.v3.js"></script>
+
+<!-- JQuery's includes -->
+<script type="text/javascript" src="../lib/jquery/jquery-1.8.3.js"></script>
+<script type="text/javascript" src="../lib/jquery-ui/jquery-ui.min.js"></script>
+
+<!-- Underscore include -->
+<script type="text/javascript" src="../lib/underscore/underscore.js"></script>
+
+<!-- Modernizr include -->
+<script type="text/javascript" src="../lib/modernizr/modernizr-latest.js"></script>
+
+<!-- Martin's includes -->
+<script type="text/javascript" src="../lib/napier/napVisLib.js"></script>
+<script type="text/javascript" src="../lib/napier/MVCCoord.js"></script>
+<script type="text/javascript" src="../lib/napier/cheapHash2.js"></script>
+<script type="text/javascript" src="dwcaParse.js"></script>
+<script type="text/javascript" src="dwcaHelper.js"></script>
+<script type="text/javascript" src="zipParse.js"></script>
+<script type="text/javascript" src="tree2.js"></script>
+<script type="text/javascript" src="sunburst.js"></script>
+<script type="text/javascript" src="occList.js"></script>
+<script type="text/javascript" src="dwcaDataTable.js"></script>
+<script type="text/javascript" src="../lib/jszip/jszip.js"></script>
+<script type="text/javascript" src="../lib/jszip/jszip-inflate.js"></script>
+<script type="text/javascript" src="../lib/jszip/jszip-load.js"></script>
+<script type="text/vbscript" src="../lib/napier/iedataload.vbs"></script>
+
+<script type="text/javascript" src="dwcaMapLeaflet.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/leaflet.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/leaflet.markercluster-src.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/heatcanvas-leaflet.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/heatcanvas.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/heatcanvas-worker.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/quadCanvas/QuadTree.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/quadCanvas/L.TileLayer.MaskCanvas.js"></script>
+
+<link rel="stylesheet" href="allVis.css" type="text/css" />
+<link rel="stylesheet" href="tree.css" type="text/css" />
+<link rel="stylesheet" href="helper.css" type="text/css" />
+<link rel="stylesheet" href="../lib/leafletjs/leaflet.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/MarkerCluster.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/MarkerCluster.Default.css" />
+
+</head>
+
+<body>
+
+<H1>Zip Read</H1>
+
+<div id="loadStatDiv">
+    <p id="notifyStatusID"></p>
+</div>
+
+<div id="selDiv">
+    <div id="buttonDiv" class="leftColumn">
+    <button type="button" id="loadButton" class="load">Load with chosen extensions</button>
+    <hr>
+    <button type="button" id="allButton">Select All Fields</button>
+    <button type="button" id="clearButton">Clear All Fields</button>
+    </div>
+
+    <div id="listDiv" class="fullWidthHolder"></div>
+</div>
+
+
+<div id="allVisDiv" style="margin: 0 auto; width: 90%; position: relative; clear: both; overflow: hidden; display: none;">
+
+    <div id="treeDiv" class="vis"
+         style="float: left; width: 50%; height: 600px;"></div>
+
+    <div id="detailsDiv" class="vis"
+         style="float: left; height: 600px; width: 43%; overflow: scroll;">
+        <table id="dtable" class="detailTable"></table>
+    </div>
+
+    <div style="clear: both; height: 0; overflow: hidden;"></div>
+
+    <div id="geoDiv" class="vis" style="width: 93%; height: 400px;"></div>
+</div>
+
+
+
+<!--   <div style="width: 100%; clear: both;"></div> -->
+
+ <script>
+     var zipFile = '../data/germanSLfless.zip';
+     //var zipFile = '../data/dwca-mt-specimens.zip';
+     //var zipFile = '../data/dwca-vascan.zip';
+     //var zipFile = '../data/ena2.zip';
+     //var zipFile = '../data/archive-kingdom-animalia-bl2.zip';
+     //var zipFile = '../data/archive-complete.zip';
+     console.log ("loading ", zipFile);
+
+     function proceed (zip, mdata, dParse) {
+         var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields ("div#selDiv");
+         var fileRows = {};
+         function notifyFunc (str, obj) {
+             d3.select("#notifyStatusID").html(str+":"+obj);
+             d3.select("#loadStatDiv").attr("offsetWidth");
+         }
+         //DWCAZipParse.setNotifyFunc (notifyFunc);
+
+         $.each (selectedStuff, function (key, value) {
+             var fileData = mdata.fileData[key];
+             var fileName = fileData.fileName;
+             var readFields = [];
+             for (var i = 0; i < fileData.invFieldIndex.length; i++) {
+                 readFields[i] = false;
+             }
+
+             $.each (value, function (key, value) {
+                readFields [+key] = value;
+             });
+
+             DWCAZipParse.set (fileData, readFields);
+             zip.zipEntries.readLocalFile (fileName, DWCAZipParse.zipStreamSVParser2);
+             fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
+             console.log ("frows", fileName, fileRows[fileData.rowType]);
+             dParse.updateFilteredLists (fileData, readFields);
+         });
+
+         alert ("mem monitor point 1");
+
+         var treeStruc = dParse.setupStrucFromRows (fileRows, mdata);
+         alert ("mem monitor point X");
+         console.log ("fin");
+
+         d3.select("div#selDiv").style("display", "none");
+         d3.select("div#allVisDiv").style("display", "block");
+
+         var coreType = mdata.coreRowType;
+         var fileData = mdata.fileData;
+         var coreFieldIndex = fileData[coreType].filteredFieldIndex;
+         var coreView;
+         var tables = new SelectedView ("#detailsDiv", mdata);
+         var otherViews = [tables];
+
+         if (NapVisLib.endsWith (coreType, "Taxon")) {
+             /*
+             coreView = new Tree ("#treeDiv", {"identifyingField":coreFieldIndex["id"],
+                         "childField":"taxa", "nameField":coreFieldIndex["scientificName"], "rankField":coreFieldIndex["taxonRank"]},
+                     mdata, dParse
+             );
+             */
+
+             coreView = new Sunburst ("#treeDiv", {"identifyingField":coreFieldIndex["id"],
+                         "childField":"taxa", "nameField":coreFieldIndex["acceptedNameUsage"], "rankField":coreFieldIndex["taxonRank"]},
+                     mdata, dParse
+             );
+         }
+         else if (NapVisLib.endsWith (coreType, "Occurrence")) {
+             var rowFields = [];
+             rowFields [coreFieldIndex["scientificName"]] = true;
+             rowFields [coreFieldIndex["vernacularName"]] = true;
+             coreView = new OccList ("#treeDiv", {"identifyingField":coreFieldIndex["id"],
+                         "nameField":coreFieldIndex["scientificName"], "rankField":coreFieldIndex["taxonRank"],
+                         "rowFields":rowFields},
+                     fileData, dParse
+             );
+
+             var map = new DWCAMapLeaflet ("#geoDiv", {"identifyingField":coreFieldIndex["id"], "latitude":coreFieldIndex["decimalLatitude"],
+                         "longitude":coreFieldIndex["decimalLongitude"], "nameField":coreFieldIndex["vernacularName"]},
+                     fileData
+             );
+             otherViews.push (map);
+         }
+
+         var views = [coreView].concat(otherViews);
+         DWCAHelper.initViews (views, treeStruc);
+     };
+
+	 var asyncMethod = function (xhr) {
+        // var textLoaded = xhr && xhr.responseText
+         NapVisLib.showProps (xhr);
+         var textLoaded;// = xhr && (xhr.response || xhr.responseText);
+		 if ($.browser.msie) {
+             console.log ("Having to get binary out of XHR using VBScript in IE.")
+			 textLoaded = NapVisLib.getBinaryFromXHR (xhr); // calling VBScript if in IE, cos IE is brok
+		 }
+         else {
+             textLoaded = xhr && (xhr.response || xhr.responseText);
+         }
+         console.log ("loaded ", textLoaded.length | textLoaded.byteLength, " bytes.");
+
+         alert ("check memory use in task manager");
+		 var zip = new JSZip(textLoaded, {base64:false});
+
+        // zip.zipEntries.readLocalFiles();
+         zip.zipEntries.readLocalFile ("meta.xml");
+         console.log ("unzipped ", zip, zip.files);
+
+         $.each (zip.files, function (key, value) {
+			console.log (value, value.data ? value.data.length : "not unzipped");
+		});
+
+         var dParser = new dwcaParser ();
+         var metaFile = zip.zipEntries.getLocalFile ("meta.xml");
+         var metaData = dParser.parseMeta ($.parseXML (metaFile.uncompressedFileData));
+
+         console.log (DWCAHelper);
+         DWCAHelper.makeFieldSelectionBoxes (metaData, d3.select("div#listDiv"));
+         var checkBoxParent = d3.select("div#listDiv");
+         var excepFunc = function exceptionFunc (d, i) {
+             return i == 0;
+         };
+         d3.select("#loadButton").on("click", function(d) { proceed (zip, metaData, dParser); });
+         d3.select("#allButton").on("click", function(d) { DWCAHelper.setAllFields ( checkBoxParent, true, undefined, excepFunc); });
+         d3.select("#clearButton").on("click", function(d) { DWCAHelper.setAllFields ( checkBoxParent, false, undefined, excepFunc); });
+         var bdiv = d3.select("div#buttonDiv").node();
+         DWCAHelper.addHelperButton (bdiv, checkBoxParent, "Remove Verbose Fields", dParser.flabbyLists.wordyList, false);
+         DWCAHelper.addHelperButton (bdiv, checkBoxParent, "Add Basic Taxonomic Fields", dParser.neccLists.taxonomy, true, "img/tree.png");
+         DWCAHelper.addHelperButton (bdiv, checkBoxParent, "Add Basic Geo Fields", dParser.neccLists.geo, true, "img/world.png");
+         console.log ("possible tax", DWCAHelper.fieldListExistence (checkBoxParent, dParser.neccLists.taxonomy));
+	 };
+
+	 //var myzip = ($.browser.msie ? NapVisLib.xhr : NapVisLib.jqueryXhr) (zipFile, 'text/plain; charset=x-user-defined', asyncMethod);
+    var myzip = ($.browser.msie ? NapVisLib.xhr2 : NapVisLib.xhr2) (zipFile, 'text/plain; charset=x-user-defined', asyncMethod);
+	// });   
+
+ </script>
+
+</body>
+</html>

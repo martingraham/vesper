@@ -1,0 +1,141 @@
+@CHARSET "ISO-8859-1";
+
+div.selectBox {
+    border: 1px solid gray;
+    background: #ddf;
+    float: left;
+    margin: 5px;
+}
+
+div.selectBox table {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+div.selectBox table.coreTable {
+    background: #dfd;
+}
+
+
+div.selectionWrapper {
+    margin: 0 auto;
+}
+
+div.leftColumn {
+    width: 150px;
+    float: left;
+    background: #dff;
+    border: solid 2px #add;
+    padding: 4px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+
+.leftColumn hr {
+    height: 1px;
+    border: 1px solid #add;
+}
+
+div.fullWidthHolder {
+    /*margin: 0 auto;*/
+    /*width: 95%;*/
+    overflow: hidden;
+    margin-left: 150px;
+}
+
+tr.col {
+    background: #e0e0ff;
+}
+
+.coreTable tr.col {
+    background: #e0ffe0;
+}
+
+button[type="button"] {
+    width: 110px;
+    white-space: normal;
+    font-family: "Gill Sans MT", Georgia, Arial;
+}
+
+button[type="button"].load {
+    width: 110px;
+    white-space: normal;
+    font-weight: bold;
+}
+
+button[type="button"].choice {
+    margin: 10px;
+    font-size: 12pt;
+}
+
+button[type="button"].selButtonStyle {
+    font-size: 10pt;
+}
+
+
+div.choiceHolder {
+    text-align: center;
+    background: #add;
+    padding: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    border: solid 2px #8aa;
+    color: #ffffff;
+    font-size: 20pt;
+    font-weight: bolder;
+    text-shadow: -1px -1px 0 #477,
+    1px -1px 0 #477,
+    -1px 1px 0 #477,
+    1px 1px 0 #477;
+}
+
+.html5lack {
+    font-size: 10pt;
+    font-weight: normal;
+    font-family: "OCR A Extended", Courier, monospace;
+}
+
+.visWrapper {
+    position: relative;
+    float: left;
+}
+
+.visWrapper H3 {
+    border: 2px 0px;
+    border-width: 2px;
+    background: #88a;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    padding-left: 8px;
+}
+
+.filenameLabel {
+    text-align: center;
+    font-size: 14pt;
+}
+
+.filesizeLabel {
+    text-align: center;
+    font-size: 11pt;
+}
+
+h4.notoppad {
+    padding-top: 0px;
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+span.fieldGroup {
+    display: block;
+}
+
+label.nameChoice {
+    display: block;
+}
+
+button[type="button"].killbutton {
+    float: right;
+    font-size: 10pt;
+    width: inherit;
+    height: 20px;
+}
