@@ -1,0 +1,23 @@
+.timeBin {
+    stroke: #888;
+    /*fill: #0f0;*/
+}
+
+.countBin {
+    stroke: #448;
+    /*fill: #66a;*/
+}
+
+.vesperAxis path,
+.vesperAxis line {
+    fill: none;
+    stroke: #888;
+    shape-rendering: crispEdges;
+}
+
+.barChartControl {
+    border: 1px solid gray;
+    position:absolute;
+    left:10px;
+    top:30px;
+}

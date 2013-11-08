@@ -1,2 +1,7 @@
 node_modules/
 data/
+lib/jquery-ui/jquery-ui-1.10.3/
+lib/jquery-indexeddb/
+lib/d3/d3.v3.js.old
+lib/jszip/docs/
+lib/jszip/test/

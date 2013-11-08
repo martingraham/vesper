@@ -1,0 +1,36 @@
+{
+  "name": "vesper",
+  "version": "0.1.0",
+  "description": "DWCA Visual Components",
+  "main": "demo.js",
+  "dependencies": {
+    "jquery":"~2.0.2",
+    "jquery-ui":"~1.10.3",
+    "d3":"~3.0"
+  },
+  "devDependencies": {
+      "grunt": "~0.4.1",
+      "grunt-contrib-uglify": "~0.2.0",
+      "grunt-contrib-concat": "~0.3.0",
+      "grunt-contrib-cssmin": "~0.7.0",
+      "grunt-contrib-copy": "~0.4.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/martingraham/vesper.git"
+  },
+  "keywords": [
+    "vesper",
+    "d3",
+    "visualisation",
+    "dwca"
+  ],
+  "author": "martin graham",
+  "license": "Apache V2",
+  "bugs": {
+    "url": "https://github.com/martingraham/vesper/issues"
+  }
+}
