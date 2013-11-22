@@ -108,7 +108,9 @@ span.noShad {
 .visWrapper H3 {
     border: 2px 0px;
     border-width: 2px;
-    background: #88a;
+    /*background: #88a;*/
+    background: #88a url('../img/bumpPat.png') 100% 100% repeat;
+    text-shadow: 0 0 2px #fff;
     -moz-border-radius: 5px;
     border-radius: 5px;
     padding-left: 8px;

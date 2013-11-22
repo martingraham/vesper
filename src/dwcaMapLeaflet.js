@@ -16,6 +16,9 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     var curSelLayer;
 
+    var maxIconHeight = 60;
+    var heightMultiplier = 5;
+
     var selIcon = L.icon({
         iconUrl: VESPER.imgbase+'selMarker.png',
         shadowUrl: '../lib/leafletjs/images/marker-shadow.png',
@@ -132,14 +135,42 @@ VESPER.DWCAMapLeaflet = function (divid) {
             markerGroup = new L.MarkerClusterGroup (
                 {
                     iconCreateFunction: function(cluster) {
-                        return new L.DivIcon({ html: '<div class="unselected">' + cluster.getChildCount() + '</div><div class="selected">' + cluster.getSelectedChildCount()+ '</div>',
+                        var clog = Math.log (cluster.getChildCount() + 1);
+                        var height = 10 + (clog * heightMultiplier);
+                        //var selHeight = Math.log (cluster.getSelectedChildCount() + 1) * heightMultiplier;
+                        var selHeight = (height * Math.log (cluster.getSelectedChildCount() + 1)) / clog;
+                        var unselHeight = height - selHeight;
+
+                        return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
+                                +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
                             className: 'vesperMapIcon',
-                            iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
+                            //iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
+                            //iconSize: new L.Point(40, 20 + (Math.log (cluster.getSelectedChildCount() + 1) * 5))
+                            iconSize: new L.Point(40, height)
                         });
                     }
                 }
             );
-            markerGroup.clearLayers();
+
+            markerGroup.on('clustermouseover', function (a) {
+                VESPER.tooltip.updateText (a.latlng,
+                    a.layer.getChildCount()+" Records"
+                    +(a.layer.getSelectedChildCount() > 0 ? "<br>" + a.layer.getSelectedChildCount()+' Selected' : ""));
+                VESPER.tooltip.updatePosition (a.originalEvent);
+            });
+
+            markerGroup.on('clustercontextmenu', function (a) {
+                var theseMarkers = [];
+                var sel = [];
+                a.layer.getAllChildMarkers (theseMarkers);
+                if (theseMarkers.length > 0) {
+                    for (var n = 0; n < theseMarkers.length; n++) {
+                        sel.push (theseMarkers[n].extId);
+                    }
+                    model.getSelectionModel().clear();
+                    model.getSelectionModel().addAllToMap (sel);
+                }
+            });
         }
 
 		var colourscheme = function(value){
@@ -175,7 +206,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 						 //VESPER.log (lat, longi);
 						 var marker = L.marker(coord)
 						 	.bindPopup (rec[keyField]+" "+rec[nameField])
-						 	.on ('dblclick', function (e) {
+						 	.on ('contextmenu', function (e) {
                                 model.getSelectionModel().clear();
                                 model.getSelectionModel().addToMap (e.target.extId);
 						 	})
@@ -203,13 +234,26 @@ VESPER.DWCAMapLeaflet = function (divid) {
 		
 		VESPER.log ("group ", markerGroup);
 		VESPER.log ("map ", map);
-	};
+
+        recalcHeightMultiplier();
+    };
+
+
+    function recalcHeightMultiplier () {
+        var cc = markerGroup._topClusterLevel.getChildCount();
+        var allHeight = Math.log (cc + 1);
+        heightMultiplier = maxIconHeight / allHeight;
+    }
 
 
 	this.update = function () {
         var vals = model.getSelectionModel().values();
 
+        console.log ("MGROUP COUNT: ", markerGroup._topClusterLevel.getChildCount());
+
 		if (map.hasLayer (markerGroup)) {
+            recalcHeightMultiplier ();
+
             markerGroup.eachLayer (function(layer) {
                 var sel = model.getSelectionModel().contains(layer.extId);
                 layer.setIcon (sel ? selIcon : oldIcon);

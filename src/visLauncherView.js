@@ -11,6 +11,7 @@ VESPER.VisLauncher = function (divid) {
     var model;
     var self = this;
     var keyField, nameField, dims, choiceData;
+    var handleElement = "h3";
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
@@ -116,7 +117,7 @@ VESPER.VisLauncher = function (divid) {
                 .attr ("id", id+"container")
                 .style("width", details.width ? details.width : "50%")
             ;
-            newDiv.append("h3").text(vid);
+            newDiv.append(handleElement).text(vid);
             var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height);
 
             var coreType = aModel.getMetaData().coreRowType;
@@ -131,12 +132,15 @@ VESPER.VisLauncher = function (divid) {
             aModel.addView (newVis);
             newVis.go (aModel);
 
-            DWCAHelper.addKillViewButton (newDiv.select("h3"), newDiv, newVis);
-            if (details.title != "Map") { // map selection goes funny if I make it draggable
+            DWCAHelper.addKillViewButton (newDiv.select(handleElement), newDiv, newVis);
+            // draggy causing more problems in timeline
+
+            //if (details.title != "Map") { // map selection goes funny if I make it draggable
                 $(function() {
-                    $("#"+id+"container").draggable();
+                    $("#"+id+"container").draggable({ handle: handleElement});
                 });
-            }
+           // }
+
         }
     };
 

@@ -132,6 +132,8 @@ DIV .hack {
 .vesperMapIcon div {
    height: 20px;
    font-weight: bold;
+   padding: 0px 2px 0px 2px;
+   overflow: hidden;
 }
 
 .vesperTooltip {
