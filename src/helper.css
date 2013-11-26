@@ -113,7 +113,8 @@ span.noShad {
     text-shadow: 0 0 2px #fff;
     -moz-border-radius: 5px;
     border-radius: 5px;
-    padding-left: 8px;
+    padding: 0px 8px 0px 8px;
+    font-size: 16pt;
 }
 
 .filenameLabel {

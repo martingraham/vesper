@@ -399,15 +399,9 @@ var DWCAHelper = new function () {
         where.append("button")
             .attr("type", "button")
             .attr("class", "killbutton")
-            //.text("KILL")
             .on ("click", function() {
-                if (view) {
-                    if (view.destroy) { view.destroy(); }
-                }
+                if (view && view.destroy) { view.destroy(); }
                 d3.select(d3.event.target).on ("click", null);
-                //if (div) {
-                //    div.node().parentNode.removeChild(div.node());
-                //}
             })
             .attr ("title", "Close this view")
             .append ("img")

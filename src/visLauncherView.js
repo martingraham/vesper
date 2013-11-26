@@ -118,7 +118,7 @@ VESPER.VisLauncher = function (divid) {
                 .style("width", details.width ? details.width : "50%")
             ;
             newDiv.append(handleElement).text(vid);
-            var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height);
+            var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
 
             var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
@@ -133,7 +133,6 @@ VESPER.VisLauncher = function (divid) {
             newVis.go (aModel);
 
             DWCAHelper.addKillViewButton (newDiv.select(handleElement), newDiv, newVis);
-            // draggy causing more problems in timeline
 
             //if (details.title != "Map") { // map selection goes funny if I make it draggable
                 $(function() {

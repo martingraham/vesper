@@ -3,6 +3,7 @@ VESPER.FilterView = function (divID) {
     var model;
     var self = this;
     var nameField;
+    var typeAhead = true;
 
     this.set = function (fields, mmodel) {
         model = mmodel;
@@ -22,6 +23,25 @@ VESPER.FilterView = function (divID) {
             .attr("id", tid)
         ;
 
+        var typeAheadDiv = textSearch.append("div");
+
+        typeAheadDiv
+            .append ("input")
+            .attr ("name", tid+"TypeAhead")
+            .attr ("value", typeAhead ? "checked" : "")
+            .attr ("checked", typeAhead)
+            .attr ("type", "checkbox")
+            .on ("click", function () {
+                typeAhead = d3.event.target.checked;
+            })
+        ;
+
+        typeAheadDiv
+            .append ("label")
+            .attr ("for", tid+"TypeAhead")
+            .text ("Keystroke Search")
+        ;
+
         bindSearch ();
 		this.update ();
 	};
@@ -30,12 +50,12 @@ VESPER.FilterView = function (divID) {
         var tfield = d3.select(divID).select("span input");
         tfield
             .on ("keyup", function() {
-                VESPER.log (d3.select(this).node(), d3.select(this).property("value"));
-                model.getSelectionModel().clear();
-                var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"), nameField);
+                if (typeAhead || (d3.event.keyCode | d3.event.charCode) === 13) {
+                    model.getSelectionModel().clear();
+                    var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"), nameField);
+                }
             })
         ;
-        VESPER.log (tfield);
     }
 	
 	

@@ -11,7 +11,8 @@ var VESPER = (function() {
     vesper.logRun = true;
     vesper.log = function (obj) {
         if (vesper.logRun) {
-            console.log.apply (console, arguments);
+            //console.log.apply (console, arguments);
+            Function.prototype.apply.call(console.log, console, arguments);
         }
     };
     vesper.imgbase = "../img/";
