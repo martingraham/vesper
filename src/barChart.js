@@ -53,10 +53,9 @@ VESPER.BarChart = function(divid) {
 
 
     this.set = function (fields, mmodel) {
-        ffields.keyField = fields.identifyingField;
-        ffields.dateField = fields.dateField;
-        ffields.nameField = fields.nameField;
-        ffields.realField = fields.realField;
+        ffields.keyField = mmodel.makeIndices ([fields.identifyingField])[0];
+        ffields.dateField = mmodel.makeIndices ([fields.dateField])[0];
+        ffields.realField = mmodel.makeIndices ([fields.realField])[0];
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
@@ -458,8 +457,9 @@ VESPER.TaxaDistribution = function (div) {
     chart.wrapDataType = function (d) { return d; };
     chart.unwrapDataType = function (o) { return o; };
     chart.getVal = function (model, data, key, fields) {
-        var taxaData = model.getTaxaData (data[key]);
-        if (taxaData[fields.realField] == taxaData[fields.keyField]) {
+        var keyID = model.getIndexedDataPoint (data[key], fields.keyField);
+        var realID = model.getIndexedDataPoint (data[key], fields.realField);
+        if (realID == keyID) {
             var node = model.getNodeFromID(key);
             var subTaxa = model.getSubTaxa(node);
             return (subTaxa ? subTaxa.length : 0);
@@ -486,7 +486,8 @@ VESPER.TimeLine = function (div) {
     };
     chart.unwrapDataType = function (date) { return date.getTime(); };
     chart.getVal = function (model, data, key, fields) {
-        var val = model.getTaxaData(data[key])[fields.dateField];
+        //var val = model.getTaxaData(data[key])[fields.dateField.fieldIndex];
+        var val = model.getIndexedDataPoint(data[key], fields.dateField);
         if (!timeCache[key] && val !== undefined) {
             timeCache[key] = new Date (val);
         }

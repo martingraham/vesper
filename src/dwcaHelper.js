@@ -24,6 +24,7 @@ var DWCAHelper = new function () {
         elem.style ("background", check ? "" : back);
     }
 
+    function isCore (fd, metaData) { return fd.rowType == metaData.coreRowType; }
     function isId (fd, d) { return fd.invFieldIndex[fd.idIndex] === d; }
     function getItemSelection (fd, d) { return fd.selectedItems[d] === true || isId(fd, d); }
     function setItemSelection (fd, d, val) { fd.selectedItems[d] = val; }
@@ -127,8 +128,9 @@ var DWCAHelper = new function () {
             VESPER.log ("table", i, d);
             var table = d3.select(this);
             var tableId = table.attr ("id");
+            var suffixNames = d.value.invFieldIndex.filter (function (elem) { return elem !== undefined; });
             var rows = table.selectAll("tr.col")
-                .data (d.value.invFieldIndex)
+                .data (suffixNames)
             ;
 
             rows.exit().selectAll("input").on("click", null);
@@ -206,36 +208,51 @@ var DWCAHelper = new function () {
     };
 
 
-
-
-    this.setAllFields = function (parentSelection, torf, list, exceptionFunc, metaData) {
+    // parentSelection - div of tables holding checkboxes
+    // torf - true or false. Set or unset.
+    // list - list of fieldnames to use in this op. Undefined if we're considering everything.
+    // exceptionFunc - function that excludes some checkboxes from this operation
+    // metaData - the DWCA metadata object
+    // selectionOptions object
+    //      .includeExtFiles - does this apply just to fields in core file or extension files too?
+    //      .selectFirstOnly - select just the first field with the given name we come across? (selection only, clearing clears all such fields)
+    this.setAllFields = function (parentSelection, torf, list, exceptionFunc, metaData, selectionOptions) {
         //VESPER.log ("efunc", exceptionFunc, parentSelection, list, metaData);
         var tables = parentSelection.selectAll("table");
+        var includeExtFiles = (selectionOptions ? selectionOptions.useExtRows : true);
+        var selectFirstOnly = (selectionOptions ? selectionOptions.selectFirstOnly : false);
 
         var fd = metaData.fileData;
-        for (var prop in fd) {
-            if (fd.hasOwnProperty(prop)) {
-                var f = fd[prop];
-                var si = f.selectedItems;
-                var llist = list || f.invFieldIndex;
-                if (si !== undefined) {
-                    for (var n = 0; n < llist.length; n++) {
-                        var i = llist[n];
-                        if (f.fieldIndex[i]) {
-                            si[i] = (exceptionFunc ? exceptionFunc (f, i) : false) || torf;
+        // make array ordered with core row type as first entry
+        var fdArray = d3.entries(fd).sort(function(a,b) {
+            return isCore (a.value, metaData) ? -1 : (isCore (b.value, metaData) ? 1: 0);
+        });
+
+        var nullableList = (list ? list.slice(0) : undefined); // list we can safely null values in with no side-effects (possible since list is passed in as a parameter)
+
+        for (var n = 0; n < fdArray.length; n++) {
+            var f = fdArray[n].value;
+            var si = f.selectedItems;
+            var llist = nullableList || f.invFieldIndex;
+            if (si !== undefined) {
+                for (var m = 0; m < llist.length; m++) {
+                    var i = llist[m];
+                    if (f.fieldIndex[i]) {
+                        si[i] = (isCore (f, metaData) || includeExtFiles) ? ((exceptionFunc ? exceptionFunc (f, i) : false) || torf) : false;
+                        if (torf && selectFirstOnly && nullableList) {
+                            nullableList[m] = null;
                         }
                     }
+                }
 
-                    var vals = d3.values (si);
-                    var uniq = d3.set(vals);
-                    setRowTypeSelection (f, uniq.has("true"));
-                    VESPER.log (prop, uniq.has("true"));
-                }	
+                var vals = d3.values (si);
+                var uniq = d3.set(vals);
+                setRowTypeSelection (f, uniq.has("true")); // set whether 'row' i.e. core or extension file is selected
+                VESPER.log (f.rowType, uniq.has("true"));
             }
         }
 
-	  setRowTypeSelection (metaData.fileData[metaData.coreRowType], true);
-
+	    setRowTypeSelection (metaData.fileData[metaData.coreRowType], true); // make sure core extension file is selected
 
         tables.each (
             function (d) {
@@ -247,20 +264,34 @@ var DWCAHelper = new function () {
 
     // check metamodel against list of fieldnames
     // needAll decides whether we need to match all the list or just part of it
-    this.fieldListExistence = function (meta, list, needAll) {
+    this.fieldListExistence = function (meta, list, needAll, checkExtRows) {
+
+        var listSet = d3.set (list);
+        var matchSet = d3.set ();
+
         var all = [];
         for (var prop in meta.fileData) {
             if (meta.fileData.hasOwnProperty (prop)) {
-                all = all.concat(meta.fileData[prop].invFieldIndex);
+                var row = meta.fileData[prop];
+                if (checkExtRows || isCore (row, meta)) {
+                    for (var m = 0; m < row.invFieldIndex.length; m++) {
+                        var fieldName = row.invFieldIndex[m];
+                        if (listSet.has (fieldName)) {
+                            matchSet.add (fieldName);
+                            all.push ({fieldName: fieldName, rowName: prop});
+                        }
+                    }
+                }
             }
         }
-        var intersect = NapVisLib.intersectArrays (list, all);
-        //VESPER.log ("inter", intersect, all);
-        return (needAll ? intersect.length === list.length : intersect.length > 0);
+
+        VESPER.log ("List", list, "Match", all, matchSet.values());
+        var matchLength = matchSet.values().length;
+        return {match: (needAll ? matchLength === list.length : matchLength > 0), fields: all} ;
     };
 
 
-    this.addHelperButton = function (parentSelection, fieldParentSelection, listName, list, add, img, klass, metaFunc) {
+    this.addHelperButton = function (parentSelection, fieldParentSelection, listName, list, add, img, klass, metaFunc, selOptions) {
         VESPER.log ("IN", listName, list, add, parentSelection.selectAll("button[type=button]."+klass));
         var buttons = parentSelection
             .selectAll("button[type=button]."+klass)
@@ -274,7 +305,7 @@ var DWCAHelper = new function () {
             .attr ("class", klass)
             .attr ("value", function (d) { return d.key; })
             .attr ("name", function (d) { return d.key; })
-            .on ("click", function (d) { DWCAHelper.setAllFields (fieldParentSelection, d.add, d.value, isId, metaFunc()); })
+            .on ("click", function (d) { DWCAHelper.setAllFields (fieldParentSelection, d.add, d.value, isId, metaFunc(), selOptions); })
             .html (function (d) { return (img ? "<img src=\""+img+"\">" : "") + d.key; })
         ;
     };
@@ -321,7 +352,7 @@ var DWCAHelper = new function () {
     };
 
 
-    this.configureCheckbox = function (checkBoxSpanSelection, cboxListParentSelection, list, meta) {
+    this.configureCheckbox = function (checkBoxSpanSelection, cboxListParentSelection, list, meta, selOptions) {
         if (list) {
             checkBoxSpanSelection.datum().attList = list;
         }
@@ -329,7 +360,7 @@ var DWCAHelper = new function () {
         checkBoxSpanSelection.select("input")
             .on ("click", function (d) {
                 var setVal = d3.select(this).property("checked");
-                DWCAHelper.setAllFields (cboxListParentSelection, setVal, d.attList, isId, meta());
+                DWCAHelper.setAllFields (cboxListParentSelection, setVal, d.attList, isId, meta(), selOptions);
 
                 var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
                 var cGroup = d3.selectAll("span."+cBoxClass+" input[type='checkbox']");
@@ -337,32 +368,33 @@ var DWCAHelper = new function () {
                 var list = [];
                 cGroup.each (function(d) { list.push.apply (list, d.attList); } );
 
-                DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta());
+                DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta(), selOptions);
             })
         ;
     };
 
 
-    this.addRadioButton = function (parentSelection, cdata, klass, groupName) {
+    this.addRadioButton = function (parentSelection, cdata, klass, groupName, textFunc) {
+        console.log ("TEXTFUNC", textFunc);
         var rbutControl = parentSelection
             .selectAll("label")
-            .data([cdata], function (d) { return d; })
+            .data([cdata], function (d) { return textFunc(d); })
         ;
 
         if (!rbutControl.enter().empty()) {
             var rwrapper = rbutControl.enter()
                 .append("label")
                 .attr ("class", klass)
-                .attr ("for", function(d) { return d+"RBChoice";})
-                .text (function(d) { return d; })
+                .attr ("for", function(d) { return textFunc(d)+"RBChoice";})
+                .text (textFunc)
             ;
 
             rwrapper
                 .append ("input")
                 .attr ("type", "radio")
-                .attr ("value", function (d) { return d; })
+                .attr ("value", textFunc)
                 .attr ("name", groupName)
-                .attr ("id", function (d) { return d+"RBChoice"; })
+                .attr ("id", function (d) { return textFunc(d)+"RBChoice"; })
                 .property ("checked", false)
             ;
         }
@@ -371,7 +403,7 @@ var DWCAHelper = new function () {
     };
 
 
-    this.configureRadioButton = function (rbLabelWrapper, cboxListParentSelection, changeThisObj, metaDataFunc) {
+    this.configureRadioButton = function (rbLabelWrapper, cboxListParentSelection, changeThisObjFunc, metaDataFunc, selOptions) {
         rbLabelWrapper
             .select("input")
             .on ("click", function (d) {
@@ -379,10 +411,10 @@ var DWCAHelper = new function () {
                 var gName = d3.select(this).attr("name");
                 var rGroup = d3.selectAll("input[type='radio'][name='"+gName+"']");
                 var list = [];
-                rGroup.each (function(d) { list.push (d); } );
-                DWCAHelper.setAllFields (cboxListParentSelection, false, list, isId, metaDataFunc());
-                DWCAHelper.setAllFields (cboxListParentSelection, setVal, [d], isId, metaDataFunc());
-                changeThisObj.result = d;
+                rGroup.each (function(d) { list.push (d.fieldType); } );
+                DWCAHelper.setAllFields (cboxListParentSelection, false, list, isId, metaDataFunc(), selOptions);
+                DWCAHelper.setAllFields (cboxListParentSelection, setVal, [d.fieldType], isId, metaDataFunc(), selOptions);
+                changeThisObjFunc(d);
         });
     };
 

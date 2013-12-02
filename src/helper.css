@@ -5,6 +5,7 @@ div.selectBox {
     background: #ddf;
     float: left;
     margin: 5px;
+    min-width: 150px;
 }
 
 div.selectBox table {
@@ -110,7 +111,7 @@ span.noShad {
     border-width: 2px;
     /*background: #88a;*/
     background: #88a url('../img/bumpPat.png') 100% 100% repeat;
-    text-shadow: 0 0 2px #fff;
+    text-shadow: 0px 0px 5px #fff;
     -moz-border-radius: 5px;
     border-radius: 5px;
     padding: 0px 8px 0px 8px;

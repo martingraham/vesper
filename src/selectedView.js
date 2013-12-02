@@ -2,12 +2,10 @@ VESPER.FilterView = function (divID) {
 
     var model;
     var self = this;
-    var nameField;
     var typeAhead = true;
 
     this.set = function (fields, mmodel) {
         model = mmodel;
-        nameField = fields.nameField;
     };
 
 
@@ -52,7 +50,7 @@ VESPER.FilterView = function (divID) {
             .on ("keyup", function() {
                 if (typeAhead || (d3.event.keyCode | d3.event.charCode) === 13) {
                     model.getSelectionModel().clear();
-                    var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"), nameField);
+                    var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"));
                 }
             })
         ;
@@ -85,12 +83,10 @@ VESPER.SelectedView = function (divID) {
     var detailTable = "detailTable";
     var model;
     var self = this;
-    var nameField;
 
 
     this.set = function (fields, mmodel) {
         model = mmodel;
-        nameField = fields.nameField;
     };
 
 
@@ -128,10 +124,13 @@ VESPER.SelectedView = function (divID) {
                 //.attr ("id", "compareSel")
                 .text ("COMPARE MODEL")
                 .on ("click", function() {
-                    VESPER.modelBag.push ({"model":model, "name":nameField});
+                    VESPER.modelBag.push ({"model":model});
                     VESPER.log ("ModelBag", VESPER.modelBag);
                     if (VESPER.modelBag.length > 1) {
-                        VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model, VESPER.modelBag[0].name, VESPER.modelBag[1].name);
+                        VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model,
+                            VESPER.modelBag[0].model.getMetaData().vesperAdds.nameLabelField,
+                            VESPER.modelBag[1].model.getMetaData().vesperAdds.nameLabelField
+                        );
                         VESPER.modelBag.length = 0;
                     }
                 })

@@ -10,12 +10,11 @@ VESPER.VisLauncher = function (divid) {
 
     var model;
     var self = this;
-    var keyField, nameField, dims, choiceData;
+    var keyField, dims, choiceData;
     var handleElement = "h3";
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
-        nameField = fields.nameField;
         choiceData = fields.visChoiceData;
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
@@ -72,10 +71,13 @@ VESPER.VisLauncher = function (divid) {
             //.attr ("id", "compareSel")
             .text ("COMPARE MODEL")
             .on ("click", function() {
-                VESPER.modelBag.push ({"model":model, "name":nameField});
+                VESPER.modelBag.push ({"model":model});
                 VESPER.log ("ModelBag", VESPER.modelBag);
                 if (VESPER.modelBag.length > 1) {
-                    VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model, VESPER.modelBag[0].name, VESPER.modelBag[1].name);
+                    VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model,
+                        VESPER.modelBag[0].model.getMetaData().vesperAdds.nameLabelField,
+                        VESPER.modelBag[1].model.getMetaData().vesperAdds.nameLabelField
+                    );
                     VESPER.modelBag.length = 0;
                 }
             })
@@ -96,12 +98,12 @@ VESPER.VisLauncher = function (divid) {
         var visChoices = divSel.selectAll("button.visChoice");
         visChoices.style("display", function(d) {
             var fileData = model.getMetaData().fileData;
-            var indices = VESPER.DWCAParser.findFields (fileData, d.attList, "filteredFieldIndex");
+            var indices = model.makeIndices (d.attList);
             var nullCount = NapVisLib.countNulls (indices);
             //VESPER.log (d.title, nullCount);
             return (indices.length == 0 || (d.matchAll && nullCount === 0) || (!d.matchAll && nullCount < indices.length))
                 ? "block" : "none"
-                ;
+            ;
         })
     }
 
@@ -122,13 +124,14 @@ VESPER.VisLauncher = function (divid) {
 
             var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
-            var coreFieldIndex = fileData[coreType].filteredFieldIndex;
+           // var coreFieldIndex = fileData[coreType].filteredFieldIndex;
 
             var newVis = details.newVisFunc ("#"+id);
             VESPER.log ("newvis", newVis, newVis.set);
-            var keyFields = details.setupFunc (coreFieldIndex) || {};
-            keyFields.identifyingField = VESPER.DWCAParser.getFilteredIdIndex (aModel.getMetaData());
-            newVis.set (keyFields, aModel);
+            var fields = details.setupFunc () || {};
+            var keyFieldName = fileData[coreType].filteredInvFieldIndex [VESPER.DWCAParser.getFilteredIdIndex (aModel.getMetaData())];
+            fields.identifyingField = keyFieldName;
+            newVis.set (fields, aModel);
             aModel.addView (newVis);
             newVis.go (aModel);
 

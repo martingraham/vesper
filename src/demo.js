@@ -13,41 +13,41 @@ VESPER.demo = function (files) {
 
     VESPER.tooltip.init();
 
-
-    var nameLabelField = {result: null};
+    var selectionOptions = {useExtRows: true, selectFirstOnly: true};
 
     var visChoiceData = [
         {title:"VisChoices", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
             newVisFunc: function (div) { return new VESPER.VisLauncher (div);},
-            setupFunc: function (coreFieldIndex) {return {"nameField":coreFieldIndex[nameLabelField.result], "visChoiceData":visChoiceData}}
+            setupFunc: function () {return {"visChoiceData":visChoiceData}}
         },
         {title:"Implicit Taxonomy", multiple: true,  attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.Tree (div);},
-            setupFunc: function (coreFieldIndex) {return {"nameField":coreFieldIndex[nameLabelField.result], "rankField":coreFieldIndex["taxonRank"]}}
+            setupFunc: function () {return {"rankField":"taxonRank"}}
         },
         {title:"Explicit Taxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.Tree (div);},
-            setupFunc: function (coreFieldIndex) {return {"nameField":coreFieldIndex[nameLabelField.result], "rankField":coreFieldIndex["taxonRank"]}}
+            setupFunc: function () {return {"rankField":"taxonRank"}}
         },
         {title:"Map", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
-            setupFunc: function (coreFieldIndex) {return {"latitude":coreFieldIndex["decimalLatitude"], "longitude":coreFieldIndex["decimalLongitude"], "nameField":coreFieldIndex[nameLabelField.result]}}
+            setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}}
         },
         {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"geo.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
-            setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"], "nameField":coreFieldIndex[nameLabelField.result]}}
+            //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
+            setupFunc: function () { return {"dateField":"eventDate"}}
         },
         {title:"Sanity Check", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"geo.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.Sanity (div);},
-            setupFunc: function (coreFieldIndex) { return undefined; }
+            setupFunc: function () { return undefined; }
         },
         {title:"Taxa Distribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TaxaDistribution (div);},
-            setupFunc: function (coreFieldIndex) { return {"realField":coreFieldIndex["acceptedNameUsageID"], "nameField":coreFieldIndex[nameLabelField.result], "rankField":coreFieldIndex["taxonRank"]}}
+            setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}}
         },
         {title:"Search Box", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"geo.png", height: "150px", width: "200px",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
-            setupFunc: function (coreFieldIndex) { return {"nameField":coreFieldIndex[nameLabelField.result]} ;}
+            setupFunc: function () { return {} ;}
         }
     ];
     var visTiedToSpecificAttrs = visChoiceData.slice (0, 6);
@@ -104,14 +104,15 @@ VESPER.demo = function (files) {
         for (var n = 0; n < visboxes.length; n++) {
             var data = visboxes[n];
             var spanSelection = DWCAHelper.addCheckbox (bdiv, data, "fieldGroup");
-            DWCAHelper.configureCheckbox (spanSelection, checkListParent, data.attList, function() { return getMeta(); });
+            DWCAHelper.configureCheckbox (spanSelection, checkListParent, data.attList, function() { return getMeta(); }, selectionOptions);
         }
 
         var ldiv = d3.select ("#labelSelectDiv");
         for (var n = 0; n < radioChoices.length; n++) {
-            var data = radioChoices[n];
-            var elem = DWCAHelper.addRadioButton (ldiv, data, "nameChoice", "nameChoice", true);
-            DWCAHelper.configureRadioButton (elem, checkListParent, nameLabelField, function() { return getMeta(); });
+            var data = {"fieldType":radioChoices[n], "rowType":undefined};
+            console.log ("NAME CHOICE", data);
+            var elem = DWCAHelper.addRadioButton (ldiv, data, "nameChoice", "nameChoice", function(d) { return d.fieldType; });
+            DWCAHelper.configureRadioButton (elem, checkListParent, function(result) { getMeta().vesperAdds.nameLabelField = result; }, function() { return getMeta(); }, selectionOptions);
         }
 
           var setVisOptionBoxes = function (bool) {
@@ -122,23 +123,37 @@ VESPER.demo = function (files) {
                 var rbuts = d3.select("#labelSelectDiv").selectAll(".nameChoice input");
                 rbuts = rbuts.filter (function() {return d3.select(this).style("display") != "none"; });
                 rbuts.property ("checked", bool);
-                nameLabelField.result = null;
+                getMeta().vesperAdds.nameLabelField = null;
             }
           };
 
         DWCAHelper.addHelperButton (d3.select("#advancedSelectDiv"), checkListParent, "Remove Verbose Fields", VESPER.DWCAParser.flabbyLists.wordyList,
-            false, null, "selButtonStyle listCon", function() { return getMeta(); });
+            false, null, "selButtonStyle listCon", function() { return getMeta(); }, selectionOptions);
         var excepFunc = function exceptionFunc (d, i) { return i == 0; };
-        d3.select("#allButton").on("click", function(d) {
-		DWCAHelper.setAllFields (checkListParent, true, undefined, excepFunc, getMeta()); 
-		setVisOptionBoxes (true); 
-		return false; 
-	  });
-        d3.select("#clearButton").on("click", function(d) { 
-		DWCAHelper.setAllFields (checkListParent, false, undefined, excepFunc, getMeta());
-		setVisOptionBoxes (false); 
-		return false;
-	  });
+        d3.select("#allButton").on("click", function() {
+            DWCAHelper.setAllFields (checkListParent, true, undefined, excepFunc, getMeta(), selectionOptions);
+            setVisOptionBoxes (true);
+            return false;
+          });
+        d3.select("#clearButton").on("click", function() {
+            DWCAHelper.setAllFields (checkListParent, false, undefined, excepFunc, getMeta(), selectionOptions);
+            setVisOptionBoxes (false);
+            return false;
+          });
+        var useExtBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Search DWCA Extensions", image:null}, "fieldGroup");
+        useExtBox.select("input")
+            .property ("checked", selectionOptions.useExtRows)
+            .on("click", function() {
+                selectionOptions.useExtRows = !selectionOptions.useExtRows;
+                refilterNameChoices (getMeta());
+                refilterVisChoices (getMeta());
+        });
+        var selectFirstOnlyBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Select First Matching Field Only", image:null}, "fieldGroup");
+        selectFirstOnlyBox.select("input")
+            .property ("checked", selectionOptions.selectFirstOnly)
+            .on("click", function() {
+                selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly
+            });
         var advSelFunc = function (d) {
             var val = d3.select(this).property("checked") ? "block" : "none";
             DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
@@ -153,37 +168,15 @@ VESPER.demo = function (files) {
 
 
     function proceed (zip, mdata) {
-       // var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (d3.select("div#selDiv"));
-        var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
-        var fileRows = {};
         function notifyFunc (str, obj) {
             d3.select("#notifyStatusID").html(str+":"+obj);
             d3.select("#loadStatDiv").attr("offsetWidth");
         }
-        VESPER.log ("ZIP:", zip);
         //DWCAZipParse.setNotifyFunc (notifyFunc);
 
-        // read selected data from zip
-        $.each (selectedStuff, function (key, value) {
-            var fileData = mdata.fileData[key];
-            var fileName = fileData.fileName;
-            var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
+        console.log ("META", meta);
+        model = VESPER.DWCAParser.filterReadZipEntriesToMakeModel (zip, mdata);
 
-            $.each (value, function (key, value) {
-                readFields [fileData.fieldIndex[key]] = value;
-            });
-
-            VESPER.log ("readFields", readFields);
-            VESPER.DWCAZipParse.set (fileData, readFields);
-            zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
-            fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
-            VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
-        });
-
-        if (VESPER.alerts) { alert ("mem monitor point 1"); }
-
-        // make taxonomy (or list)
-        model = new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata));
         VESPER.log ("MODEL", model);
         if (VESPER.alerts) { alert ("mem monitor point X"); }
 
@@ -208,29 +201,12 @@ VESPER.demo = function (files) {
         var zip = accessZip.jszip;
 
         DWCAHelper.makeFieldSelectionBoxes (metaData, d3.select("#listDiv"));  // Makes checkboxes for all fields (normally hidden)
-        d3.select("#loadButton").on("click", null).on("click", function(d) { proceed (zip, metaData); return false;});
+        d3.select("#loadButton").on("click", null).on("click", function() { proceed (zip, metaData); return false;});
 
-        var checkBoxParentSelection = d3.select("#listDiv");
-        var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup");
-        VESPER.log (visCheckBoxGroup);
-        visCheckBoxGroup
-            .property ("checked", false)
-            .style ("display", function(d) {
-                var poss = DWCAHelper.fieldListExistence (metaData, d.attList, d.matchAll);
-                return poss ? null : "none";
-            })
-        ;
+        refilterVisChoices (metaData);
+        refilterNameChoices (metaData);
 
         var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("label.nameChoice");
-        VESPER.log (nameChoiceGroup);
-        nameChoiceGroup
-            .property ("checked", false)
-            .style ("display", function(d) {
-                var poss = DWCAHelper.fieldListExistence (metaData, [d], true);
-                return poss ? null : "none";
-            })
-        ;
-
         var first = true;
         nameChoiceGroup.each (function(d) {
             var disp = d3.select(this).style ("display");
@@ -246,6 +222,34 @@ VESPER.demo = function (files) {
 
         DWCAHelper.divDisplay (["#showOnZipLoadDiv"], "block");
     };
+
+
+    function refilterNameChoices (metaData) {
+        var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("label.nameChoice");
+        nameChoiceGroup
+            .property ("checked", false)
+            .style ("display", function(d) {
+                var poss = DWCAHelper.fieldListExistence (metaData, [d.fieldType], true, selectionOptions.useExtRows);
+                if (poss.fields.length > 0) {
+                    d.rowType = poss.fields[0].rowName;
+                }
+                //VESPER.log ("NAME STATE", d, poss.match);
+                return poss.match ? null : "none";
+            })
+        ;
+    }
+
+    function refilterVisChoices (metaData) {
+        var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup");
+        VESPER.log (visCheckBoxGroup);
+        visCheckBoxGroup
+            .property ("checked", false)
+            .style ("display", function(d) {
+                var poss = DWCAHelper.fieldListExistence (metaData, d.attList, d.matchAll, selectionOptions.useExtRows);
+                return poss.match ? null : "none";
+            })
+        ;
+    }
 
     setChoices (files);
     setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);

@@ -8,27 +8,34 @@
 
 VESPER.Filters = new function () {
 
-    this.filter2 = function (model, searchTerms, regex, nameField) {
+    this.filter2 = function (model, searchTerms, regex) {
         VESPER.log ("regex", regex);
-        VESPER.log ("filedata", model.getMetaData().fileData);
-        var ext;
-        var vnData = VESPER.DWCAParser.findFields (model.getMetaData().fileData, ["vernacularName"], "filteredFieldIndex")[0];
+        var metaData = model.getMetaData();
+        var nameLabel = metaData.vesperAdds.nameLabelField;
+        var rowDescriptor = metaData.fileData[nameLabel.rowType];
+        var rowIndex = rowDescriptor.extIndex;
+        var nameIndex = rowDescriptor.filteredFieldIndex[nameLabel.fieldType];
+        var oneArray = [];
+
+        console.log ("FILTER", nameLabel, nameIndex, rowIndex);
 
         var specificFilter = function (model, taxon, regex) {
-            var name = model.getTaxaData(taxon)[nameField];
-            if (name && name.match (regex) != null) {
-                return true;
+            var rowRecords = model.getRowRecords (taxon, rowIndex);
+
+            if (rowIndex == undefined) {
+                oneArray[0] = rowRecords;
+                rowRecords = oneArray;
             }
-            else if (ext = model.getExtraData(taxon) && vnData && ext[vnData.type]) {
-                var vnames = ext[vnData.type];
-                for (var n = vnames.length; --n >= 0;) {
-                    var name2 = vnames[n][vnData.index];
-                    //VESPER.log ("name2", name2);
-                    if (name2.match (regex) != null) {
+
+            if (rowRecords) {
+                for (var n = 0; n < rowRecords.length; n++) {
+                    var name = rowRecords[n][nameIndex];
+                    if (name && name.match (regex) != null) {
                         return true;
                     }
                 }
             }
+
             return false;
         };
 

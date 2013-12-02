@@ -9,12 +9,11 @@ var OccList = function (divid) {
 	var exitDur = 400, updateDur = 1000, enterDur = 400;
 	var selected = {};
 	
-	var keyField, nameField, rankField, rowFields;
+	var keyField, rankField, rowFields;
 
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
-        nameField = fields.nameField;
         rankField = fields.rankField;
         rowFields = fields.rowFields;
         model = mmodel;

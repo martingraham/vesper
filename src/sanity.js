@@ -29,7 +29,7 @@ VESPER.Sanity = function(divid) {
         var lists = VESPER.DWCAParser.neccLists;
         for (var list in lists) {
             if (lists.hasOwnProperty(list)) {
-                var present = VESPER.DWCAParser.findFields (model.getMetaData().fileData, lists[list], "filteredFieldIndex");
+                var present = model.makeIndices (lists[list]);
                 var nullCount = NapVisLib.countNulls (present);
                 if (nullCount === 0) {
                     tests.push (present);
@@ -42,17 +42,20 @@ VESPER.Sanity = function(divid) {
         for (var obj in dataModel) {
             if (dataModel.hasOwnProperty(obj)) {
                 oc++;
-                var tdat = model.getTaxaData (dataModel[obj]);
+                //var tdat = model.getTaxaData (dataModel[obj]);
 
-                if (tdat) {
+                //if (tdat) {
                     for (var i = 0; i < tests.length; i++) {
                         var test = tests[i];
                         var some = false, all = true;
 
                         for (var j = 0; j < test.length; j++) {
-                            var fieldData = test[j];
-                            var index = fieldData.index;
-                            var val = tdat[index];
+                            //var fdata = fdEntries[n].value;
+                           // var tdat = model.getRowData (dataModel[obj], fdata.extIndex);
+                            var val = model.getIndexedDataPoint (dataModel[obj], test[j]);
+                            //var fieldData = test[j];
+                            //var index = fieldData.index;
+                            //var val = tdat[index];
                             if (val === undefined || val === null) {
                                 some = true;
                             }
@@ -64,7 +67,7 @@ VESPER.Sanity = function(divid) {
                         if (some) { testOutputs[i].some++; }
                         if (all) { testOutputs[i].all++; }
                     }
-                }
+                //}
             }
         }
 
@@ -88,20 +91,23 @@ VESPER.Sanity = function(divid) {
 
         for (var obj in dataModel) {
             if (dataModel.hasOwnProperty(obj)) {
-                var tdat = model.getTaxaData (dataModel[obj]);
-                if (tdat) {
-
-                    for (var n = 0; n < fdEntries.length; n++) {
-                        var fIndex = fdEntries[n].value.filteredInvFieldIndex;
-                        var shortName = fdEntries[n].value.mappedRowType;
+                for (var n = 0; n < fdEntries.length; n++) {
+                    var fdata = fdEntries[n].value;
+                    var tdat = model.getRowData (dataModel[obj], fdata.extIndex);
+                    //if (tdat) {
+                        if (tdat && fdata.extIndex) {
+                            tdat = tdat[0];
+                        }
+                        var fIndex = fdata.filteredInvFieldIndex;
+                        var shortName = fdata.mappedRowType;
                         for (var f = 0; f < fIndex.length; f++) {
                             var fName = fIndex[f];
 
-                            if (tdat[f] === undefined || tdat[f] === null) {
+                            if (tdat === undefined || tdat[f] === undefined || tdat[f] === null) {
                                 results[shortName][fName].count++;
                             }
                         }
-                    }
+                    //}
                 }
             }
         }
@@ -217,7 +223,6 @@ VESPER.Sanity = function(divid) {
             } else {
                 arr = d3.entries(d);
             }
-            VESPER.log ("d", d, cellOrder, arr);
 
             var cells = d3.select(this).selectAll("td").data(arr);
             var newcells = cells.enter().append ("td");

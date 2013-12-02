@@ -22,7 +22,7 @@ VESPER.Tree = function(divid) {
     zoomObj.scaleExtent ([1.0, 4.0]); // constrain zooming
 
     var exitDur = 400, updateDur = 1000, enterDur = 400;
-    var keyField, nameField, rankField;
+    var keyField, rankField;
     var firstLayout = true;
     var color = d3.scale.category20c();
     var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
@@ -30,7 +30,7 @@ VESPER.Tree = function(divid) {
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
-		"alpha": function (a,b) { var n1 = model.getTaxaData(a)[nameField]; var n2 = model.getTaxaData(b)[nameField];
+		"alpha": function (a,b) { var n1 = model.getLabel(a); var n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
 		"descendants": function (a,b) { var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b); 
 										//VESPER.log (s1,s2);
@@ -51,20 +51,19 @@ VESPER.Tree = function(divid) {
         "selected": function (a,b) {
             var sModel = model.getSelectionModel();
             //console.log (a,b);
-            var sel1 = sModel.contains(model.getTaxaData(a)[keyField]);
-            var sel2 = sModel.contains(model.getTaxaData(b)[keyField]);
+            var sel1 = sModel.contains(model.getIndexedDataPoint (a,keyField));
+            var sel2 = sModel.contains(model.getIndexedDataPoint (b,keyField));
             return (sel1 === sel2) ? 0 :  (sel1 === true ? 1 : -1);
         }
 	};
 
     function tooltipString (node, model) {
-        var td = model.getTaxaData(node);
         var specs = model.getSpecimens(node);
         var desc = model.getDescendantCount(node);
         var sdesc = model.getSelectedDescendantCount(node);
         var subt = model.getSubTaxa(node);
 
-        return td[nameField]+": "+td[rankField]
+        return model.getLabel(node)+": "+model.getIndexedDataPoint(node, rankField)
         + (subt === undefined ?
                 (specs ? "<br>"+specs.length+" specimens" : "")
                 : "<br>"+desc+" descendants")
@@ -82,21 +81,21 @@ VESPER.Tree = function(divid) {
             //.value(function(d) { return 1; })// having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .value(function(d) { return model.getLeafValue (d); }) // having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .children (function (d) { return model.getSubTaxa(d); })
-            .nodeId (function (d) { return model.getTaxaData(d)[keyField]; })
+            .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
         bottomUpLog: AdaptedD3.logPartition()
             .sort (null)
             .value (function(d) { return model.getLeafValue (d); })
             .children (function (d) { return model.getSubTaxa(d); })
-            .nodeId (function (d) { return model.getTaxaData(d)[keyField]; })
+            .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
         topDown: AdaptedD3.topdown()
             .sort (null)
             .value (null)
             .children (function (d) { return model.getSubTaxa(d); })
-            .nodeId (function (d) { return model.getTaxaData(d)[keyField]; })
+            .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
            // .filter (function (d) { return allowedRanks[model.getTaxaData(d)[rankField]]; })
     };
 
@@ -164,7 +163,7 @@ VESPER.Tree = function(divid) {
             ;
 
             newNodes.append ("svg:text")
-                .text (function(d) { var node = getNode (d.id) /*d*/; return model.getTaxaData(node)[nameField]; })
+                .text (function(d) { var node = getNode (d.id) /*d*/; return model.getLabel(node); })
                 .style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": "hidden"; })
                 .call (partitionLayout.sharedTextAttrs)
                 //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
@@ -314,7 +313,7 @@ VESPER.Tree = function(divid) {
         sharedAttrs: function (group) {
             group
                 //.style ("fill", function(d) { var node = getNode (d.id); var s = model.getSelectionModel().contains(d.id); var p = (node.sdcount || 0) / (node.dcount || 1); return (p && !s) ? colourScale (p) : null; })
-                .attr ("class", function(d) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
+                .attr ("class", function(d) { if (d.id == undefined) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
             ;
         },
 
@@ -418,7 +417,7 @@ VESPER.Tree = function(divid) {
 
             /*
             newNodes.append ("svg:text")
-                //.text (function(d) { return model.getTaxaData(node)[nameField]; })
+                //.text (function(d) { return model.getLabel(node); })
                 //.attr ("text-anchor", "middle")
                 .style ("visibility", function (d) { return d.dx > 1 ? "visible": "collapse"; })
                 //.call (sunburstLayout.sharedTextAttrs)
@@ -430,7 +429,7 @@ VESPER.Tree = function(divid) {
                     .append ("svg:tspan")
                         .attr ("dy", "1em")
                         //.attr ("text-anchor", "middle")
-                        .text (function(d) { var node = getNode (d.id); return model.getTaxaData(node)[nameField]; })
+                        .text (function(d) { var node = getNode (d.id); return model.getLabel(node); })
 
                 //.attr ("clip-path", function (d) { var node = getNode (d.id); return "url(#depthclip"+node.depth+")"; })
             ;
@@ -473,23 +472,15 @@ VESPER.Tree = function(divid) {
 
     this.set = function (fields, mmodel) {
         VESPER.log ("set args", arguments, d3.select(divid).node());
-        keyField = fields.identifyingField;
-        nameField = fields.nameField;
-        rankField = fields.rankField;
+        var ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
+        keyField = ffields[0];
+        rankField = ffields[1];
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
 	
 	this.go = function () {
-        var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
-        if (root === undefined) {
-            VESPER.log ("no root defined for tree");
-            return;
-        }
-
-		absRoot = root;
 		thisView = this;
 		
 		svg = d3.select(divid)
@@ -504,6 +495,15 @@ VESPER.Tree = function(divid) {
 			.append ("svg:g")
 			.attr("class", "treeSVG")
 		;
+
+        var vals = model.getSelectionModel().values();
+        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
+        if (root === undefined) {
+            VESPER.log ("no root defined for tree");
+            return;
+        }
+
+        absRoot = root;
 
         var spaceAllocs = d3.values(spaceAllocationOptions);
         for (var n = 0; n < spaceAllocs.length; n++) {
@@ -624,7 +624,7 @@ VESPER.Tree = function(divid) {
 
 
 	function getNode (id) {
-        return model.getNodeFromID(id);
+        return model.getNodeFromID (id);
     }
 
 
@@ -714,7 +714,7 @@ VESPER.Tree = function(divid) {
             //handle mouse over
             var node = getNode (d.id) /*d*/;
             var val = tooltipString (node, model);
-            VESPER.tooltip.updateText (model.getTaxaData(node)[nameField], val);
+            VESPER.tooltip.updateText (model.getLabel(node), val);
             VESPER.tooltip.updatePosition (d3.event);
         })
         .on ("mouseout", function(d) {
@@ -737,7 +737,8 @@ VESPER.Tree = function(divid) {
     }
 
     function selectSubTreeR (node, ids) {
-        var id = model.getTaxaData(node)[keyField];
+        //var id = model.getTaxaData(node)[keyField];
+        var id = model.getIndexedDataPoint (node, keyField);
         ids.push(id);
 
         var taxa = model.getSubTaxa (node);

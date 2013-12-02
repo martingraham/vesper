@@ -9,7 +9,7 @@
 VESPER.DWCAZipParse = new function () {
 
     var fileData;
-    var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
+    var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, lineDelimLength, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
     var escapeCharVal = "\\".charCodeAt(0);
     var defaults = [], invDiscreteTermIndex = [], invSharedTermIndex = [];
     var pTime = 0;
@@ -40,14 +40,26 @@ VESPER.DWCAZipParse = new function () {
             }
             if (!quotes && (c === fieldDelimiterVal || n === strLen - 1)) {
                 if (use) {
-                    toI = n + ((n === strLen - 1) ? 1 : 0);
+                    toI = n + ((c === fieldDelimiterVal) ? 0 : 1);
+                    // strip out quotes if there
+                    if (quoteDelimiter) {
+                        if (strArray[fromI] == qDelimVal) {
+                            fromI++;
+                        }
+                        if (strArray[toI - 1] == qDelimVal) {
+                            toI--;
+                        }
+                    }
+                    //toI = n + ((n === strLen - 1) ? 1 : 0);
                     if (fromI === toI) {    // empty field, adjacent delimiters
                         str.push (defaults[field]);
+                        //console.log ("EMPTY");
                     } else {
                         var newStr = String.fromCharCode.apply (null, strArray.slice(fromI, toI));
                         // if field is deemed to be formed of a discrete set of entries (like ranks), then reuse strings to save mem
                         var dList = invDiscreteTermIndex [field];
                         var sIndex = invSharedTermIndex [field];
+                        //console.log ("NEWSTR", newStr);
 
                         if (dList) {
                             var mapStr = dList[newStr];
@@ -71,6 +83,12 @@ VESPER.DWCAZipParse = new function () {
 
                         pb += (toI - fromI);
                         str.push (newStr);
+                    }
+
+                    // If last char in string is field delimiter then there's actually an empty field after it
+                    if (c == fieldDelimiterVal && n === strLen - 1) {
+                        str.push (defaults[field]);
+                        //console.log ("LAST EMPTY");
                     }
                 }
                 field++;
@@ -113,7 +131,7 @@ VESPER.DWCAZipParse = new function () {
         var buff = new Array(1024);
         var blength = 1024;
         var out = [];
-        var i;
+        var i, j;
         var bigOut = [];
         var k = 0;
         var esc = false, quotes = false;
@@ -124,6 +142,29 @@ VESPER.DWCAZipParse = new function () {
 
         var mt = NapVisLib.makeTime();
         pTime = mt;
+
+        function matchEol (c, buf, off) {
+            var fcmatch = (lineDelimVal == c);
+
+            if (lineDelimLength == 1) { // if EOL is single char
+                return fcmatch;
+            } else if (fcmatch) {
+                if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
+                    for (var l = lineDelimiter.length; --l >= 1;) { // first char matched remember (fcmatch)
+                        if (lineDelimiter.charCodeAt(l) != buf[off+l]) {
+                            return false;
+                        }
+                    }
+                    j += lineDelimiter.length - 1;  // move along over these read bytes
+                    return true;
+                } else {
+                    utfwrap = i - j;
+                    j = i;
+                    ch = undefined;
+                }
+            }
+            return false;
+        }
 
         while((i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
 
@@ -148,7 +189,7 @@ VESPER.DWCAZipParse = new function () {
                 stt = false;
             }
 
-            for (var j = n; j < i; j++) {
+            for (j = n; j < i; j++) {
                 ch = buff[j];
                 if (ch >= 128) {
                     if( ch >= 0xC2 && ch < 0xE0 ) {
@@ -188,8 +229,10 @@ VESPER.DWCAZipParse = new function () {
 
                 if (quoteDelimiter && !esc && ch == qDelimVal) {
                     quotes = !quotes;
+                    out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
                 }
-                else if (!quotes && ch == lineDelimVal) {  // end of line
+                //else if (!quotes && ch == lineDelimVal) {  // end of line
+                else if (!quotes && matchEol (ch, buff, j)) {  // end of line
                     bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
                     k++;
                     out.length = 0;
@@ -238,13 +281,14 @@ VESPER.DWCAZipParse = new function () {
 
         fileData = ifileData;
         fieldDelimiter = ifileData.fieldsTerminatedBy.replace ("\\t", "\t").replace("\\n", "\n");    // 'cos reading in from file doesn't escape tabs or return
-        lineDelimiter = ifileData.linesTerminatedBy.replace ("\\t", "\t").replace("\\n", "\n");
+        lineDelimiter = ifileData.linesTerminatedBy.replace ("\\t", "\t").replace("\\n", "\n").replace("\\r", "\r");
         quoteDelimiter = ifileData.fieldsEnclosedBy.replace ("\\\"", "\"");
         readFields = ireadFields;
         firstTrue = readFields.indexOf (true);
         fieldDelimiterVal = fieldDelimiter.charCodeAt (0);
         lineDelimVal = lineDelimiter.charCodeAt (0);
         qDelimVal = quoteDelimiter ? quoteDelimiter.charCodeAt (0) : -1;
+        lineDelimLength = lineDelimiter.length;
         lineNo = 0;
 
         VESPER.log (VESPER.DWCAParser.sharedValuesTerms);

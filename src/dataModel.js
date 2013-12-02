@@ -53,6 +53,13 @@ function DWCAModel (metaData, data) {
         return node[VESPER.DWCAParser.TDATA];
     };
 
+    this.getRowData = function (node, rid) {
+        if (rid == undefined) {
+            return this.getTaxaData (node);
+        }
+        return this.getExtraData(node) == undefined ? undefined : this.getExtraData(node)[rid];
+    };
+
     this.getSubTaxa = function (node) {
         return node[VESPER.DWCAParser.TAXA];
     };
@@ -78,6 +85,63 @@ function DWCAModel (metaData, data) {
         return this.getData()[id] || this.getTaxonomy()[id];
     };
 
+    this.getLabel = function (node) {
+        var nameField = this.getMetaData().vesperAdds.nameLabelField;
+        return this.getDataPoint (node, nameField);
+        //console.log ("LABEL", nameField, this.getTaxaData(node), metaData.fileData[metaData.coreRowType].filteredFieldIndex[nameField.labelType]);
+        //return this.getTaxaData(node)[metaData.fileData[metaData.coreRowType].filteredFieldIndex[nameField.fieldType]];
+    };
+
+    this.getDataPoint = function (node, fieldAndRowObj) {
+        var findexer = this.getMetaData().fileData[fieldAndRowObj.rowType].filteredFieldIndex;
+        var fid = findexer[fieldAndRowObj.fieldType];
+        if (fid == undefined) { return undefined; }
+        var rid = this.getMetaData().fileData[fieldAndRowObj.rowType].extIndex;
+        if (rid == undefined) {
+            return this.getTaxaData(node)[fid];
+        }
+        return this.getExtraData(node) ? this.getExtraData(node)[rid][0][fid] : undefined;
+    };
+
+    this.getIndexedDataPoint = function (node, index) {
+        if (index == undefined || index.fieldType == undefined) { return undefined; }
+        if (index.rowIndex == undefined) {
+            return this.getTaxaData(node)[index.fieldIndex];
+        }
+        return (this.getExtraData(node)) ? this.getExtraData(node)[index.rowIndex][0][index.fieldIndex] : undefined;
+    };
+
+    // Finds first instance of field name in filedata structure
+    this.makeIndices = function (fieldNames) {
+        var fieldData = [];
+        for (var n = 0, len = fieldNames.length; n < len; n++) {
+            fieldData.push (this.makeIndex (fieldNames[n]));
+        }
+        return fieldData;
+    };
+
+
+    this.makeIndex = function (fieldName) {
+        var fileData = this.getMetaData().fileData;
+        for (var type in fileData) {
+            if (fileData.hasOwnProperty(type)) {
+                var i = fileData[type].filteredFieldIndex[fieldName];
+                if (i !== undefined) {
+                    return {"rowIndex": fileData[type].extIndex, "rowType": type, "fieldIndex": i, "fieldType":fieldName};
+                }
+            }
+        }
+
+        return null;
+    }
+
+    this.getRowRecords = function (node, rid) {
+        if (rid == undefined) {
+            return this.getTaxaData (node); // a single array
+        }
+        return this.getExtraData(node) ? this.getExtraData(node)[rid] : undefined; // an array of arrays
+    };
+
     this.addView = function (view) {
         selectionModel.addSingleVis (view);
         viewCount++;
@@ -101,7 +165,7 @@ function DWCAModel (metaData, data) {
         selectionModel.update();
     };
 
-    this.countSelectedDesc = function (taxon, idx) {
+    this.countSelectedDesc = function (taxon, idField) {
         var taxa = this.getSubTaxa (taxon);
         var spec = this.getSpecimens (taxon);
 
@@ -110,18 +174,18 @@ function DWCAModel (metaData, data) {
 
             if (taxa != undefined) {
                 for (var n = 0, len = taxa.length; n < len; n++) {
-                    taxon.sdcount += this.countSelectedDesc (taxa[n], idx);
+                    taxon.sdcount += this.countSelectedDesc (taxa[n], idField);
                 }
             }
 
             if (spec != undefined) {
                 for (var n = 0, len = spec.length; n < len; n++) {
-                    taxon.sdcount += this.getSelectionModel().contains (this.getTaxaData(spec[n])[idx]) ? 1 : 0;
+                    taxon.sdcount += this.getSelectionModel().contains (this.getIndexedDataPoint (spec[n], idField)) ? 1 : 0;
                 }
             }
         }
 
-        return (taxon.sdcount || 0) + ((this.getSelectionModel().contains (this.getTaxaData(taxon)[idx]) ? 1 : 0));
+        return (taxon.sdcount || 0) + ((this.getSelectionModel().contains (this.getIndexedDataPoint (taxon, idField)) ? 1 : 0));
     };
 
     this.data = data;

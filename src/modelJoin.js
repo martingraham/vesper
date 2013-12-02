@@ -26,8 +26,7 @@ VESPER.modelComparisons = new function () {
         for (var prop in smallData) {
             if (smallData.hasOwnProperty (prop)) {
                 var rec = smallData[prop];
-                var tdata = small.getTaxaData (rec);
-                var val = tdata[smallLinkField];
+                var val = smallData.getDataPoint (rec, smallLinkField);
                 invMap[val] = prop;
             }
         }
@@ -36,8 +35,7 @@ VESPER.modelComparisons = new function () {
         for (var prop in largeData) {
             if (largeData.hasOwnProperty (prop)) {
                 var rec = largeData[prop];
-                var tdata = large.getTaxaData (rec);
-                var val = tdata[largeLinkField];
+                var val = largeData.getDataPoint (rec, largeLinkField);
 
                 if (invMap[val]) {
                     small.getSelectionModel().addToMap (invMap[val]);

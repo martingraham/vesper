@@ -6,7 +6,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 	
 	var exitDur = 400, updateDur = 1000, enterDur = 400;
 	
-	var keyField, longField, latField, nameField;
+	var keyField, longField, latField;
     var model;
 	
 	var struc;
@@ -34,10 +34,10 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var oldIcon = new L.Icon.Default();
 
     this.set = function (fields, mmodel) {
-        keyField = fields.identifyingField;
-        longField = fields.longitude;
-        latField = fields.latitude;
-        nameField = fields.nameField;
+        var ffields = mmodel.makeIndices ([fields.identifyingField, fields.longitude, fields.latitude]);
+        keyField = ffields[0];
+        longField = ffields[1];
+        latField = ffields[2];
         dims = NapVisLib.getDivDims (divid);
         model = mmodel;
         VESPER.log ("set model for map", model);
@@ -195,17 +195,20 @@ VESPER.DWCAMapLeaflet = function (divid) {
 		if (latField && longField) {
 			 for (var prop in struc) {
 				 if (struc.hasOwnProperty (prop)) {
-					 var rec = model.getTaxaData(struc[prop]);
-					 var lat = +rec[latField];
-					 var longi = +rec[longField];
+					 //var rec = model.getTaxaData(struc[prop]);
+                     var lat = +model.getIndexedDataPoint (struc[prop], latField);
+                     var longi = +model.getIndexedDataPoint (struc[prop], longField);
+					 //var lat = +rec[latField];
+					 //var longi = +rec[longField];
 					
 					 //narRecs[prop] = [+rec[latI], +rec[lonI], 1, rec[idI]];
 					 //narRecs[prop] = [+rec[latField], +rec[longField]];
 					 if (!isNaN(lat) && !isNaN(longi)) {
 						 var coord= [lat, longi];
+                         var key = model.getIndexedDataPoint (struc[prop], keyField);
 						 //VESPER.log (lat, longi);
 						 var marker = L.marker(coord)
-						 	.bindPopup (rec[keyField]+" "+rec[nameField])
+						 	.bindPopup (key+" "+model.getLabel(struc[prop]))
 						 	.on ('contextmenu', function (e) {
                                 model.getSelectionModel().clear();
                                 model.getSelectionModel().addToMap (e.target.extId);
