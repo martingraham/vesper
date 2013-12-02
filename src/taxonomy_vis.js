@@ -313,7 +313,7 @@ VESPER.Tree = function(divid) {
         sharedAttrs: function (group) {
             group
                 //.style ("fill", function(d) { var node = getNode (d.id); var s = model.getSelectionModel().contains(d.id); var p = (node.sdcount || 0) / (node.dcount || 1); return (p && !s) ? colourScale (p) : null; })
-                .attr ("class", function(d) { if (d.id == undefined) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
+                .attr ("class", function(d) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
             ;
         },
 
