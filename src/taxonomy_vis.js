@@ -756,6 +756,8 @@ VESPER.Tree = function(divid) {
         model = null;
         absRoot = null;
         curRoot = null;
+        cstore = {};
+        pstore = {};
         DWCAHelper.twiceUpRemove(divid);
     };
 

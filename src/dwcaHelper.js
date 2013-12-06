@@ -364,29 +364,31 @@ var DWCAHelper = new function () {
 
                 var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
                 var cGroup = d3.selectAll("span."+cBoxClass+" input[type='checkbox']");
-                cGroup = cGroup.filter (function() { return d3.select(this).property("checked"); });
-                var list = [];
-                cGroup.each (function(d) { list.push.apply (list, d.attList); } );
-
-                DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta(), selOptions);
+                DWCAHelper.reselectActiveVisChoices (cGroup, cboxListParentSelection, meta, selOptions);
             })
         ;
+    };
+
+    this.reselectActiveVisChoices = function (group, cboxListParentSelection, meta, selOptions) {
+        group = group.filter (function() { return d3.select(this).property("checked"); });
+        var list = [];
+        group.each (function(d) { list.push.apply (list, d.attList); } );
+
+        DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta(), selOptions);
     };
 
 
     this.addRadioButton = function (parentSelection, cdata, klass, groupName, textFunc) {
         console.log ("TEXTFUNC", textFunc);
         var rbutControl = parentSelection
-            .selectAll("label")
+            .selectAll("span")
             .data([cdata], function (d) { return textFunc(d); })
         ;
 
         if (!rbutControl.enter().empty()) {
             var rwrapper = rbutControl.enter()
-                .append("label")
-                .attr ("class", klass)
-                .attr ("for", function(d) { return textFunc(d)+"RBChoice";})
-                .text (textFunc)
+                .append("span")
+                .attr("class", klass)
             ;
 
             rwrapper
@@ -396,6 +398,12 @@ var DWCAHelper = new function () {
                 .attr ("name", groupName)
                 .attr ("id", function (d) { return textFunc(d)+"RBChoice"; })
                 .property ("checked", false)
+            ;
+
+            rwrapper
+                .append("label")
+                .attr ("for", function(d) { return textFunc(d)+"RBChoice";})
+                .text (textFunc)
             ;
         }
 

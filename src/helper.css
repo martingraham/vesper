@@ -1,79 +1,5 @@
 @CHARSET "ISO-8859-1";
 
-div.selectBox {
-    border: 1px solid gray;
-    background: #ddf;
-    float: left;
-    margin: 5px;
-    min-width: 150px;
-}
-
-div.selectBox table {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-div.selectBox table.coreTable {
-    background: #dfd;
-}
-
-
-div.selectionWrapper {
-    margin: 0 auto;
-}
-
-div.leftColumn {
-    width: 150px;
-    float: left;
-    background: #dff;
-    border: solid 2px #add;
-    padding: 4px;
-    -moz-border-radius: 10px;
-    border-radius: 10px;
-}
-
-.leftColumn hr {
-    border: 1px solid #add;
-    border-top-width: 1px;
-    border-bottom-width: 0px;
-}
-
-div.fullWidthHolder {
-    /*margin: 0 auto;*/
-    /*width: 95%;*/
-    overflow: hidden;
-    margin-left: 150px;
-}
-
-tr.col {
-    background: #e0e0ff;
-}
-
-.coreTable tr.col {
-    background: #e0ffe0;
-}
-
-button[type="button"] {
-    width: 110px;
-    white-space: normal;
-    font-family: "Gill Sans MT", Georgia, Arial;
-}
-
-button[type="button"].load {
-    width: 110px;
-    white-space: normal;
-    font-weight: bold;
-}
-
-button[type="button"].choice {
-    margin: 10px;
-    font-size: 12pt;
-}
-
-button[type="button"].selButtonStyle {
-    font-size: 10pt;
-}
-
 
 div.choiceHolder {
     text-align: center;
@@ -96,6 +22,123 @@ span.noShad {
     font-size: 12pt;
 }
 
+button[type="button"].choice {
+    margin: 10px;
+    font-size: 12pt;
+}
+
+
+
+
+
+div.selectionWrapper {
+    margin: 0 auto;
+}
+
+div.leftColumn {
+    width: 150px;
+    float: left;
+    background: #dff;
+    border: solid 2px #add;
+    padding: 4px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+
+.leftColumn hr {
+    border: 1px solid #add;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
+}
+
+button[type="button"] {
+    width: 110px;
+    white-space: normal;
+    font-family: "Gill Sans MT", Georgia, Arial;
+}
+
+button[type="button"].load {
+    width: 110px;
+    white-space: normal;
+    font-weight: bold;
+}
+
+button[type="button"].selButtonStyle {
+    font-size: 10pt;
+}
+
+.filenameLabel {
+    text-align: center;
+    font-size: 14pt;
+}
+
+.filesizeLabel {
+    text-align: center;
+    font-size: 11pt;
+}
+
+span.fieldGroup {
+    display: block;
+}
+
+h4.notoppad {
+    padding-top: 0px;
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+/* hide advanced option button */
+/*
+#advancedSelectOuter {
+    display: none;
+}
+*/
+
+
+
+
+
+
+
+
+
+div.selectBox {
+    border: 1px solid gray;
+    background: #ddf;
+    float: left;
+    margin: 5px;
+    min-width: 150px;
+}
+
+div.selectBox table {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+div.selectBox table.coreTable {
+    background: #dfd;
+}
+
+div.fullWidthHolder {
+    /*margin: 0 auto;*/
+    /*width: 95%;*/
+    overflow: hidden;
+    margin-left: 150px;
+}
+
+tr.col {
+    background: #e0e0ff;
+}
+
+.coreTable tr.col {
+    background: #e0ffe0;
+}
+
+
+
+
+
+
 .html5lack {
     font-size: 10pt;
     font-weight: normal;
@@ -117,30 +160,6 @@ span.noShad {
     border-radius: 5px;
     padding: 0px 8px 0px 8px;
     font-size: 16pt;
-}
-
-.filenameLabel {
-    text-align: center;
-    font-size: 14pt;
-}
-
-.filesizeLabel {
-    text-align: center;
-    font-size: 11pt;
-}
-
-h4.notoppad {
-    padding-top: 0px;
-    margin-top: 0px;
-    margin-bottom: 5px;
-}
-
-span.fieldGroup {
-    display: block;
-}
-
-label.nameChoice {
-    display: block;
 }
 
 button[type="button"].killbutton {

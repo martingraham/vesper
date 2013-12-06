@@ -161,6 +161,7 @@ VESPER.VisLauncher = function (divid) {
         DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
+        model.getSelectionModel().clear();
         model = null;
         DWCAHelper.twiceUpRemove(divid);
     }

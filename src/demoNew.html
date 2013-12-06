@@ -94,19 +94,25 @@
         <span id="filesizePlaceholder" class="filesizeLabel"></span>
         <hr>
         <div id="showOnZipLoadDiv">
-            <div id="labelSelectDiv">
+            <div id="labelSelectOuter">
                 <h4 class="notoppad">Item Label Field</h4>
+                <div id="labelSelectDiv"></div>
+                <hr>
             </div>
-            <hr>
-            <div id="dynamicSelectDiv"><h4 class="notoppad">Vis Options</h4></div>
-            <hr>
-            <span id="advRevealPlaceholder"></span>
-            <!-- <button type="button" id="advRevealButton" class="load">Show Advanced Options</button> -->
-            <div id="advancedSelectDiv" style="display:none;">
-                <button type="button" id="allButton" class="selButtonStyle">Select All Fields</button>
-                <button type="button" id="clearButton" class="selButtonStyle">Clear All Fields</button>
+            <div id="dynamicSelectionOuter">
+                <h4 class="notoppad">Vis Options</h4>
+                <div id="dynamicSelectDiv"></div>
+                <hr>
             </div>
-            <hr>
+            <div id="advancedSelectOuter">
+                <span id="advRevealPlaceholder"></span>
+                <!-- <button type="button" id="advRevealButton" class="load">Show Advanced Options</button> -->
+                <div id="advancedSelectDiv" style="display:none;">
+                    <button type="button" id="allButton" class="selButtonStyle">Select All Fields</button>
+                    <button type="button" id="clearButton" class="selButtonStyle">Clear All Fields</button>
+                </div>
+                <hr>
+            </div>
             <button type="button" id="loadButton" class="load">Load</button>
         </div>
     </div>

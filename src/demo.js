@@ -110,9 +110,11 @@ VESPER.demo = function (files) {
         var ldiv = d3.select ("#labelSelectDiv");
         for (var n = 0; n < radioChoices.length; n++) {
             var data = {"fieldType":radioChoices[n], "rowType":undefined};
-            console.log ("NAME CHOICE", data);
-            var elem = DWCAHelper.addRadioButton (ldiv, data, "nameChoice", "nameChoice", function(d) { return d.fieldType; });
-            DWCAHelper.configureRadioButton (elem, checkListParent, function(result) { getMeta().vesperAdds.nameLabelField = result; }, function() { return getMeta(); }, selectionOptions);
+            var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
+            DWCAHelper.configureRadioButton (elem, checkListParent,
+                function(result) { getMeta().vesperAdds.nameLabelField = result; reselectVisChoices();},
+                function() { return getMeta(); },
+            selectionOptions);
         }
 
           var setVisOptionBoxes = function (bool) {
@@ -120,7 +122,7 @@ VESPER.demo = function (files) {
             cboxes = cboxes.filter (function() {return d3.select(this).style("display") != "none"; });
             cboxes.property ("checked", bool);
             if (!bool) {
-                var rbuts = d3.select("#labelSelectDiv").selectAll(".nameChoice input");
+                var rbuts = d3.select("#labelSelectDiv").selectAll(".fieldGroup input");
                 rbuts = rbuts.filter (function() {return d3.select(this).style("display") != "none"; });
                 rbuts.property ("checked", bool);
                 getMeta().vesperAdds.nameLabelField = null;
@@ -206,7 +208,7 @@ VESPER.demo = function (files) {
         refilterVisChoices (metaData);
         refilterNameChoices (metaData);
 
-        var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("label.nameChoice");
+        var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("span.fieldGroup input");
         var first = true;
         nameChoiceGroup.each (function(d) {
             var disp = d3.select(this).style ("display");
@@ -223,11 +225,11 @@ VESPER.demo = function (files) {
         DWCAHelper.divDisplay (["#showOnZipLoadDiv"], "block");
     };
 
-
+    // Decide which name options to show
     function refilterNameChoices (metaData) {
-        var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("label.nameChoice");
+        var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("span.fieldGroup");
         nameChoiceGroup
-            .property ("checked", false)
+            //.property ("checked", false)
             .style ("display", function(d) {
                 var poss = DWCAHelper.fieldListExistence (metaData, [d.fieldType], true, selectionOptions.useExtRows);
                 if (poss.fields.length > 0) {
@@ -239,6 +241,7 @@ VESPER.demo = function (files) {
         ;
     }
 
+    // Decide which vis options to show
     function refilterVisChoices (metaData) {
         var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup");
         VESPER.log (visCheckBoxGroup);
@@ -249,6 +252,13 @@ VESPER.demo = function (files) {
                 return poss.match ? null : "none";
             })
         ;
+    }
+
+    // Reselect active vis choices after a change (in case removing one vis or name choice removes fields another vis needs)
+    function reselectVisChoices () {
+        var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup input");
+        DWCAHelper.reselectActiveVisChoices (visCheckBoxGroup, d3.select("#listDiv"), function() { return getMeta(); });
+        console.log (visCheckBoxGroup);
     }
 
     setChoices (files);
