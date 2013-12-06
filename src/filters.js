@@ -41,6 +41,7 @@ VESPER.Filters = new function () {
 
         model.getSelectionModel().setUpdating (true);
         var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
+        console.log ("selected count", count, model.getSelectionModel().values());
         model.getSelectionModel().setUpdating (false);
         return count;
     }

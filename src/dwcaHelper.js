@@ -445,6 +445,10 @@ var DWCAHelper = new function () {
     this.twiceUpRemove = function (divid) {
         var node = d3.select(divid).node();
         var containerNode = node.parentElement;
+        console.log ("CONTAINER", containerNode, $(containerNode));
+        $(function() {
+            $(containerNode).draggable("destroy");
+        });
         containerNode.parentElement.removeChild (containerNode);
     };
 

@@ -142,6 +142,7 @@ DIV .hack {
     border-radius: 10px;
     background: #aadddd;
     opacity: 0.9;
+    z-index: 1;
 }
 
 .vesperTooltip h2 {
@@ -158,6 +159,13 @@ DIV .hack {
     margin: 0px;
     font-size: 10pt;
     color: #222;
+}
+
+.vesperTooltip hr {
+    border-style: solid;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
+    margin: 2px 0px;
 }
 
 .sliderThumb {

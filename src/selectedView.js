@@ -91,52 +91,6 @@ VESPER.SelectedView = function (divID) {
 
 
     this.go = function () {
-        var save = d3.select(divID).select("button#save");
-        if (save.empty()) {
-            if (window.requestFileSystem) {
-                d3.select(divID).append("button")
-                    //.attr ("id", "save")
-                    .text ("SAVE")
-                    .on ("click", function(d) {
-                        NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
-                    })
-                ;
-            } else {
-                NapVisLib.html5Lacks(d3.select(divID), "[Browser does not support FileWriter]");
-            }
-        }
-
-        var clear = d3.select(divID).select("button#clearSel");
-        if (clear.empty()) {
-            d3.select(divID).append("button")
-                //.attr ("id", "clearSel")
-                .text ("CLEAR")
-                .on ("click", function(d) {
-                    model.getSelectionModel().clear();
-                    model.getSelectionModel().update();
-                })
-            ;
-        }
-
-        var compare = d3.select(divID).select("button#compareMod");
-        if (compare.empty()) {
-            d3.select(divID).append("button")
-                //.attr ("id", "compareSel")
-                .text ("COMPARE MODEL")
-                .on ("click", function() {
-                    VESPER.modelBag.push ({"model":model});
-                    VESPER.log ("ModelBag", VESPER.modelBag);
-                    if (VESPER.modelBag.length > 1) {
-                        VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model,
-                            VESPER.modelBag[0].model.getMetaData().vesperAdds.nameLabelField,
-                            VESPER.modelBag[1].model.getMetaData().vesperAdds.nameLabelField
-                        );
-                        VESPER.modelBag.length = 0;
-                    }
-                })
-            ;
-        }
-
         this.update ();
     };
 

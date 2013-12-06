@@ -11,7 +11,8 @@ var VESPER = (function() {
     vesper.logRun = true;
     vesper.log = function (obj) {
         if (vesper.logRun) {
-            console.log.apply (console, arguments);
+            //console.log.apply (console, arguments);
+            Function.prototype.apply.call(console.log, console, arguments);
         }
     };
     vesper.imgbase = "../img/";
@@ -28,7 +29,7 @@ var VESPER = (function() {
 VESPER.DWCAZipParse = new function () {
 
     var fileData;
-    var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
+    var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, lineDelimLength, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
     var escapeCharVal = "\\".charCodeAt(0);
     var defaults = [], invDiscreteTermIndex = [], invSharedTermIndex = [];
     var pTime = 0;
@@ -59,14 +60,26 @@ VESPER.DWCAZipParse = new function () {
             }
             if (!quotes && (c === fieldDelimiterVal || n === strLen - 1)) {
                 if (use) {
-                    toI = n + ((n === strLen - 1) ? 1 : 0);
+                    toI = n + ((c === fieldDelimiterVal) ? 0 : 1);
+                    // strip out quotes if there
+                    if (quoteDelimiter) {
+                        if (strArray[fromI] == qDelimVal) {
+                            fromI++;
+                        }
+                        if (strArray[toI - 1] == qDelimVal) {
+                            toI--;
+                        }
+                    }
+                    //toI = n + ((n === strLen - 1) ? 1 : 0);
                     if (fromI === toI) {    // empty field, adjacent delimiters
                         str.push (defaults[field]);
+                        //console.log ("EMPTY");
                     } else {
                         var newStr = String.fromCharCode.apply (null, strArray.slice(fromI, toI));
                         // if field is deemed to be formed of a discrete set of entries (like ranks), then reuse strings to save mem
                         var dList = invDiscreteTermIndex [field];
                         var sIndex = invSharedTermIndex [field];
+                        //console.log ("NEWSTR", newStr);
 
                         if (dList) {
                             var mapStr = dList[newStr];
@@ -90,6 +103,12 @@ VESPER.DWCAZipParse = new function () {
 
                         pb += (toI - fromI);
                         str.push (newStr);
+                    }
+
+                    // If last char in string is field delimiter then there's actually an empty field after it
+                    if (c == fieldDelimiterVal && n === strLen - 1) {
+                        str.push (defaults[field]);
+                        //console.log ("LAST EMPTY");
                     }
                 }
                 field++;
@@ -132,7 +151,7 @@ VESPER.DWCAZipParse = new function () {
         var buff = new Array(1024);
         var blength = 1024;
         var out = [];
-        var i;
+        var i, j;
         var bigOut = [];
         var k = 0;
         var esc = false, quotes = false;
@@ -143,6 +162,29 @@ VESPER.DWCAZipParse = new function () {
 
         var mt = NapVisLib.makeTime();
         pTime = mt;
+
+        function matchEol (c, buf, off) {
+            var fcmatch = (lineDelimVal == c);
+
+            if (lineDelimLength == 1) { // if EOL is single char
+                return fcmatch;
+            } else if (fcmatch) {
+                if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
+                    for (var l = lineDelimiter.length; --l >= 1;) { // first char matched remember (fcmatch)
+                        if (lineDelimiter.charCodeAt(l) != buf[off+l]) {
+                            return false;
+                        }
+                    }
+                    j += lineDelimiter.length - 1;  // move along over these read bytes
+                    return true;
+                } else {
+                    utfwrap = i - j;
+                    j = i;
+                    ch = undefined;
+                }
+            }
+            return false;
+        }
 
         while((i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
 
@@ -167,7 +209,7 @@ VESPER.DWCAZipParse = new function () {
                 stt = false;
             }
 
-            for (var j = n; j < i; j++) {
+            for (j = n; j < i; j++) {
                 ch = buff[j];
                 if (ch >= 128) {
                     if( ch >= 0xC2 && ch < 0xE0 ) {
@@ -207,8 +249,10 @@ VESPER.DWCAZipParse = new function () {
 
                 if (quoteDelimiter && !esc && ch == qDelimVal) {
                     quotes = !quotes;
+                    out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
                 }
-                else if (!quotes && ch == lineDelimVal) {  // end of line
+                //else if (!quotes && ch == lineDelimVal) {  // end of line
+                else if (!quotes && matchEol (ch, buff, j)) {  // end of line
                     bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
                     k++;
                     out.length = 0;
@@ -244,6 +288,7 @@ VESPER.DWCAZipParse = new function () {
         VESPER.log ("Time: ", mt/1000, " secs.");
         VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
         VESPER.log ("pulled out "+pb+" characters from zip");
+        sharedMaps.length = 0;  // used, discard, helps GC
         return bigOut;
     };
 
@@ -257,17 +302,19 @@ VESPER.DWCAZipParse = new function () {
 
         fileData = ifileData;
         fieldDelimiter = ifileData.fieldsTerminatedBy.replace ("\\t", "\t").replace("\\n", "\n");    // 'cos reading in from file doesn't escape tabs or return
-        lineDelimiter = ifileData.linesTerminatedBy.replace ("\\t", "\t").replace("\\n", "\n");
+        lineDelimiter = ifileData.linesTerminatedBy.replace ("\\t", "\t").replace("\\n", "\n").replace("\\r", "\r");
         quoteDelimiter = ifileData.fieldsEnclosedBy.replace ("\\\"", "\"");
         readFields = ireadFields;
         firstTrue = readFields.indexOf (true);
         fieldDelimiterVal = fieldDelimiter.charCodeAt (0);
         lineDelimVal = lineDelimiter.charCodeAt (0);
         qDelimVal = quoteDelimiter ? quoteDelimiter.charCodeAt (0) : -1;
+        lineDelimLength = lineDelimiter.length;
         lineNo = 0;
 
         VESPER.log (VESPER.DWCAParser.sharedValuesTerms);
         // quick field lookups
+        sharedMaps.length = 0;
         for (var n = 0; n < ifileData.invFieldIndex.length; n++) {
             var field = ifileData.invFieldIndex[n];
             var fieldData = ifileData.fieldData[field];
@@ -632,8 +679,6 @@ VESPER.DWCAZipParseDB = new function () {
 };
 ;// TimeLine
 
-
-
 VESPER.BarChart = function(divid) {
 	
 	var svg;	// top level svg
@@ -685,10 +730,9 @@ VESPER.BarChart = function(divid) {
 
 
     this.set = function (fields, mmodel) {
-        ffields.keyField = fields.identifyingField;
-        ffields.dateField = fields.dateField;
-        ffields.nameField = fields.nameField;
-        ffields.realField = fields.realField;
+        ffields.keyField = mmodel.makeIndices ([fields.identifyingField])[0];
+        ffields.dateField = mmodel.makeIndices ([fields.dateField])[0];
+        ffields.realField = mmodel.makeIndices ([fields.realField])[0];
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
@@ -713,7 +757,6 @@ VESPER.BarChart = function(divid) {
 		;
 
         var controls = d3.select(divid).select(".barChartControl");
-        VESPER.log ("controls", controls);
         var noHashId = divid.substring (1);
         if (controls.empty()) {
             var butdiv = d3.select(divid).append("span")
@@ -874,7 +917,6 @@ VESPER.BarChart = function(divid) {
                 })
                 .on("contextmenu", function(d) {
                     //handle right click
-                    VESPER.log ("hello right click");
                     model.getSelectionModel().clear();
                     var arr = self.returnMatches (model, ffields, d.start, d.end);
                     model.getSelectionModel().addAllToMap (arr);
@@ -918,8 +960,6 @@ VESPER.BarChart = function(divid) {
             .ticks (5, d3.format(",d"))
         );
 
-        VESPER.log ("cds", currentDataSelection);
-
         currentDataSelection
             .transition()
             .duration(500)
@@ -944,7 +984,7 @@ VESPER.BarChart = function(divid) {
         function findMinMax () {
             if (!hardMin || !hardMax) {
                 for (var key in data) {
-                    if (data.hasOwnProperty (key)) {
+                    if (data.hasOwnProperty (key) /*&& (!includeFunc || includeFunc (key, data))*/) {
                         var val = chart.getVal (model, data, key, fields);
                         if (val !== undefined) {
                             val = chart.wrapDataType (val, key);
@@ -1067,7 +1107,7 @@ VESPER.BarChart = function(divid) {
         }
     };
 
-    this.destroy = function () {
+    this.baseDestroy = function () {
         DWCAHelper.recurseClearEvents (d3.select(divid));
 
         var visBins = timelineG.selectAll(self.barClass);
@@ -1076,13 +1116,16 @@ VESPER.BarChart = function(divid) {
         model.removeView (self);
         model = null;
         DWCAHelper.twiceUpRemove(divid);
+    };
+
+    this.destroy = function () {
+        this.baseDestroy ();
     }
 };
 
 
 VESPER.TaxaDistribution = function (div) {
     var chart = new VESPER.BarChart (div);
-    //chart.makeTitle = function (d) {return "Subtaxa: "+Math.ceil(d.start)+" to "+Math.floor(d.end)+"<br>Count: "+d.count; };
     chart.makeTitle = function (d) {
         var singleVal = ((d.end - d.start) == 1);
         return "Subtaxa: "+d.start+(singleVal ? "" : " to "+(d.end - 1))+"<br>Count: "+d.count;
@@ -1090,13 +1133,15 @@ VESPER.TaxaDistribution = function (div) {
     chart.wrapDataType = function (d) { return d; };
     chart.unwrapDataType = function (o) { return o; };
     chart.getVal = function (model, data, key, fields) {
-        var taxaData = model.getTaxaData (data[key]);
-        if (taxaData[fields.realField] == taxaData[fields.keyField]) {
+        var keyID = model.getIndexedDataPoint (data[key], fields.keyField);
+        var realID = model.getIndexedDataPoint (data[key], fields.realField);
+        if (realID == keyID || realID == undefined) { // don't count synonyms
             var node = model.getNodeFromID(key);
             var subTaxa = model.getSubTaxa(node);
+            //var pid = model.getDataPoint (node, {fieldType:"parentNameUsageID", rowType:model.getMetaData().coreRowType});
             return (subTaxa ? subTaxa.length : 0);
         }
-        else return undefined;
+        return undefined;
     };
     chart.divisions = [1,2,10];
 
@@ -1118,11 +1163,15 @@ VESPER.TimeLine = function (div) {
     };
     chart.unwrapDataType = function (date) { return date.getTime(); };
     chart.getVal = function (model, data, key, fields) {
-        var val = model.getTaxaData(data[key])[fields.dateField];
+        var val = model.getIndexedDataPoint(data[key], fields.dateField);
         if (!timeCache[key] && val !== undefined) {
             timeCache[key] = new Date (val);
         }
         return val;
+    };
+    chart.destroy = function () {
+        chart.baseDestroy ();
+        timeCache = {};     // clear time cache
     };
     var oneDayInMs = 24 * 60 * 60 * 1000;
     chart.toNearest = oneDayInMs * 7; // to nearest week
@@ -1179,9 +1228,14 @@ function DWCAModel (metaData, data) {
         var d = this.getData();
         var s = this.getSelectionModel();
         var arr = [];
+        var tempField = {fieldType:"acceptedNameUsageID", rowType:this.getMetaData().coreRowType};
         for (var iid in d) {
             if (!s.contains(iid)) {
-                arr.push (iid);
+                var n = this.getNodeFromID(iid);
+                var accv = this.getDataPoint (n, tempField);
+                if (accv == iid) {
+                    arr.push (iid);
+                }
             }
         }
         s.clear ();
@@ -1194,6 +1248,17 @@ function DWCAModel (metaData, data) {
 
     this.getTaxaData = function (node) {
         return node[VESPER.DWCAParser.TDATA];
+    };
+
+    this.getSynonyms = function (node) {
+        return node[VESPER.DWCAParser.SYN];
+    };
+
+    this.getRowData = function (node, rid) {
+        if (rid == undefined) {
+            return this.getTaxaData (node);
+        }
+        return this.getExtraData(node) == undefined ? undefined : this.getExtraData(node)[rid];
     };
 
     this.getSubTaxa = function (node) {
@@ -1221,6 +1286,61 @@ function DWCAModel (metaData, data) {
         return this.getData()[id] || this.getTaxonomy()[id];
     };
 
+    this.getLabel = function (node) {
+        var nameField = this.getMetaData().vesperAdds.nameLabelField;
+        return this.getDataPoint (node, nameField);
+    };
+
+    this.getDataPoint = function (node, fieldAndRowObj) {
+        var findexer = this.getMetaData().fileData[fieldAndRowObj.rowType].filteredFieldIndex;
+        var fid = findexer[fieldAndRowObj.fieldType];
+        if (fid == undefined) { return undefined; }
+        var rid = this.getMetaData().fileData[fieldAndRowObj.rowType].extIndex;
+        if (rid == undefined) {
+            return this.getTaxaData(node)[fid];
+        }
+        return this.getExtraData(node) ? this.getExtraData(node)[rid][0][fid] : undefined;
+    };
+
+    this.getIndexedDataPoint = function (node, index) {
+        if (index == undefined || index.fieldType == undefined) { return undefined; }
+        if (index.rowIndex == undefined) {
+            return this.getTaxaData(node)[index.fieldIndex];
+        }
+        return (this.getExtraData(node)) ? this.getExtraData(node)[index.rowIndex][0][index.fieldIndex] : undefined;
+    };
+
+    // Finds first instance of field name in filedata structure
+    this.makeIndices = function (fieldNames) {
+        var fieldData = [];
+        for (var n = 0, len = fieldNames.length; n < len; n++) {
+            fieldData.push (this.makeIndex (fieldNames[n]));
+        }
+        return fieldData;
+    };
+
+
+    this.makeIndex = function (fieldName) {
+        var fileData = this.getMetaData().fileData;
+        for (var type in fileData) {
+            if (fileData.hasOwnProperty(type)) {
+                var i = fileData[type].filteredFieldIndex[fieldName];
+                if (i !== undefined) {
+                    return {"rowIndex": fileData[type].extIndex, "rowType": type, "fieldIndex": i, "fieldType":fieldName};
+                }
+            }
+        }
+
+        return null;
+    };
+
+    this.getRowRecords = function (node, rid) {
+        if (rid == undefined) {
+            return this.getTaxaData (node); // a single array
+        }
+        return this.getExtraData(node) ? this.getExtraData(node)[rid] : undefined; // an array of arrays
+    };
+
     this.addView = function (view) {
         selectionModel.addSingleVis (view);
         viewCount++;
@@ -1244,7 +1364,7 @@ function DWCAModel (metaData, data) {
         selectionModel.update();
     };
 
-    this.countSelectedDesc = function (taxon, idx) {
+    this.countSelectedDesc = function (taxon, idField) {
         var taxa = this.getSubTaxa (taxon);
         var spec = this.getSpecimens (taxon);
 
@@ -1253,18 +1373,18 @@ function DWCAModel (metaData, data) {
 
             if (taxa != undefined) {
                 for (var n = 0, len = taxa.length; n < len; n++) {
-                    taxon.sdcount += this.countSelectedDesc (taxa[n], idx);
+                    taxon.sdcount += this.countSelectedDesc (taxa[n], idField);
                 }
             }
 
             if (spec != undefined) {
                 for (var n = 0, len = spec.length; n < len; n++) {
-                    taxon.sdcount += this.getSelectionModel().contains (this.getTaxaData(spec[n])[idx]) ? 1 : 0;
+                    taxon.sdcount += this.getSelectionModel().contains (this.getIndexedDataPoint (spec[n], idField)) ? 1 : 0;
                 }
             }
         }
 
-        return (taxon.sdcount || 0) + ((this.getSelectionModel().contains (this.getTaxaData(taxon)[idx]) ? 1 : 0));
+        return (taxon.sdcount || 0) + ((this.getSelectionModel().contains (this.getIndexedDataPoint (taxon, idField)) ? 1 : 0));
     };
 
     this.data = data;
@@ -1285,41 +1405,41 @@ VESPER.demo = function (files) {
 
     VESPER.tooltip.init();
 
-
-    var nameLabelField = {result: null};
+    var selectionOptions = {useExtRows: true, selectFirstOnly: true};
 
     var visChoiceData = [
         {title:"VisChoices", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
             newVisFunc: function (div) { return new VESPER.VisLauncher (div);},
-            setupFunc: function (coreFieldIndex) {return {"nameField":coreFieldIndex[nameLabelField.result], "visChoiceData":visChoiceData}}
+            setupFunc: function () {return {"visChoiceData":visChoiceData}}
         },
         {title:"Implicit Taxonomy", multiple: true,  attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.Tree (div);},
-            setupFunc: function (coreFieldIndex) {return {"nameField":coreFieldIndex[nameLabelField.result], "rankField":coreFieldIndex["taxonRank"]}}
+            setupFunc: function () {return {"rankField":"taxonRank"}}
         },
         {title:"Explicit Taxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.Tree (div);},
-            setupFunc: function (coreFieldIndex) {return {"nameField":coreFieldIndex[nameLabelField.result], "rankField":coreFieldIndex["taxonRank"]}}
+            setupFunc: function () {return {"rankField":"taxonRank"}}
         },
         {title:"Map", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
-            setupFunc: function (coreFieldIndex) {return {"latitude":coreFieldIndex["decimalLatitude"], "longitude":coreFieldIndex["decimalLongitude"], "nameField":coreFieldIndex[nameLabelField.result]}}
+            setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}}
         },
         {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"geo.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
-            setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"], "nameField":coreFieldIndex[nameLabelField.result]}}
+            //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
+            setupFunc: function () { return {"dateField":"eventDate"}}
         },
         {title:"Sanity Check", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"geo.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.Sanity (div);},
-            setupFunc: function (coreFieldIndex) { return undefined; }
+            setupFunc: function () { return undefined; }
         },
         {title:"Taxa Distribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TaxaDistribution (div);},
-            setupFunc: function (coreFieldIndex) { return {"realField":coreFieldIndex["acceptedNameUsageID"], "nameField":coreFieldIndex[nameLabelField.result], "rankField":coreFieldIndex["taxonRank"]}}
+            setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}}
         },
         {title:"Search Box", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"geo.png", height: "150px", width: "200px",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
-            setupFunc: function (coreFieldIndex) { return {"nameField":coreFieldIndex[nameLabelField.result]} ;}
+            setupFunc: function () { return {} ;}
         }
     ];
     var visTiedToSpecificAttrs = visChoiceData.slice (0, 6);
@@ -1376,14 +1496,15 @@ VESPER.demo = function (files) {
         for (var n = 0; n < visboxes.length; n++) {
             var data = visboxes[n];
             var spanSelection = DWCAHelper.addCheckbox (bdiv, data, "fieldGroup");
-            DWCAHelper.configureCheckbox (spanSelection, checkListParent, data.attList, function() { return getMeta(); });
+            DWCAHelper.configureCheckbox (spanSelection, checkListParent, data.attList, function() { return getMeta(); }, selectionOptions);
         }
 
         var ldiv = d3.select ("#labelSelectDiv");
         for (var n = 0; n < radioChoices.length; n++) {
-            var data = radioChoices[n];
-            var elem = DWCAHelper.addRadioButton (ldiv, data, "nameChoice", "nameChoice", true);
-            DWCAHelper.configureRadioButton (elem, checkListParent, nameLabelField, function() { return getMeta(); });
+            var data = {"fieldType":radioChoices[n], "rowType":undefined};
+            console.log ("NAME CHOICE", data);
+            var elem = DWCAHelper.addRadioButton (ldiv, data, "nameChoice", "nameChoice", function(d) { return d.fieldType; });
+            DWCAHelper.configureRadioButton (elem, checkListParent, function(result) { getMeta().vesperAdds.nameLabelField = result; }, function() { return getMeta(); }, selectionOptions);
         }
 
           var setVisOptionBoxes = function (bool) {
@@ -1394,23 +1515,37 @@ VESPER.demo = function (files) {
                 var rbuts = d3.select("#labelSelectDiv").selectAll(".nameChoice input");
                 rbuts = rbuts.filter (function() {return d3.select(this).style("display") != "none"; });
                 rbuts.property ("checked", bool);
-                nameLabelField.result = null;
+                getMeta().vesperAdds.nameLabelField = null;
             }
           };
 
         DWCAHelper.addHelperButton (d3.select("#advancedSelectDiv"), checkListParent, "Remove Verbose Fields", VESPER.DWCAParser.flabbyLists.wordyList,
-            false, null, "selButtonStyle listCon", function() { return getMeta(); });
+            false, null, "selButtonStyle listCon", function() { return getMeta(); }, selectionOptions);
         var excepFunc = function exceptionFunc (d, i) { return i == 0; };
-        d3.select("#allButton").on("click", function(d) {
-		DWCAHelper.setAllFields (checkListParent, true, undefined, excepFunc, getMeta()); 
-		setVisOptionBoxes (true); 
-		return false; 
-	  });
-        d3.select("#clearButton").on("click", function(d) { 
-		DWCAHelper.setAllFields (checkListParent, false, undefined, excepFunc, getMeta());
-		setVisOptionBoxes (false); 
-		return false;
-	  });
+        d3.select("#allButton").on("click", function() {
+            DWCAHelper.setAllFields (checkListParent, true, undefined, excepFunc, getMeta(), selectionOptions);
+            setVisOptionBoxes (true);
+            return false;
+          });
+        d3.select("#clearButton").on("click", function() {
+            DWCAHelper.setAllFields (checkListParent, false, undefined, excepFunc, getMeta(), selectionOptions);
+            setVisOptionBoxes (false);
+            return false;
+          });
+        var useExtBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Search DWCA Extensions", image:null}, "fieldGroup");
+        useExtBox.select("input")
+            .property ("checked", selectionOptions.useExtRows)
+            .on("click", function() {
+                selectionOptions.useExtRows = !selectionOptions.useExtRows;
+                refilterNameChoices (getMeta());
+                refilterVisChoices (getMeta());
+        });
+        var selectFirstOnlyBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Select First Matching Field Only", image:null}, "fieldGroup");
+        selectFirstOnlyBox.select("input")
+            .property ("checked", selectionOptions.selectFirstOnly)
+            .on("click", function() {
+                selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly
+            });
         var advSelFunc = function (d) {
             var val = d3.select(this).property("checked") ? "block" : "none";
             DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
@@ -1425,37 +1560,15 @@ VESPER.demo = function (files) {
 
 
     function proceed (zip, mdata) {
-       // var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (d3.select("div#selDiv"));
-        var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
-        var fileRows = {};
         function notifyFunc (str, obj) {
             d3.select("#notifyStatusID").html(str+":"+obj);
             d3.select("#loadStatDiv").attr("offsetWidth");
         }
-        VESPER.log ("ZIP:", zip);
         //DWCAZipParse.setNotifyFunc (notifyFunc);
 
-        // read selected data from zip
-        $.each (selectedStuff, function (key, value) {
-            var fileData = mdata.fileData[key];
-            var fileName = fileData.fileName;
-            var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
+        console.log ("META", meta);
+        model = VESPER.DWCAParser.filterReadZipEntriesToMakeModel (zip, mdata);
 
-            $.each (value, function (key, value) {
-                readFields [fileData.fieldIndex[key]] = value;
-            });
-
-            VESPER.log ("readFields", readFields);
-            VESPER.DWCAZipParse.set (fileData, readFields);
-            zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
-            fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
-            VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
-        });
-
-        if (VESPER.alerts) { alert ("mem monitor point 1"); }
-
-        // make taxonomy (or list)
-        model = new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata));
         VESPER.log ("MODEL", model);
         if (VESPER.alerts) { alert ("mem monitor point X"); }
 
@@ -1480,29 +1593,12 @@ VESPER.demo = function (files) {
         var zip = accessZip.jszip;
 
         DWCAHelper.makeFieldSelectionBoxes (metaData, d3.select("#listDiv"));  // Makes checkboxes for all fields (normally hidden)
-        d3.select("#loadButton").on("click", null).on("click", function(d) { proceed (zip, metaData); return false;});
+        d3.select("#loadButton").on("click", null).on("click", function() { proceed (zip, metaData); return false;});
 
-        var checkBoxParentSelection = d3.select("#listDiv");
-        var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup");
-        VESPER.log (visCheckBoxGroup);
-        visCheckBoxGroup
-            .property ("checked", false)
-            .style ("display", function(d) {
-                var poss = DWCAHelper.fieldListExistence (metaData, d.attList, d.matchAll);
-                return poss ? null : "none";
-            })
-        ;
+        refilterVisChoices (metaData);
+        refilterNameChoices (metaData);
 
         var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("label.nameChoice");
-        VESPER.log (nameChoiceGroup);
-        nameChoiceGroup
-            .property ("checked", false)
-            .style ("display", function(d) {
-                var poss = DWCAHelper.fieldListExistence (metaData, [d], true);
-                return poss ? null : "none";
-            })
-        ;
-
         var first = true;
         nameChoiceGroup.each (function(d) {
             var disp = d3.select(this).style ("display");
@@ -1518,6 +1614,34 @@ VESPER.demo = function (files) {
 
         DWCAHelper.divDisplay (["#showOnZipLoadDiv"], "block");
     };
+
+
+    function refilterNameChoices (metaData) {
+        var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("label.nameChoice");
+        nameChoiceGroup
+            .property ("checked", false)
+            .style ("display", function(d) {
+                var poss = DWCAHelper.fieldListExistence (metaData, [d.fieldType], true, selectionOptions.useExtRows);
+                if (poss.fields.length > 0) {
+                    d.rowType = poss.fields[0].rowName;
+                }
+                //VESPER.log ("NAME STATE", d, poss.match);
+                return poss.match ? null : "none";
+            })
+        ;
+    }
+
+    function refilterVisChoices (metaData) {
+        var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup");
+        VESPER.log (visCheckBoxGroup);
+        visCheckBoxGroup
+            .property ("checked", false)
+            .style ("display", function(d) {
+                var poss = DWCAHelper.fieldListExistence (metaData, d.attList, d.matchAll, selectionOptions.useExtRows);
+                return poss.match ? null : "none";
+            })
+        ;
+    }
 
     setChoices (files);
     setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);
@@ -1548,6 +1672,7 @@ VESPER.demo = function (files) {
         elem.style ("background", check ? "" : back);
     }
 
+    function isCore (fd, metaData) { return fd.rowType == metaData.coreRowType; }
     function isId (fd, d) { return fd.invFieldIndex[fd.idIndex] === d; }
     function getItemSelection (fd, d) { return fd.selectedItems[d] === true || isId(fd, d); }
     function setItemSelection (fd, d, val) { fd.selectedItems[d] = val; }
@@ -1651,8 +1776,9 @@ VESPER.demo = function (files) {
             VESPER.log ("table", i, d);
             var table = d3.select(this);
             var tableId = table.attr ("id");
+            var suffixNames = d.value.invFieldIndex.filter (function (elem) { return elem !== undefined; });
             var rows = table.selectAll("tr.col")
-                .data (d.value.invFieldIndex)
+                .data (suffixNames)
             ;
 
             rows.exit().selectAll("input").on("click", null);
@@ -1730,36 +1856,51 @@ VESPER.demo = function (files) {
     };
 
 
-
-
-    this.setAllFields = function (parentSelection, torf, list, exceptionFunc, metaData) {
+    // parentSelection - div of tables holding checkboxes
+    // torf - true or false. Set or unset.
+    // list - list of fieldnames to use in this op. Undefined if we're considering everything.
+    // exceptionFunc - function that excludes some checkboxes from this operation
+    // metaData - the DWCA metadata object
+    // selectionOptions object
+    //      .includeExtFiles - does this apply just to fields in core file or extension files too?
+    //      .selectFirstOnly - select just the first field with the given name we come across? (selection only, clearing clears all such fields)
+    this.setAllFields = function (parentSelection, torf, list, exceptionFunc, metaData, selectionOptions) {
         //VESPER.log ("efunc", exceptionFunc, parentSelection, list, metaData);
         var tables = parentSelection.selectAll("table");
+        var includeExtFiles = (selectionOptions ? selectionOptions.useExtRows : true);
+        var selectFirstOnly = (selectionOptions ? selectionOptions.selectFirstOnly : false);
 
         var fd = metaData.fileData;
-        for (var prop in fd) {
-            if (fd.hasOwnProperty(prop)) {
-                var f = fd[prop];
-                var si = f.selectedItems;
-                var llist = list || f.invFieldIndex;
-                if (si !== undefined) {
-                    for (var n = 0; n < llist.length; n++) {
-                        var i = llist[n];
-                        if (f.fieldIndex[i]) {
-                            si[i] = (exceptionFunc ? exceptionFunc (f, i) : false) || torf;
+        // make array ordered with core row type as first entry
+        var fdArray = d3.entries(fd).sort(function(a,b) {
+            return isCore (a.value, metaData) ? -1 : (isCore (b.value, metaData) ? 1: 0);
+        });
+
+        var nullableList = (list ? list.slice(0) : undefined); // list we can safely null values in with no side-effects (possible since list is passed in as a parameter)
+
+        for (var n = 0; n < fdArray.length; n++) {
+            var f = fdArray[n].value;
+            var si = f.selectedItems;
+            var llist = nullableList || f.invFieldIndex;
+            if (si !== undefined) {
+                for (var m = 0; m < llist.length; m++) {
+                    var i = llist[m];
+                    if (f.fieldIndex[i]) {
+                        si[i] = (isCore (f, metaData) || includeExtFiles) ? ((exceptionFunc ? exceptionFunc (f, i) : false) || torf) : false;
+                        if (torf && selectFirstOnly && nullableList) {
+                            nullableList[m] = null;
                         }
                     }
+                }
 
-                    var vals = d3.values (si);
-                    var uniq = d3.set(vals);
-                    setRowTypeSelection (f, uniq.has("true"));
-                    VESPER.log (prop, uniq.has("true"));
-                }	
+                var vals = d3.values (si);
+                var uniq = d3.set(vals);
+                setRowTypeSelection (f, uniq.has("true")); // set whether 'row' i.e. core or extension file is selected
+                VESPER.log (f.rowType, uniq.has("true"));
             }
         }
 
-	  setRowTypeSelection (metaData.fileData[metaData.coreRowType], true);
-
+	    setRowTypeSelection (metaData.fileData[metaData.coreRowType], true); // make sure core extension file is selected
 
         tables.each (
             function (d) {
@@ -1771,20 +1912,34 @@ VESPER.demo = function (files) {
 
     // check metamodel against list of fieldnames
     // needAll decides whether we need to match all the list or just part of it
-    this.fieldListExistence = function (meta, list, needAll) {
+    this.fieldListExistence = function (meta, list, needAll, checkExtRows) {
+
+        var listSet = d3.set (list);
+        var matchSet = d3.set ();
+
         var all = [];
         for (var prop in meta.fileData) {
             if (meta.fileData.hasOwnProperty (prop)) {
-                all = all.concat(meta.fileData[prop].invFieldIndex);
+                var row = meta.fileData[prop];
+                if (checkExtRows || isCore (row, meta)) {
+                    for (var m = 0; m < row.invFieldIndex.length; m++) {
+                        var fieldName = row.invFieldIndex[m];
+                        if (listSet.has (fieldName)) {
+                            matchSet.add (fieldName);
+                            all.push ({fieldName: fieldName, rowName: prop});
+                        }
+                    }
+                }
             }
         }
-        var intersect = NapVisLib.intersectArrays (list, all);
-        //VESPER.log ("inter", intersect, all);
-        return (needAll ? intersect.length === list.length : intersect.length > 0);
+
+        VESPER.log ("List", list, "Match", all, matchSet.values());
+        var matchLength = matchSet.values().length;
+        return {match: (needAll ? matchLength === list.length : matchLength > 0), fields: all} ;
     };
 
 
-    this.addHelperButton = function (parentSelection, fieldParentSelection, listName, list, add, img, klass, metaFunc) {
+    this.addHelperButton = function (parentSelection, fieldParentSelection, listName, list, add, img, klass, metaFunc, selOptions) {
         VESPER.log ("IN", listName, list, add, parentSelection.selectAll("button[type=button]."+klass));
         var buttons = parentSelection
             .selectAll("button[type=button]."+klass)
@@ -1798,7 +1953,7 @@ VESPER.demo = function (files) {
             .attr ("class", klass)
             .attr ("value", function (d) { return d.key; })
             .attr ("name", function (d) { return d.key; })
-            .on ("click", function (d) { DWCAHelper.setAllFields (fieldParentSelection, d.add, d.value, isId, metaFunc()); })
+            .on ("click", function (d) { DWCAHelper.setAllFields (fieldParentSelection, d.add, d.value, isId, metaFunc(), selOptions); })
             .html (function (d) { return (img ? "<img src=\""+img+"\">" : "") + d.key; })
         ;
     };
@@ -1845,7 +2000,7 @@ VESPER.demo = function (files) {
     };
 
 
-    this.configureCheckbox = function (checkBoxSpanSelection, cboxListParentSelection, list, meta) {
+    this.configureCheckbox = function (checkBoxSpanSelection, cboxListParentSelection, list, meta, selOptions) {
         if (list) {
             checkBoxSpanSelection.datum().attList = list;
         }
@@ -1853,7 +2008,7 @@ VESPER.demo = function (files) {
         checkBoxSpanSelection.select("input")
             .on ("click", function (d) {
                 var setVal = d3.select(this).property("checked");
-                DWCAHelper.setAllFields (cboxListParentSelection, setVal, d.attList, isId, meta());
+                DWCAHelper.setAllFields (cboxListParentSelection, setVal, d.attList, isId, meta(), selOptions);
 
                 var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
                 var cGroup = d3.selectAll("span."+cBoxClass+" input[type='checkbox']");
@@ -1861,32 +2016,33 @@ VESPER.demo = function (files) {
                 var list = [];
                 cGroup.each (function(d) { list.push.apply (list, d.attList); } );
 
-                DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta());
+                DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta(), selOptions);
             })
         ;
     };
 
 
-    this.addRadioButton = function (parentSelection, cdata, klass, groupName) {
+    this.addRadioButton = function (parentSelection, cdata, klass, groupName, textFunc) {
+        console.log ("TEXTFUNC", textFunc);
         var rbutControl = parentSelection
             .selectAll("label")
-            .data([cdata], function (d) { return d; })
+            .data([cdata], function (d) { return textFunc(d); })
         ;
 
         if (!rbutControl.enter().empty()) {
             var rwrapper = rbutControl.enter()
                 .append("label")
                 .attr ("class", klass)
-                .attr ("for", function(d) { return d+"RBChoice";})
-                .text (function(d) { return d; })
+                .attr ("for", function(d) { return textFunc(d)+"RBChoice";})
+                .text (textFunc)
             ;
 
             rwrapper
                 .append ("input")
                 .attr ("type", "radio")
-                .attr ("value", function (d) { return d; })
+                .attr ("value", textFunc)
                 .attr ("name", groupName)
-                .attr ("id", function (d) { return d+"RBChoice"; })
+                .attr ("id", function (d) { return textFunc(d)+"RBChoice"; })
                 .property ("checked", false)
             ;
         }
@@ -1895,7 +2051,7 @@ VESPER.demo = function (files) {
     };
 
 
-    this.configureRadioButton = function (rbLabelWrapper, cboxListParentSelection, changeThisObj, metaDataFunc) {
+    this.configureRadioButton = function (rbLabelWrapper, cboxListParentSelection, changeThisObjFunc, metaDataFunc, selOptions) {
         rbLabelWrapper
             .select("input")
             .on ("click", function (d) {
@@ -1903,10 +2059,10 @@ VESPER.demo = function (files) {
                 var gName = d3.select(this).attr("name");
                 var rGroup = d3.selectAll("input[type='radio'][name='"+gName+"']");
                 var list = [];
-                rGroup.each (function(d) { list.push (d); } );
-                DWCAHelper.setAllFields (cboxListParentSelection, false, list, isId, metaDataFunc());
-                DWCAHelper.setAllFields (cboxListParentSelection, setVal, [d], isId, metaDataFunc());
-                changeThisObj.result = d;
+                rGroup.each (function(d) { list.push (d.fieldType); } );
+                DWCAHelper.setAllFields (cboxListParentSelection, false, list, isId, metaDataFunc(), selOptions);
+                DWCAHelper.setAllFields (cboxListParentSelection, setVal, [d.fieldType], isId, metaDataFunc(), selOptions);
+                changeThisObjFunc(d);
         });
     };
 
@@ -1923,15 +2079,9 @@ VESPER.demo = function (files) {
         where.append("button")
             .attr("type", "button")
             .attr("class", "killbutton")
-            //.text("KILL")
             .on ("click", function() {
-                if (view) {
-                    if (view.destroy) { view.destroy(); }
-                }
+                if (view && view.destroy) { view.destroy(); }
                 d3.select(d3.event.target).on ("click", null);
-                //if (div) {
-                //    div.node().parentNode.removeChild(div.node());
-                //}
             })
             .attr ("title", "Close this view")
             .append ("img")
@@ -1943,6 +2093,10 @@ VESPER.demo = function (files) {
     this.twiceUpRemove = function (divid) {
         var node = d3.select(divid).node();
         var containerNode = node.parentElement;
+        console.log ("CONTAINER", containerNode, $(containerNode));
+        $(function() {
+            $(containerNode).draggable("destroy");
+        });
         containerNode.parentElement.removeChild (containerNode);
     };
 
@@ -1974,10 +2128,9 @@ VESPER.demo = function (files) {
 	
 	var exitDur = 400, updateDur = 1000, enterDur = 400;
 	
-	var keyField, longField, latField, nameField;
+	var keyField, longField, latField;
     var model;
-	
-	var struc;
+
 	var dwcaid2Marker = {};
 	var markerGroup;
 	var map;
@@ -2001,11 +2154,110 @@ VESPER.demo = function (files) {
 
     var oldIcon = new L.Icon.Default();
 
+    // what a markercluster does when the mouse is over it
+    var clusterMouseOverListener = function (a) {
+        VESPER.tooltip.updateText (a.latlng,
+            a.layer.getChildCount()+" Records"
+                +(a.layer.getSelectedChildCount() > 0 ? "<br>" + a.layer.getSelectedChildCount()+' Selected' : ""));
+        VESPER.tooltip.updatePosition (a.originalEvent);
+    };
+
+    // what a markercluster does when right clicked
+    var clusterSelectionListener = function (a) {
+        var theseMarkers = [];
+        var sel = [];
+        a.layer.getAllChildMarkers (theseMarkers);
+        if (theseMarkers.length > 0) {
+            for (var n = 0; n < theseMarkers.length; n++) {
+                sel.push (theseMarkers[n].extId);
+            }
+            model.getSelectionModel().clear();
+            model.getSelectionModel().addAllToMap (sel);
+        }
+    };
+
+    var markerMouseOverListener = function (e) {
+        var eid = e.target.extId;
+        var node = model.getNodeFromID (eid);
+        VESPER.tooltip.updateText (model.getLabel (node),
+            e.latlng+(model.getSelectionModel().contains (eid) ? "<br>Selected" : "")
+        );
+        VESPER.tooltip.updatePosition (e.originalEvent);
+    };
+
+    var markerSelectionListener = function (e) {
+        model.getSelectionModel().clear();
+        model.getSelectionModel().addToMap (e.target.extId);
+    };
+
+    // What the map does when a shape is drawn on it
+    var drawListener = function (e) {
+        var type = e.layerType,
+            layer = e.layer;
+
+        var sel = [];
+        var i = 0;
+
+        if (type === 'circle') {
+            VESPER.log ("circle", e);
+            var cll = e.layer._latlng;
+            var rad = e.layer._mRadius;
+            markerGroup.eachLayer(function (layer) {
+                i++;
+                var ll = layer.getLatLng();
+                if (cll.distanceTo (ll) <= rad) {
+                    sel.push(layer.extId);
+                    //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within circle");
+                }
+            });
+        }
+        else if (type === 'rectangle') {
+            VESPER.log ("rectangle", e);
+            var clls = e.layer._latlngs;
+            var bounds = new L.LatLngBounds (clls[0], clls[2]);
+            markerGroup.eachLayer(function (layer) {
+                i++;
+                var ll = layer.getLatLng();
+                if (bounds.contains (ll)) {
+                    sel.push(layer.extId);
+                    //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within rectangle");
+                }
+            });
+        }
+        else if (type === 'polygon') {
+            VESPER.log ("polygon", e);
+            var clls = e.layer._latlngs;
+            var bb = new L.LatLngBounds (clls);
+            markerGroup.eachLayer(function (layer) {
+                i++;
+                var ll = layer.getLatLng();
+                if (containsLatLng (clls, bb, ll)) {
+                    sel.push(layer.extId);
+                    //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within polygon");
+                }
+            });
+        }
+
+        if (curSelLayer) {
+            map.removeLayer (curSelLayer);
+        }
+
+        VESPER.log (sel.length, "specimens within", type);
+
+        // Do whatever else you need to. (save to db, add to map etc)
+        map.addLayer(layer);
+        curSelLayer = layer;
+
+        model.getSelectionModel().clear();
+        model.getSelectionModel().addAllToMap (sel);
+    };
+
+
     this.set = function (fields, mmodel) {
-        keyField = fields.identifyingField;
-        longField = fields.longitude;
-        latField = fields.latitude;
-        nameField = fields.nameField;
+        var ffields = mmodel.makeIndices ([fields.identifyingField, fields.longitude, fields.latitude]);
+        keyField = ffields[0];
+        longField = ffields[1];
+        latField = ffields[2];
         dims = NapVisLib.getDivDims (divid);
         model = mmodel;
         VESPER.log ("set model for map", model);
@@ -2025,8 +2277,6 @@ VESPER.demo = function (files) {
             map = L.map(dividsub);//.setView([51.505, -0.09], 13); // set view dependent on markers now, drawControl is for draw toolbar
             map.addLayer (osm);
 
-            VESPER.log ("size", map.getSize());
-
             // Adds leaflet.draw functionality
             var drawControl = new L.Control.Draw({
                 draw: {
@@ -2036,168 +2286,64 @@ VESPER.demo = function (files) {
             });
             map.addControl (drawControl);
 
-            map.on('draw:created', function (e) {
-                var type = e.layerType,
-                    layer = e.layer;
+            map.on('draw:created', drawListener);
 
-                var sel = [];
-                var i = 0;
-
-                if (type === 'circle') {
-                    VESPER.log ("circle", e);
-                    var cll = e.layer._latlng;
-                    var rad = e.layer._mRadius;
-                    markerGroup.eachLayer(function (layer) {
-                        i++;
-                        var ll = layer.getLatLng();
-                        if (cll.distanceTo (ll) <= rad) {
-                            sel.push(layer.extId);
-                            //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within circle");
-                        }
-                    });
-                }
-                else if (type === 'rectangle') {
-                    VESPER.log ("rectangle", e);
-                    var clls = e.layer._latlngs;
-                    var bounds = new L.LatLngBounds (clls[0], clls[2]);
-                    markerGroup.eachLayer(function (layer) {
-                        i++;
-                        var ll = layer.getLatLng();
-                        if (bounds.contains (ll)) {
-                            sel.push(layer.extId);
-                            //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within rectangle");
-                        }
-                    });
-                }
-                else if (type === 'polygon') {
-                    VESPER.log ("polygon", e);
-                    var clls = e.layer._latlngs;
-                    var bb = new L.LatLngBounds (clls);
-                    markerGroup.eachLayer(function (layer) {
-                        i++;
-                        var ll = layer.getLatLng();
-                        if (containsLatLng (clls, bb, ll)) {
-                            sel.push(layer.extId);
-                            //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within polygon");
-                        }
-                    });
-                }
-
-                //if (sel.length > 0) {
-
-                    if (curSelLayer) {
-                        map.removeLayer (curSelLayer);
+            markerGroup = new L.MarkerClusterGroup ({
+                iconCreateFunction: function(cluster) {
+                    var clog = Math.log (cluster.getChildCount() + 1);
+                    var height = 10 + (clog * heightMultiplier);
+                    var selHeight = (height * Math.log (cluster.getSelectedChildCount() + 1)) / clog;
+                    var unselHeight = height - selHeight;
+                    // really small heights due to rounding errors emerge as numbers in scientific notation.
+                    // this made them big in the style sheet as they took the mantissa (ooh) as the number so we squash them here.
+                    if (unselHeight < 0.5 && (cluster.getChildCount() == cluster.getSelectedChildCount ())) {
+                        unselHeight = 0;
                     }
 
-                    VESPER.log (sel.length, "specimens within", type);
-
-                    // Do whatever else you need to. (save to db, add to map etc)
-                    map.addLayer(layer);
-                    curSelLayer = layer;
-
-                    model.getSelectionModel().clear();
-                    model.getSelectionModel().addAllToMap (sel);
-                //}
-            });
-
-            markerGroup = new L.MarkerClusterGroup (
-                {
-                    iconCreateFunction: function(cluster) {
-                        var clog = Math.log (cluster.getChildCount() + 1);
-                        var height = 10 + (clog * heightMultiplier);
-                        //var selHeight = Math.log (cluster.getSelectedChildCount() + 1) * heightMultiplier;
-                        var selHeight = (height * Math.log (cluster.getSelectedChildCount() + 1)) / clog;
-                        var unselHeight = height - selHeight;
-
-                        return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
-                                +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
-                            className: 'vesperMapIcon',
-                            //iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
-                            //iconSize: new L.Point(40, 20 + (Math.log (cluster.getSelectedChildCount() + 1) * 5))
-                            iconSize: new L.Point(40, height)
-                        });
-                    }
-                }
-            );
-
-            markerGroup.on('clustermouseover', function (a) {
-                VESPER.tooltip.updateText (a.latlng,
-                    a.layer.getChildCount()+" Records"
-                    +(a.layer.getSelectedChildCount() > 0 ? "<br>" + a.layer.getSelectedChildCount()+' Selected' : ""));
-                VESPER.tooltip.updatePosition (a.originalEvent);
-            });
-
-            markerGroup.on('clustercontextmenu', function (a) {
-                var theseMarkers = [];
-                var sel = [];
-                a.layer.getAllChildMarkers (theseMarkers);
-                if (theseMarkers.length > 0) {
-                    for (var n = 0; n < theseMarkers.length; n++) {
-                        sel.push (theseMarkers[n].extId);
-                    }
-                    model.getSelectionModel().clear();
-                    model.getSelectionModel().addAllToMap (sel);
+                    return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
+                            +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
+                        className: 'vesperMapIcon',
+                        //iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
+                        //iconSize: new L.Point(40, 20 + (Math.log (cluster.getSelectedChildCount() + 1) * 5))
+                        iconSize: new L.Point(40, height)
+                    });
                 }
             });
+
+            markerGroup.on('clustermouseover', clusterMouseOverListener);
+            markerGroup.on('clustercontextmenu', clusterSelectionListener);
         }
 
-		var colourscheme = function(value){
-		    return [value, 1, 0.5, 1];
-		};
-		//var heatmap = new L.TileLayer.HeatCanvas(/*"HeatCanvas", map,*/ {},
-	    //        {'step':0.2, 'degree':HeatCanvas.QUAD, 'opacity':0.4, 'colorscheme':colourscheme}
-		//);
-
-        var maskMap = L.TileLayer.maskCanvas({
-            radius: 5,  // radius in pixels or in meters (see useAbsoluteRadius)
-            useAbsoluteRadius: false,  // true: r in meters, false: r in pixels
-            color: '#000',  // the color of the layer
-            opacity: 0.6  // opacity of the not coverted area
-        });
-        VESPER.log ("maskmap ",maskMap);
-
+        var latlngs = [];
 		var markers = [];
-		var latlngs = [];
-		
-		struc = model.getData();
+
+		var struc = model.getData();
 		if (latField && longField) {
 			 for (var prop in struc) {
 				 if (struc.hasOwnProperty (prop)) {
-					 var rec = model.getTaxaData(struc[prop]);
-					 var lat = +rec[latField];
-					 var longi = +rec[longField];
-					
-					 //narRecs[prop] = [+rec[latI], +rec[lonI], 1, rec[idI]];
-					 //narRecs[prop] = [+rec[latField], +rec[longField]];
+                     var lat = +model.getIndexedDataPoint (struc[prop], latField);
+                     var longi = +model.getIndexedDataPoint (struc[prop], longField);
+
 					 if (!isNaN(lat) && !isNaN(longi)) {
 						 var coord= [lat, longi];
-						 //VESPER.log (lat, longi);
 						 var marker = L.marker(coord)
-						 	.bindPopup (rec[keyField]+" "+rec[nameField])
-						 	.on ('contextmenu', function (e) {
-                                model.getSelectionModel().clear();
-                                model.getSelectionModel().addToMap (e.target.extId);
-						 	})
+                            .on ('mouseover', markerMouseOverListener)
+						 	.on ('contextmenu', markerSelectionListener)
 						 ;
 						 marker.extId = prop;
 						 markers.push (marker);
 						 latlngs.push (coord);
 						 dwcaid2Marker[prop] = marker;
-						 
-						// heatmap.pushData (lat, longi, 1);
 					 }
 				 }
 			 } 
 			 markerGroup.addLayers (markers);
-            maskMap.setData (latlngs);
 		}
-		
-		//map.addLayer (heatmap);
+
 		map.addLayer (markerGroup);
-       // map.addLayer (maskMap);
 		map.fitBounds ((new L.LatLngBounds (latlngs)).pad(1.05));
 		
-		L.control.layers ({},{"Marker":markerGroup, /*"Heatmap":heatmap,*/ "Mask":maskMap}).addTo(map);
+		L.control.layers ({},{"Marker":markerGroup}).addTo(map);
 		L.control.scale().addTo (map);
 		
 		VESPER.log ("group ", markerGroup);
@@ -2252,12 +2398,31 @@ VESPER.demo = function (files) {
 	};
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        //DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
         model = null;
+
+        markerGroup.removeEventListener();
+        markerGroup.eachLayer (function(layer) {
+            layer.removeEventListener();
+        });
+        markerGroup.clearLayers();
+
+        var lys = [];
+        map.eachLayer (function(layer) {
+            lys.push(layer);
+        });
+        map.removeEventListener();
+        for (var n = 0; n < lys.length; n++) {
+            map.removeLayer (lys[n]);
+        }
+        map.remove();
+
+        dwcaid2Marker = {};
         DWCAHelper.twiceUpRemove(divid);
     };
+
 
     this.updateVals = this.update;
 
@@ -2287,17 +2452,13 @@ VESPER.demo = function (files) {
 
 
     // extend Leaflet MarkerClusterGroup classes to count selected marker totals at each cluster, mjg
-    var  mc = 0;
+
     // Extend MarkerClusterGroup
     // mjg
     L.MarkerClusterGroup.include( {
             //mjg
             setAllSelectedChildCounts: function (selectionModel) {
-                //VESPER.log ("recalcing cluster sel counts");
-                mc = 0;
-                var cc = this._topClusterLevel.setAllSelectedChildCounts (selectionModel);
-                //VESPER.log ("MC", mc);
-                return cc;
+                return this._topClusterLevel.setAllSelectedChildCounts (selectionModel);
             }
         }
     );
@@ -2310,7 +2471,6 @@ VESPER.demo = function (files) {
             // mjg
             setAllSelectedChildCounts: function (selectionModel) {
                 var curCount = 0;
-                mc++;
 
                 for (var j = this._markers.length - 1; j >= 0; j--) {
                     if (selectionModel.contains (this._markers[j].extId)) {
@@ -2324,6 +2484,7 @@ VESPER.demo = function (files) {
 
                 this._selChildCount = curCount;
                 this._updateIcon ();    // seem to need to poke icon to recalc html, doesn't do it dynamically
+
                 return curCount;
             },
 
@@ -2333,7 +2494,6 @@ VESPER.demo = function (files) {
             }
         }
     );
-
 };
 		;VESPER.DWCAParser = new function () {
 
@@ -2346,6 +2506,8 @@ VESPER.demo = function (files) {
     this.EXT = 2;
     this.SYN = 3;
     this.SPECS = "s";
+
+    this.SUPERROOT = "superroot";
 
 
 	// terms from old darwin core archive format superseded by newer ones
@@ -2459,6 +2621,8 @@ VESPER.demo = function (files) {
     this.sharedValuesTerms = {"taxonID":1, "acceptedNameUsageID":1, "parentNameUsageID":1, "originalNameUsageID":1};
 
 
+    // Translates URIs into simple labels for interface
+    // If no label found will use URI in full
     this.recordURIMap = {
         "http://rs.tdwg.org/dwc/xsd/simpledarwincore/SimpleDarwinRecord": "Simple Darwin Record",
         "http://rs.tdwg.org/dwc/terms/Occurrence" : "Occurrence",
@@ -2480,7 +2644,11 @@ VESPER.demo = function (files) {
         "http://rs.nordgen.org/dwc/germplasm/0.1/terms/GermplasmSample" : "GermplasmSample",
         "http://purl.org/germplasm/germplasmTerm#GermplasmAccession" : "GermplasmAccession",
         "http://purl.org/germplasm/germplasmTerm#MeasurementExperiment" : "MeasurementExperiment",
-        "http://purl.org/germplasm/germplasmTerm#MeasurementMethod" : "MeasurementMethod"
+        "http://purl.org/germplasm/germplasmTerm#MeasurementMethod" : "MeasurementMethod",
+        "http://eol.org/schema/reference/Reference" : "EOL Reference",
+        "http://eol.org/schema/media/Document" : "EOL Document",
+        "http://eol.org/schema/agent/Agent" : "EOL Agent",
+        "http://www.w3.org/ns/oa#Annotationt" : "W3 Annotation"
     };
 
 
@@ -2510,16 +2678,67 @@ VESPER.demo = function (files) {
 
     this.accessZip = function (text, metaFileName) {
         var zip = new JSZip(text, {base64:false, noInflate:true});
-        zip.zipEntries.readLocalFile (metaFileName);
+        zip.dwcaFolder = "";
+        var newMetaFileName;
+
+        // look for metaFileName in zip entries. May be appended to a folder name.
+        for (var n = 0; n < zip.zipEntries.files.length; n++) {
+            var fname = zip.zipEntries.files[n].fileName;
+            var subStrI = fname.indexOf(metaFileName);
+            if (subStrI >= 0) {
+                newMetaFileName = fname;
+                zip.dwcaFolder = newMetaFileName.slice (0, subStrI);
+                break;
+            }
+        }
+        console.log ("ZIP ENTRIES", zip.zipEntries, newMetaFileName);
+        zip.zipEntries.readLocalFile (newMetaFileName);
         VESPER.log ("unzipped ", zip, zip.files);
-        var metaFile = zip.zipEntries.getLocalFile (metaFileName);
+        var metaFile = zip.zipEntries.getLocalFile (newMetaFileName);
         var metaData = VESPER.DWCAParser.parseMeta ($.parseXML (metaFile.uncompressedFileData));
         return {jszip: zip, meta: metaData};
     };
 
 
+    // Read in csv files that are zip entries. Use selectedStuff and readField to pick out
+    // which columns to snatch out the zip parsing routines.
+    this.filterReadZipEntriesToMakeModel = function (zip, mdata) {
+        var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
+        var fileRows = {};
+        VESPER.log ("ZIP:", zip);
+
+        // read selected data from zip
+        $.each (selectedStuff, function (key, value) {
+            var fileData = mdata.fileData[key];
+            var fileName = zip.dwcaFolder + fileData.fileName;
+            var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
+
+            $.each (value, function (key, value) {
+                readFields [fileData.fieldIndex[key]] = value;
+            });
+
+            VESPER.log ("readFields", readFields);
+            VESPER.DWCAZipParse.set (fileData, readFields);
+            zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
+            fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
+            VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
+        });
+
+        // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
+        $.each (selectedStuff, function (key, value) {
+            var fileData = mdata.fileData[key];
+            var fileName = zip.dwcaFolder + fileData.fileName;
+            zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
+        });
+
+        if (VESPER.alerts) { alert ("mem monitor point 1"); }
+
+        // make taxonomy (or list)
+        return new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata));
+    };
+
+
     $.fn.filterNode = function(name) {
-        VESPER.log ("go");
         return this.find('*').filter(function() {
             VESPER.log (this);
             return this.nodeName ? (this.nodeName.toUpperCase() == name.toUpperCase()) : false;
@@ -2527,10 +2746,10 @@ VESPER.demo = function (files) {
     };
 
 
+    // Get attribute defaults from dwca.xsd file
     this.makeRowTypeDefaults = function (xsdFile) {
         var wat = xsdFile.find('xs\\:attributeGroup[name="fileAttributes"], attributeGroup[name="fileAttributes"]');
         var ffrag = $(wat);
-        //VESPER.log ("FILEATTR", wat);
 
         $(ffrag[0]).find('xs\\:attribute, attribute').each(function() {
             var xmlthis= $(this);
@@ -2595,72 +2814,100 @@ VESPER.demo = function (files) {
     }
 
 	// This uses implicit id linking in the dwca file i.e. acceptedNameUsageID to parentNameUsageID
-	this.taxaArray2JSONTree = function (tsvData, fileData, fieldIndexer) {
+	this.taxaArray2JSONTree = function (tsvData, fileData, metaData) {
+        var fieldIndexer = fileData.filteredFieldIndex;
         var idx = fileData.idIndex;
 		var jsonObj = this.occArray2JSONArray (tsvData, idx);
 
         if (VESPER.alerts) { alert ("mem monitor point 1.5"); }
 		var hidx = fieldIndexer["parentNameUsageID"];
 		var aidx = fieldIndexer["acceptedNameUsageID"];
-		
+
+        // First pass. Add nodes with child ids to nodes with parent ids
 		for (var n = 0, len = tsvData.length; n < len; n++) {
 			var rec = tsvData[n];
             if (rec !== undefined) {
                 var id = rec[idx];
                 var pid = rec[hidx];
-
                 var pRec = jsonObj[pid];
 
                 if (pid != id && pRec != undefined) {	// no self-ref loops and parent must exist
                     // Make child taxa lists
                     addToArrayProp (pRec, VESPER.DWCAParser.TAXA, jsonObj[id]);
                 }
-                else if (pRec == undefined) {
+            }
+		}
+
+        // Second pass. Get synonyms and attach them and any existing children to the proper name node.
+        for (var n = 0, len = tsvData.length; n < len; n++) {
+            var rec = tsvData[n];
+            if (rec !== undefined) {
+                var id = rec[idx];
+                var pid = rec[hidx];
+                var pRec = jsonObj[pid];
+
+                if (pRec == undefined) {
                     // Make synonym lists
                     var aid = rec[aidx];
-                    if (id != aid) {
+                    if (id != aid && aid !== undefined) {
                         var aRec = jsonObj[aid];
                         if (aRec != undefined) {
-                            addToArrayProp (aRec, VESPER.DWCAParser.SYN, jsonObj[id]);
+                            var sRec = jsonObj[id];
+                            addToArrayProp (aRec, VESPER.DWCAParser.SYN, sRec);
+                            var sChildren = sRec[VESPER.DWCAParser.TAXA];
+
+                            if (sChildren) {
+                                console.log ("ADDING SYNS CHILDREN", sRec, sChildren, sChildren.length);
+
+                                for (var m = 0; m < sChildren.length; m++) {
+                                    var scObj = sChildren[m];
+                                    var scRec = scObj[VESPER.DWCAParser.TDATA];
+                                    var scid = scRec[idx];
+                                    var scaid = scRec[aidx];
+                                    if ((scid == scaid) && (scaid !== undefined)) {
+                                        addToArrayProp (aRec, VESPER.DWCAParser.TAXA, scObj);
+                                    }
+                                }
+                                sRec[VESPER.DWCAParser.TAXA].length = 0;
+                                //sChildren.length = 0;
+                            }
+
                             //delete jsonObj[id];
                         }
                     }
                 }
             }
-		}
+        }
 		
 		var roots = this.findRoots (jsonObj, idx, fieldIndexer);
-		this.createSuperroot (jsonObj, roots, fileData.invFieldIndex[idx], fieldIndexer);
+		this.createSuperroot (jsonObj, roots, fileData, metaData, fieldIndexer);
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
 		return {"records":jsonObj, "tree":jsonObj};
 	};
 
+    function isSynonym (id, aid) {
+       return (id != aid && aid !== undefined);
+    }
+
 
     // This uses explicit id linking in the dwca file i.e. kingdom, order, family etc data
-    this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, fieldIndexer, addOriginalTo) {
+    this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, metaData, addOriginalTo) {
         var idx = fileData.idIndex;
+        var fieldIndexer = fileData.filteredFieldIndex;
         var jsonObj = this.occArray2JSONArray (tsvData, idx);
 
         if (VESPER.alerts) { alert ("mem monitor point 1.5a ex"); }
         VESPER.log ("SPECS", VESPER.DWCAParser.SPECS);
         var rankList = VESPER.DWCAParser.explicitRanks;
-        var nameField = fieldIndexer["acceptedNameUsage"] || fieldIndexer["vernacularName"] || fieldIndexer["scientificName"];
+        console.log ("Vesper adds", metaData.vesperAdds);
+        var nameField = fieldIndexer[metaData.vesperAdds.nameLabelField.fieldType];
         var rootObjs = {};
         var rLen = rankList.length;
         // Make a taxonomy from the explicitly declared ranks
 
         var data = jsonObj;
-        var count = 0;
-        var ms = Date.now();
-        for (var prop in data) {
-            if (data.hasOwnProperty(prop)) {
-                count++;
-            }
-        }
-        ms = Date.now() - ms;
-        VESPER.log ("first iter pass: ",ms,"ms.");
 
         // I am separating the jsonObj from the tree organising structure here, as mixing integer and string property names
         // causes massive slowdown in webkit broswers (chrome 29 and opera 15 currently).
@@ -2711,18 +2958,8 @@ VESPER.demo = function (files) {
             }
         }
 
-        count = 0;
-        ms = Date.now();
-        for (var prop in data) {
-            if (data.hasOwnProperty(prop)) {
-                count++;
-            }
-        }
-        ms = Date.now() - ms;
-        VESPER.log ("second iter pass: ",ms,"ms.");
-
         var roots = d3.keys (rootObjs);
-        this.createSuperroot (treeObj, roots, fileData.invFieldIndex[idx], fieldIndexer);
+        this.createSuperroot (treeObj, roots, fileData, metaData, fieldIndexer);
         VESPER.log ("roots", roots);
 
         VESPER.log ("json", jsonObj, "tree", treeObj);
@@ -2756,9 +2993,12 @@ VESPER.demo = function (files) {
 	
 
 
-	this.addExtRows2JSON = function (jsonData, extRowData, coreIDIndex, extFieldName) {
+	this.addExtRows2JSON = function (jsonData, extRowData, rowDescriptor) {
+        var coreIDIndex = rowDescriptor.idIndex;
+
 		var unreconciled = [];
 		if (extRowData && (coreIDIndex != undefined)) {
+            var extIndex = rowDescriptor.extIndex;
 			for (var i = 0, len = extRowData.length; i < len; i++) {
 				var dataRow = extRowData [i];
 
@@ -2770,10 +3010,10 @@ VESPER.demo = function (files) {
 
                         if (jsonins != undefined) {
                             if (! jsonins[this.EXT]) {
-                                jsonins[this.EXT] = {};
+                                jsonins[this.EXT] = [];
                             }
                             var jsonExt = jsonins[this.EXT];
-                            addToArrayProp (jsonExt, extFieldName, dataRow);
+                            addToArrayProp (jsonExt, extIndex, dataRow);
                         }
                     }
                     else {
@@ -2789,23 +3029,23 @@ VESPER.demo = function (files) {
 	
 	
 	this.makeTreeFromAllFileRows = function (theFileRows, metaData) {
-		var fileData = metaData.fileData;
-		var coreFileData = fileData[metaData.coreRowType];
+		var rowDescriptors = metaData.fileData;
+		var coreFileData = rowDescriptors[metaData.coreRowType];
 		var jsoned;
 		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
-			jsoned = this.taxaArray2JSONTree (theFileRows[coreFileData.rowType], coreFileData, coreFileData.filteredFieldIndex);
+			jsoned = this.taxaArray2JSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData);
 		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
-            jsoned = this.taxaArray2ExplicitJSONTree (theFileRows[coreFileData.rowType], coreFileData, coreFileData.filteredFieldIndex,
+            jsoned = this.taxaArray2ExplicitJSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData,
                 VESPER.DWCAParser.addOriginalAsSpecimenEntry
             );
 		}
   		
-  		for (var indFileDataProp in fileData) {
-  			if (fileData.hasOwnProperty (indFileDataProp)) {
-  				var indFileData = fileData[indFileDataProp];
-                if (metaData.coreRowType !== indFileData.rowType && indFileData.selected) {
-                    var unreconciled = this.addExtRows2JSON (jsoned.records, theFileRows[indFileData.rowType], indFileData.idIndex, indFileData.mappedRowType);
-                    VESPER.log ("unreconciled in ",indFileDataProp, unreconciled);
+  		for (var indRowDescriptorProp in rowDescriptors) {
+  			if (rowDescriptors.hasOwnProperty (indRowDescriptorProp)) {
+  				var indRowDescriptor = rowDescriptors[indRowDescriptorProp];
+                if (metaData.coreRowType !== indRowDescriptor.rowType && indRowDescriptor.selected) {
+                    var unreconciled = this.addExtRows2JSON (jsoned.records, theFileRows[indRowDescriptor.rowType], indRowDescriptor);
+                    VESPER.log ("unreconciled in ",indRowDescriptorProp, unreconciled);
                 }
   			}
   		}
@@ -2843,7 +3083,7 @@ VESPER.demo = function (files) {
                         var id = rec[idx];
                         var aid = rec[aidx];
                         var pid = rec[hidx];
-                        if (id == aid && (pid == id || jsonObj[pid] == undefined)) { //Not a synonym, and parentid is same as id or parentid does not exist. possible root
+                        if ((id == aid || aid == undefined) && (pid == id || jsonObj[pid] == undefined)) { //Not a synonym, and parentid is same as id or parentid does not exist. possible root
                             roots.push (taxonProp);
                         }
                     }
@@ -2855,7 +3095,7 @@ VESPER.demo = function (files) {
 	};
 	
 	
-	this.createSuperroot = function (jsonObj, roots, idName, fieldIndexer) {
+	this.createSuperroot = function (jsonObj, roots, fileData, metaData, fieldIndexer) {
 		if (roots.length == 0) {
 			return undefined;
 		}
@@ -2864,18 +3104,22 @@ VESPER.demo = function (files) {
             jsonObj["-1000"] = jsonObj[roots[0]];
 			return jsonObj[roots[0]];
 		}
-		
+
+        var nameField = fieldIndexer[metaData.vesperAdds.nameLabelField.fieldType];
+        var idName = fileData.invFieldIndex[fieldIndexer["id"]];
+        var nameName = fileData.invFieldIndex[nameField];
+
 		var hidx = fieldIndexer["parentNameUsageID"];
 		var srID = "-1000";
 		var srData = {
             //id: srID,
             acceptedNameUsageID: srID,
             parentNameUsageID: srID,
-            acceptedNameUsage:  "superroot",
-            taxonRank: "superroot",
-            nameAccordingTo: "dwcaParse.js",
-            scientificName: "superroot"
+            acceptedNameUsage: VESPER.DWCAParser.SUPERROOT,
+            taxonRank: VESPER.DWCAParser.SUPERROOT,
+            nameAccordingTo: "dwcaParse.js"
 		};
+        srData[nameName] = VESPER.DWCAParser.SUPERROOT;
         srData[idName] = srID;
 		var srObj = {};
 	
@@ -2888,7 +3132,9 @@ VESPER.demo = function (files) {
 		srObj[VESPER.DWCAParser.TDATA] = [];
 		for (var prop in srData) {
 			if (srData.hasOwnProperty (prop)) {
-				srObj[VESPER.DWCAParser.TDATA][fieldIndexer[prop]] = srData[prop];
+                if (fieldIndexer[prop] !== undefined) {
+				    srObj[VESPER.DWCAParser.TDATA][fieldIndexer[prop]] = srData[prop];
+                }
 			}
 		}
 		
@@ -2920,10 +3166,10 @@ VESPER.demo = function (files) {
   		
   		var extRowTypes = this.getExtensionRowTypes (theXML);
   		for (var n = 0; n < extRowTypes.length; n++) {
-  			fileData [extRowTypes[n]] = this.parseExtension (theXML, extRowTypes[n]);
+  			fileData [extRowTypes[n]] = this.parseExtension (theXML, extRowTypes[n], n);
   		}
-  		
-  		var metaData = {"coreRowType":coreRowType, "extRowTypes":extRowTypes, "fileData":fileData};
+
+  		var metaData = {"coreRowType":coreRowType, "extRowTypes":extRowTypes, "fileData":fileData, "vesperAdds":{}};
   		VESPER.log ("metadata", metaData);
   		return metaData;
 	};
@@ -2935,8 +3181,10 @@ VESPER.demo = function (files) {
 	};
 	
 	
-	this.parseExtension = function (theXML, extensionRowType) {
-		return this.parseFrag (theXML, 'extension[rowType="'+extensionRowType+'"]', 'coreid', extensionRowType);
+	this.parseExtension = function (theXML, extensionRowType, index) {
+		var extObj = this.parseFrag (theXML, 'extension[rowType="'+extensionRowType+'"]', 'coreid', extensionRowType);
+        extObj.extIndex = index;
+        return extObj;
 	};
 	
 	
@@ -2949,7 +3197,7 @@ VESPER.demo = function (files) {
 		var fileNames = ffrag.find('files location').contents();
         fileData.fileName = fileNames[0].data;
         fileData.rowType = rowType;
-        fileData.mappedRowType = this.recordURIMap [rowType];
+        fileData.mappedRowType = this.recordURIMap [rowType] || rowType;
         for (var attrName in this.rowTypeDefaults) {
             if (this.rowTypeDefaults.hasOwnProperty (attrName)) {
                 // AARGH. Remember, there is a difference between something being undefined and an empty value.
@@ -3063,34 +3311,6 @@ VESPER.demo = function (files) {
 		return (chop > 0) ? term.substring (chop) : term;
 	}
 
-
-    // Finds first instance of field name in filedata structure
-    this.findFields = function (fileData, fieldNames, index) {
-        if (index == undefined) {
-            index = "filteredFieldIndex";
-        }
-        var fieldData = [];
-        for (var n = 0, len = fieldNames.length; n < len; n++) {
-            fieldData.push (findFieldByIndex (fileData, fieldNames[n], index));
-        }
-        return fieldData;
-    };
-
-
-    function findFieldByIndex (fileData, fieldName, indexType) {
-        //VESPER.log ("FILEDATA", fileData);
-        for (var type in fileData) {
-            if (fileData.hasOwnProperty(type)) {
-                var i = fileData[type][indexType][fieldName];
-                if (i !== undefined) {
-                    return {"type": type, "index": i, "fieldName":fieldName};
-                }
-            }
-        }
-
-        return null;
-    }
-
     this.selectNodes = function (regex, selectorFunc, model, setSelectionFunc) {
         var count = 0;
         var data = model.getData();
@@ -3120,32 +3340,40 @@ VESPER.demo = function (files) {
 
 VESPER.Filters = new function () {
 
-    this.filter2 = function (model, searchTerms, regex, nameField) {
+    this.filter2 = function (model, searchTerms, regex) {
         VESPER.log ("regex", regex);
-        VESPER.log ("filedata", model.getMetaData().fileData);
-        var ext;
-        var vnData = VESPER.DWCAParser.findFields (model.getMetaData().fileData, ["vernacularName"], "filteredFieldIndex")[0];
+        var metaData = model.getMetaData();
+        var nameLabel = metaData.vesperAdds.nameLabelField;
+        var rowDescriptor = metaData.fileData[nameLabel.rowType];
+        var rowIndex = rowDescriptor.extIndex;
+        var nameIndex = rowDescriptor.filteredFieldIndex[nameLabel.fieldType];
+        var oneArray = [];
+
+        console.log ("FILTER", nameLabel, nameIndex, rowIndex);
 
         var specificFilter = function (model, taxon, regex) {
-            var name = model.getTaxaData(taxon)[nameField];
-            if (name && name.match (regex) != null) {
-                return true;
+            var rowRecords = model.getRowRecords (taxon, rowIndex);
+
+            if (rowIndex == undefined) {
+                oneArray[0] = rowRecords;
+                rowRecords = oneArray;
             }
-            else if (ext = model.getExtraData(taxon) && vnData && ext[vnData.type]) {
-                var vnames = ext[vnData.type];
-                for (var n = vnames.length; --n >= 0;) {
-                    var name2 = vnames[n][vnData.index];
-                    //VESPER.log ("name2", name2);
-                    if (name2.match (regex) != null) {
+
+            if (rowRecords) {
+                for (var n = 0; n < rowRecords.length; n++) {
+                    var name = rowRecords[n][nameIndex];
+                    if (name && name.match (regex) != null) {
                         return true;
                     }
                 }
             }
+
             return false;
         };
 
         model.getSelectionModel().setUpdating (true);
         var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
+        console.log ("selected count", count, model.getSelectionModel().values());
         model.getSelectionModel().setUpdating (false);
         return count;
     }
@@ -3178,8 +3406,7 @@ VESPER.modelComparisons = new function () {
         for (var prop in smallData) {
             if (smallData.hasOwnProperty (prop)) {
                 var rec = smallData[prop];
-                var tdata = small.getTaxaData (rec);
-                var val = tdata[smallLinkField];
+                var val = smallData.getDataPoint (rec, smallLinkField);
                 invMap[val] = prop;
             }
         }
@@ -3188,8 +3415,7 @@ VESPER.modelComparisons = new function () {
         for (var prop in largeData) {
             if (largeData.hasOwnProperty (prop)) {
                 var rec = largeData[prop];
-                var tdata = large.getTaxaData (rec);
-                var val = tdata[largeLinkField];
+                var val = largeData.getDataPoint (rec, largeLinkField);
 
                 if (invMap[val]) {
                     small.getSelectionModel().addToMap (invMap[val]);
@@ -3222,12 +3448,11 @@ VESPER.modelComparisons = new function () {
 	var exitDur = 400, updateDur = 1000, enterDur = 400;
 	var selected = {};
 	
-	var keyField, nameField, rankField, rowFields;
+	var keyField, rankField, rowFields;
 
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
-        nameField = fields.nameField;
         rankField = fields.rankField;
         rowFields = fields.rowFields;
         model = mmodel;
@@ -3453,7 +3678,7 @@ VESPER.Sanity = function(divid) {
         var lists = VESPER.DWCAParser.neccLists;
         for (var list in lists) {
             if (lists.hasOwnProperty(list)) {
-                var present = VESPER.DWCAParser.findFields (model.getMetaData().fileData, lists[list], "filteredFieldIndex");
+                var present = model.makeIndices (lists[list]);
                 var nullCount = NapVisLib.countNulls (present);
                 if (nullCount === 0) {
                     tests.push (present);
@@ -3466,17 +3691,20 @@ VESPER.Sanity = function(divid) {
         for (var obj in dataModel) {
             if (dataModel.hasOwnProperty(obj)) {
                 oc++;
-                var tdat = model.getTaxaData (dataModel[obj]);
+                //var tdat = model.getTaxaData (dataModel[obj]);
 
-                if (tdat) {
+                //if (tdat) {
                     for (var i = 0; i < tests.length; i++) {
                         var test = tests[i];
                         var some = false, all = true;
 
                         for (var j = 0; j < test.length; j++) {
-                            var fieldData = test[j];
-                            var index = fieldData.index;
-                            var val = tdat[index];
+                            //var fdata = fdEntries[n].value;
+                           // var tdat = model.getRowData (dataModel[obj], fdata.extIndex);
+                            var val = model.getIndexedDataPoint (dataModel[obj], test[j]);
+                            //var fieldData = test[j];
+                            //var index = fieldData.index;
+                            //var val = tdat[index];
                             if (val === undefined || val === null) {
                                 some = true;
                             }
@@ -3488,7 +3716,7 @@ VESPER.Sanity = function(divid) {
                         if (some) { testOutputs[i].some++; }
                         if (all) { testOutputs[i].all++; }
                     }
-                }
+                //}
             }
         }
 
@@ -3512,20 +3740,23 @@ VESPER.Sanity = function(divid) {
 
         for (var obj in dataModel) {
             if (dataModel.hasOwnProperty(obj)) {
-                var tdat = model.getTaxaData (dataModel[obj]);
-                if (tdat) {
-
-                    for (var n = 0; n < fdEntries.length; n++) {
-                        var fIndex = fdEntries[n].value.filteredInvFieldIndex;
-                        var shortName = fdEntries[n].value.mappedRowType;
+                for (var n = 0; n < fdEntries.length; n++) {
+                    var fdata = fdEntries[n].value;
+                    var tdat = model.getRowData (dataModel[obj], fdata.extIndex);
+                    //if (tdat) {
+                        if (tdat && fdata.extIndex) {
+                            tdat = tdat[0];
+                        }
+                        var fIndex = fdata.filteredInvFieldIndex;
+                        var shortName = fdata.mappedRowType;
                         for (var f = 0; f < fIndex.length; f++) {
                             var fName = fIndex[f];
 
-                            if (tdat[f] === undefined || tdat[f] === null) {
+                            if (tdat === undefined || tdat[f] === undefined || tdat[f] === null) {
                                 results[shortName][fName].count++;
                             }
                         }
-                    }
+                    //}
                 }
             }
         }
@@ -3641,7 +3872,6 @@ VESPER.Sanity = function(divid) {
             } else {
                 arr = d3.entries(d);
             }
-            VESPER.log ("d", d, cellOrder, arr);
 
             var cells = d3.select(this).selectAll("td").data(arr);
             var newcells = cells.enter().append ("td");
@@ -3720,11 +3950,10 @@ VESPER.Sanity = function(divid) {
 
     var model;
     var self = this;
-    var nameField;
+    var typeAhead = true;
 
     this.set = function (fields, mmodel) {
         model = mmodel;
-        nameField = fields.nameField;
     };
 
 
@@ -3740,6 +3969,25 @@ VESPER.Sanity = function(divid) {
             .attr("id", tid)
         ;
 
+        var typeAheadDiv = textSearch.append("div");
+
+        typeAheadDiv
+            .append ("input")
+            .attr ("name", tid+"TypeAhead")
+            .attr ("value", typeAhead ? "checked" : "")
+            .attr ("checked", typeAhead)
+            .attr ("type", "checkbox")
+            .on ("click", function () {
+                typeAhead = d3.event.target.checked;
+            })
+        ;
+
+        typeAheadDiv
+            .append ("label")
+            .attr ("for", tid+"TypeAhead")
+            .text ("Keystroke Search")
+        ;
+
         bindSearch ();
 		this.update ();
 	};
@@ -3748,12 +3996,12 @@ VESPER.Sanity = function(divid) {
         var tfield = d3.select(divID).select("span input");
         tfield
             .on ("keyup", function() {
-                VESPER.log (d3.select(this).node(), d3.select(this).property("value"));
-                model.getSelectionModel().clear();
-                var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"), nameField);
+                if (typeAhead || (d3.event.keyCode | d3.event.charCode) === 13) {
+                    model.getSelectionModel().clear();
+                    var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"));
+                }
             })
         ;
-        VESPER.log (tfield);
     }
 	
 	
@@ -3783,59 +4031,14 @@ VESPER.SelectedView = function (divID) {
     var detailTable = "detailTable";
     var model;
     var self = this;
-    var nameField;
 
 
     this.set = function (fields, mmodel) {
         model = mmodel;
-        nameField = fields.nameField;
     };
 
 
     this.go = function () {
-        var save = d3.select(divID).select("button#save");
-        if (save.empty()) {
-            if (window.requestFileSystem) {
-                d3.select(divID).append("button")
-                    //.attr ("id", "save")
-                    .text ("SAVE")
-                    .on ("click", function(d) {
-                        NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
-                    })
-                ;
-            } else {
-                NapVisLib.html5Lacks(d3.select(divID), "[Browser does not support FileWriter]");
-            }
-        }
-
-        var clear = d3.select(divID).select("button#clearSel");
-        if (clear.empty()) {
-            d3.select(divID).append("button")
-                //.attr ("id", "clearSel")
-                .text ("CLEAR")
-                .on ("click", function(d) {
-                    model.getSelectionModel().clear();
-                    model.getSelectionModel().update();
-                })
-            ;
-        }
-
-        var compare = d3.select(divID).select("button#compareMod");
-        if (compare.empty()) {
-            d3.select(divID).append("button")
-                //.attr ("id", "compareSel")
-                .text ("COMPARE MODEL")
-                .on ("click", function() {
-                    VESPER.modelBag.push ({"model":model, "name":nameField});
-                    VESPER.log ("ModelBag", VESPER.modelBag);
-                    if (VESPER.modelBag.length > 1) {
-                        VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model, VESPER.modelBag[0].name, VESPER.modelBag[1].name);
-                        VESPER.modelBag.length = 0;
-                    }
-                })
-            ;
-        }
-
         this.update ();
     };
 
@@ -4062,21 +4265,23 @@ VESPER.Tree = function(divid) {
     var thisView;
     var model;
 
+    var ffields;
+
     var zoomObj = d3.behavior.zoom();	// zoom object, need to keep as we reference it later. calling d3.behavior.zoom() again gets us a different object/function
     zoomObj.scaleExtent ([1.0, 4.0]); // constrain zooming
 
     var exitDur = 400, updateDur = 1000, enterDur = 400;
-    var keyField, nameField, rankField;
+    var keyField, rankField;
     var firstLayout = true;
     var color = d3.scale.category20c();
     var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
-    var cstore = {};
+    var cstore = {}, pstore = {};
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
-		"alpha": function (a,b) { var n1 = model.getTaxaData(a)[nameField]; var n2 = model.getTaxaData(b)[nameField];
+		"Alpha": function (a,b) { var n1 = model.getLabel(a); var n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
-		"descendants": function (a,b) { var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b); 
+		"Descendants": function (a,b) { var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b);
 										//VESPER.log (s1,s2);
 										if (s1 === undefined && s2 === undefined) {
 											var sp1 = model.getSpecimens(a);
@@ -4086,61 +4291,79 @@ VESPER.Tree = function(divid) {
 										}
 										s1 = s1 || 0;
 										s2 = s2 || 0;
-										//s1 = s1 || model.getSpecimens(a);
-										//s2 = s2 || model.getSpecimens(b);
-										//s1 = (s1 === undefined) ? 0 : s1.length;
-										//s2 = (s2 === undefined) ? 0 : s2.length;
 										return s1 > s2 ? 1 : ((s1 < s2) ? -1 : 0);
 		},
-        "selected": function (a,b) {
+        "Selected": function (a,b) {
             var sModel = model.getSelectionModel();
             //console.log (a,b);
-            var sel1 = sModel.contains(model.getTaxaData(a)[keyField]);
-            var sel2 = sModel.contains(model.getTaxaData(b)[keyField]);
+            var sel1 = sModel.contains(model.getIndexedDataPoint (a,keyField));
+            var sel2 = sModel.contains(model.getIndexedDataPoint (b,keyField));
             return (sel1 === sel2) ? 0 :  (sel1 === true ? 1 : -1);
+        },
+        "Selected Desc": function (a,b) {
+            var sModel = model.getSelectionModel();
+            //console.log (a,b);
+            var sel1 = a.sdcount;
+            var sel2 = b.sdcount
+            return (sel1 === sel2) ? 0 :  (sel1 === undefined ? -1 : (sel2 === undefined ? 1 : (sel1 - sel2)));
         }
 	};
 
     function tooltipString (node, model) {
-        var td = model.getTaxaData(node);
         var specs = model.getSpecimens(node);
         var desc = model.getDescendantCount(node);
         var sdesc = model.getSelectedDescendantCount(node);
         var subt = model.getSubTaxa(node);
 
-        return td[nameField]+": "+td[rankField]
-        + (subt === undefined ?
-                (specs ? "<br>"+specs.length+" specimens" : "")
-                : "<br>"+desc+" descendants")
-        + (sdesc > 0 ?
+        var tooltipStr = "";
+
+        for (var n = 0; n < ffields.length; n++) {
+            tooltipStr += ((n > 0) ? "<br>" : "")+ffields[n].fieldType+": "+model.getIndexedDataPoint (node, ffields[n]);
+        }
+
+        tooltipStr += (subt === undefined ?
+                (specs ? "<hr>"+specs.length+" specimens" : "")
+                : "<hr>"+desc+" descendants")
+            + (sdesc > 0 ?
                 (subt === undefined ?
                 (specs ? "<br>"+sdesc+" selected specimens" : "")
                 : "<br>"+sdesc+" selected descendants")
             : "")
         ;
+
+        var syn = model.getSynonyms(node);
+        if (syn) {
+            tooltipStr += "<hr><i>Synonymy</i>";
+            for (var n = 0; n < syn.length; n++) {
+               tooltipStr += "<br>" + model.getIndexedDataPoint(syn[n], keyField)+": "+model.getLabel (syn[n]);
+            }
+        }
+
+        return tooltipStr;
     }
 
+
     var spaceAllocationOptions = {
-        bottomUp: AdaptedD3.partition3()
+        bottomUp: AdaptedD3.bottomUp()
             .sort (null)
             //.value(function(d) { return 1; })// having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .value(function(d) { return model.getLeafValue (d); }) // having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .children (function (d) { return model.getSubTaxa(d); })
-            .nodeId (function (d) { return model.getTaxaData(d)[keyField]; })
+            .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
         bottomUpLog: AdaptedD3.logPartition()
             .sort (null)
             .value (function(d) { return model.getLeafValue (d); })
             .children (function (d) { return model.getSubTaxa(d); })
-            .nodeId (function (d) { return model.getTaxaData(d)[keyField]; })
+            .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
-        topDown: AdaptedD3.topdown()
+        topDown: AdaptedD3.topDown()
             .sort (null)
             .value (null)
             .children (function (d) { return model.getSubTaxa(d); })
-            .nodeId (function (d) { return model.getTaxaData(d)[keyField]; })
+            .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
            // .filter (function (d) { return allowedRanks[model.getTaxaData(d)[rankField]]; })
     };
 
@@ -4153,14 +4376,35 @@ VESPER.Tree = function(divid) {
             return [dims[1], dims[0]];
         },
 
-        sharedAttrs: function (group) {
+        booleanSelectedAttrs: function (group) {
             group
-                .attr ("class", function(d) { var node = getNode (d.id) /*d*/; return model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected"); })
+                .attr ("class", function(d) { /* var node = getNode (d.id);*/ return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
                 .attr ("y", function (d) { return d.x; })
                 .attr ("x", function (d) { return d.y; })
                 .attr("width", function (d) { return d.dy; })
                 .attr("height", function (d) { return d.dx; })
-                //.style("fill", function(d) { var node = getNode (d.id) /*d*/; return model.getSelectionModel().contains(d.id) ? "#ff0000" : (node.sdcount > 0 ? "#ffa080" : null /*"#00ff00"*/); })
+            ;
+        },
+
+        widthLogFunc: function (d) {
+            var node = getNode (d.id);
+            var prop = node.sdcount > 0 && node.dcount > 0 ? Math.log (node.sdcount + 1) / Math.log (node.dcount + 1) : 0;
+            return prop * d.dy;
+        },
+
+        xFunc: function (d) {
+            var node = getNode (d.id);
+            var prop = node.sdcount > 0 && node.dcount > 0 ? Math.log (node.sdcount + 1) / Math.log (node.dcount + 1) : 0;
+            return d.y + ((1.0 - prop) * d.dy);
+        },
+
+        propSharedAttrs: function (group, xFunc, widthFunc) {
+            group
+                .attr ("class", "holdsSelected")
+                .attr ("y", function (d) { return d.x; })
+                .attr ("x", xFunc)
+                .attr("height", function (d) { return d.dx; })
+                .attr("width", widthFunc)
             ;
         },
 
@@ -4195,20 +4439,26 @@ VESPER.Tree = function(divid) {
                 .append ("svg:g")
                 .attr("class", "treeNode")
                 .style("opacity", 0)
+                .call (mouseController)
             ;
 
             newNodes.append ("svg:rect")
                 .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
-                .call (partitionLayout.sharedAttrs)
-                .call (mouseController)
-                //.append("svg:title")
-               // .text(function(d) {
-                //    return tooltipString (getNode (d.id), model);
-               // })
+                .call (partitionLayout.booleanSelectedAttrs)
+                //.call (mouseController)
             ;
 
+
+            newNodes.append ("svg:rect")
+                .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
+                .style ("opacity", 0.75)
+                .call (partitionLayout.propSharedAttrs, this.xFunc, this.widthLogFunc)
+                //.call (mouseController)
+            ;
+
+
             newNodes.append ("svg:text")
-                .text (function(d) { var node = getNode (d.id) /*d*/; return model.getTaxaData(node)[nameField]; })
+                .text (function(d) { var node = getNode (d.id) /*d*/; return model.getLabel(node); })
                 .style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": "hidden"; })
                 .call (partitionLayout.sharedTextAttrs)
                 //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
@@ -4218,12 +4468,20 @@ VESPER.Tree = function(divid) {
         },
 
         redrawExistingNodes: function (group, delay) {
-            group.select("rect")
+            group.select("rect:not(.holdsSelected)")
                 .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
                 .transition()
                 .delay (delay)
                 .duration (updateDur)
-                .call (partitionLayout.sharedAttrs)
+                .call (partitionLayout.booleanSelectedAttrs)
+            ;
+
+            group.select("rect.holdsSelected")
+                .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
+                .transition()
+                .delay (delay)
+                .duration (updateDur)
+                .call (partitionLayout.propSharedAttrs, this.xFunc, this.widthLogFunc)
             ;
 
             group.select("text")
@@ -4290,64 +4548,9 @@ VESPER.Tree = function(divid) {
         }
     };
 
-
-
-
-    var π = Math.PI, ε = 1e-6;
-    d3.svg.parc = function() {
-        var innerRadius = d3_svg_arcInnerRadius, outerRadius = d3_svg_arcOuterRadius, startAngle = d3_svg_arcStartAngle, endAngle = d3_svg_arcEndAngle;
-        function arc() {
-            VESPER.log ("this", this);
-            var r1 = outerRadius.apply(this, arguments), a0 = startAngle.apply(this, arguments) + d3_svg_arcOffset, a1 = endAngle.apply(this, arguments) + d3_svg_arcOffset, da = (a1 < a0 && (da = a0,
-                a0 = a1, a1 = da), a1 - a0), df = da < π ? "0" : "1", c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
-            return da >= d3_svg_arcMax
-                ? ("M0," + r1 + "A" + r1 + "," + r1 + " 0 1,1 0," + -r1 + "A" + r1 + "," + r1 + " 0 1,1 0," + r1)
-                : ("M" + r1 * c0 + "," + r1 * s0 + "A" + r1 + "," + r1 + " 0 " + df + ",1 " + r1 * c1 + "," + r1 * s1)
-                ;
-        }
-        arc.innerRadius = function(v) {
-            if (!arguments.length) return innerRadius;
-            innerRadius = d3.functor(v);
-            return arc;
-        };
-        arc.outerRadius = function(v) {
-            if (!arguments.length) return outerRadius;
-            outerRadius = d3.functor(v);
-            return arc;
-        };
-        arc.startAngle = function(v) {
-            if (!arguments.length) return startAngle;
-            startAngle = d3.functor(v);
-            return arc;
-        };
-        arc.endAngle = function(v) {
-            if (!arguments.length) return endAngle;
-            endAngle = d3.functor(v);
-            return arc;
-        };
-        arc.centroid = function() {
-            var r = (innerRadius.apply(this, arguments) + outerRadius.apply(this, arguments)) / 2, a = (startAngle.apply(this, arguments) + endAngle.apply(this, arguments)) / 2 + d3_svg_arcOffset;
-            return [ Math.cos(a) * r, Math.sin(a) * r ];
-        };
-        return arc;
-    };
-    var d3_svg_arcOffset = -π / 2, d3_svg_arcMax = 2 * π - 1e-6;
-    function d3_svg_arcInnerRadius(d) {
-        return d.innerRadius;
-    }
-    function d3_svg_arcOuterRadius(d) {
-        return d.outerRadius;
-    }
-    function d3_svg_arcStartAngle(d) {
-        return d.startAngle;
-    }
-    function d3_svg_arcEndAngle(d) {
-        return d.endAngle;
-    }
-
     var sunburstLayout = {
 
-        cutoffVal: 0.05,
+        cutoffVal: 0.1,
 
         sizeBounds: function () {
             var radius = d3.min(dims) / 2;
@@ -4355,11 +4558,15 @@ VESPER.Tree = function(divid) {
             return [2 * Math.PI, radius * radius];
         },
 
-        sharedAttrs: function (group) {
+        booleanSelectedAttrs: function (group) {
             group
-                //.style ("fill", function(d) { var node = getNode (d.id); var s = model.getSelectionModel().contains(d.id); var p = (node.sdcount || 0) / (node.dcount || 1); return (p && !s) ? colourScale (p) : null; })
-                .attr ("class", function(d) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
+                //.attr ("class", function(d) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
+                .attr ("class", function(d) { return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
             ;
+        },
+
+        propSelectedAttrs: function (group) {
+            group.attr ("class", "holdsSelected") ;
         },
 
         sharedTextAttrs: function (sel) {
@@ -4378,8 +4585,6 @@ VESPER.Tree = function(divid) {
             ;
         },
 
-
-
         arc: d3.svg.arc()
             .startAngle(function(d) { return d.x; })
             .endAngle(function(d) { return d.x + d.dx; })
@@ -4387,31 +4592,65 @@ VESPER.Tree = function(divid) {
             .outerRadius(function(d) { return Math.sqrt(d.y + d.dy); })
         ,
 
-        parc: d3.svg.parc()
+        parc: d3.svg.arc()
             .startAngle(function(d) { return d.x; })
             .endAngle(function(d) { return d.x + d.dx; })
-            .innerRadius(function(d) { return Math.sqrt(d.y); })
-            .outerRadius(function(d) { return Math.sqrt(d.y + d.dy); })
+            .innerRadius(function(d) {
+                var oRad = Math.sqrt(d.y + d.dy);
+                var diff = oRad - Math.sqrt (d.y);
+                var node = getNode (d.id);
+                var prop = 0;
+                if (node.dcount > 0 && node.sdcount > 0) {
+                    var prop = Math.log (node.sdcount + 1) / Math.log (node.dcount + 1);
+                    prop *= prop; // square cos area of ring is square of radius
+                }
+                return oRad - (prop * diff);
+            })
+            .outerRadius(function(d) {
+                return Math.sqrt(d.y + d.dy);
+            })
         ,
 
 
         // Stash the old values for transition.
-        stash: function (d) {
+        cstash: function (d) {
             cstore[d.id] = {x0: d.x, dx0: d.dx, y0: d.y, dy0: d.dy};
+        },
+        pstash: function (d) {
+            pstore[d.id] = {x0: d.x, dx0: d.dx, y0: d.y, dy0: d.dy};
         },
 
         // Interpolate the arcs in data space.
         arcTween: function (a) {
             //VESPER.log ("a", a, a.dx0);
             var cs = cstore [a.id];
-            var i = d3.interpolate({x: cs.x0, dx: cs.dx0, y: cs.y0, dy: cs.dy0}, a);
+            if (cs === undefined) {
+                console.log ("No STORE", a.id, a);
+            }
+            if (cs) {
+                var i = d3.interpolate({x: cs.x0, dx: cs.dx0, y: cs.y0, dy: cs.dy0}, a);
+                return function(t) {
+                    var b = i(t);
+                    cs.x0 = b.x;
+                    cs.dx0 = b.dx;
+                    cs.y0 = b.y;
+                    cs.dy0 = b.dy;
+                    return sunburstLayout.arc(b);
+                };
+            }
+        },
+
+        parcTween: function (a) {
+            //VESPER.log ("a", a, a.dx0);
+            var ps = pstore [a.id];
+            var i = d3.interpolate({x: ps.x0, dx: ps.dx0, y: ps.y0, dy: ps.dy0}, a);
             return function(t) {
                 var b = i(t);
-                cs.x0 = b.x;
-                cs.dx0 = b.dx;
-                cs.y0 = b.y;
-                cs.dy0 = b.dy;
-                return sunburstLayout.arc(b);
+                ps.x0 = b.x;
+                ps.dx0 = b.dx;
+                ps.y0 = b.y;
+                ps.dy0 = b.dy;
+                return sunburstLayout.parc(b);
             };
         },
 
@@ -4423,9 +4662,13 @@ VESPER.Tree = function(divid) {
         removeOld: function (exitSel) {
             clearMouseController (exitSel);
             exitSel
-                .each (function() {
+                .transition()
+                .delay(0)
+                .duration(0)
+                .each ("end", function() {
                     var id = d3.select(this).datum().id;
                     cstore[id] = undefined;
+                    pstore[id] = undefined;
                 })
             ;
             NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
@@ -4437,103 +4680,71 @@ VESPER.Tree = function(divid) {
                 .append ("svg:g")
                 .attr("class", "treeNode")
                 .style("opacity", 0)
+                 .call (mouseController)
             ;
 
-            /*
-            var tegs = newNodes
-                    .append("path")
-                    //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
-                    .attr("d", sunburstLayout.parc)
-                    .attr ("id", function(d) { return "tarc"+ d.id; })
-                    .style ("visibility", "hidden")
-                    //.each(sunburstLayout.stash)
-                ;
-            */
-            var newSegs = newNodes
+            newNodes
                 .append("path")
                 //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
                 .attr("d", sunburstLayout.arc)
                 .attr ("id", function(d) { return "arc"+ d.id; })
-                //.style("fill", function(d) { var node = getNode (d.id); return color(model.getTaxaData(model.getSubTaxa(node) ? node : node.parent)[rankField]); })
-                .call (sunburstLayout.sharedAttrs)
-                .call (mouseController)
-                .each(sunburstLayout.stash)
+                .call (sunburstLayout.booleanSelectedAttrs)
+                .each(sunburstLayout.cstash)
             ;
 
-            /*
-            newNodes.append ("svg:text")
-                //.text (function(d) { return model.getTaxaData(node)[nameField]; })
-                //.attr ("text-anchor", "middle")
-                .style ("visibility", function (d) { return d.dx > 1 ? "visible": "collapse"; })
-                //.call (sunburstLayout.sharedTextAttrs)
-                .append ("svg:textPath")
-                    .attr ("startOffset", "0%")
-                    .attr ("spacing", "auto")
-                    .attr ("xlink:href", function(d) { return "#tarc"+ d.id; })
-                    //.attr("dy","1em")
-                    .append ("svg:tspan")
-                        .attr ("dy", "1em")
-                        //.attr ("text-anchor", "middle")
-                        .text (function(d) { var node = getNode (d.id); return model.getTaxaData(node)[nameField]; })
-
-                //.attr ("clip-path", function (d) { var node = getNode (d.id); return "url(#depthclip"+node.depth+")"; })
+            newNodes
+                .append("path")
+                //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
+                .attr("d", sunburstLayout.parc)
+                .attr ("id", function(d) { return "parc"+ d.id; })
+                .style ("opacity", 0.75)
+                .call (sunburstLayout.propSelectedAttrs)
+                .each(sunburstLayout.pstash)
             ;
-            */
-            //newSegs
-            //    .append("svg:title")
-            //    .text(function(d) {
-            //        return tooltipString (getNode (d.id), model);
-            //    })
-           // ;
 
             return newNodes;
         },
 
         redrawExistingNodes: function (group, delay) {
            group
-               .select("path.fatarc")
-               .call (sunburstLayout.sharedAttrs)
+               .select("path:not(.holdsSelected)")
+               .call (sunburstLayout.booleanSelectedAttrs)
                 .transition()
                 .delay (delay)
                 .duration(updateDur)
                 .attrTween("d", sunburstLayout.arcTween)
-                //.style("fill", function(d) { var node = getNode (d.id) /*d*/; return model.getSelectionModel().contains(d.id) ? "#ff0000" :
-                 //   (node.sdcount > 0 ? "#ffa080" : color(model.getTaxaData(model.getSubTaxa(node) ? node : node.parent)[rankField])); })
-                .each ("end", sunburstLayout.stash)
+                .each ("end", sunburstLayout.cstash)
+            ;
+
+            group
+                .select("path.holdsSelected")
+                .call (sunburstLayout.propSelectedAttrs)
+                .transition()
+                .delay (delay)
+                .duration(updateDur)
+                .attrTween("d", sunburstLayout.parcTween)
+                .each ("end", sunburstLayout.pstash)
             ;
 
             group.select("text")
                 .style ("visibility", function (d) { return d.dx > 1 ? "visible": "collapse"; })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
-                //.transition()
-                //.delay (delay)
-                //.duration (updateDur)
-                //.call (sunburstLayout.sharedTextAttrs)
             ;
         }
     };
 
-    var layoutOptions = {icicle: partitionLayout, sunburst: sunburstLayout};
+    var layoutOptions = {Icicle: partitionLayout, Sunburst: sunburstLayout};
 
     this.set = function (fields, mmodel) {
-        VESPER.log ("set args", arguments, d3.select(divid).node());
-        keyField = fields.identifyingField;
-        nameField = fields.nameField;
-        rankField = fields.rankField;
+        ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
+        keyField = ffields[0];
+        rankField = ffields[1];
+        console.log ("FFIELDS", ffields);
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
 	
 	this.go = function () {
-        var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
-        if (root === undefined) {
-            VESPER.log ("no root defined for tree");
-            return;
-        }
-
-		absRoot = root;
 		thisView = this;
 		
 		svg = d3.select(divid)
@@ -4549,15 +4760,24 @@ VESPER.Tree = function(divid) {
 			.attr("class", "treeSVG")
 		;
 
+        var vals = model.getSelectionModel().values();
+        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
+        if (root === undefined) {
+            VESPER.log ("no root defined for tree");
+            return;
+        }
+
+        absRoot = root;
+
         var spaceAllocs = d3.values(spaceAllocationOptions);
         for (var n = 0; n < spaceAllocs.length; n++) {
             var indAlloc = spaceAllocs[n];
             //indAlloc.size ([dims[1], dims[0]]);
             //indAlloc.size (partitionLayout.sizeBounds());
         }
-        spaceAlloc = spaceAllocationOptions.bottomUp;
-		curSort = sortOptions.alpha;
-        layout = layoutOptions.sunburst;
+        spaceAlloc = spaceAllocationOptions.bottomUpLog;
+		curSort = sortOptions.Alpha;
+        layout = layoutOptions.Sunburst;
 
 		//depthCharge (root);
         setupControls ();
@@ -4577,8 +4797,9 @@ VESPER.Tree = function(divid) {
             .attr ("id", noHashId+"controls")
         ;
 
-        cpanel.append("p").html("Space Allocation");
-        var allocBinds = cpanel.selectAll("button.allocChoice")
+        var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
+        spaceDiv.append("p").html("Space Allocation");
+        var allocBinds = spaceDiv.selectAll("button.allocChoice")
             .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
         var aHolders = allocBinds.enter()
             .append ("span")
@@ -4604,8 +4825,9 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
 
-        cpanel.append("p").html("Layout Style");
-        var layoutBinds = cpanel.selectAll("button.layoutChoice")
+        var layoutDiv = cpanel.append("div").attr("class", "taxaControlsLayout");
+        layoutDiv.append("p").html("Layout Style");
+        var layoutBinds = layoutDiv.selectAll("button.layoutChoice")
             .data(d3.entries (layoutOptions), function(d) { return d.key; });
         var lHolders = layoutBinds.enter()
             .append ("span")
@@ -4633,9 +4855,10 @@ VESPER.Tree = function(divid) {
             .attr("for", function(d) { return noHashId+ d.key; })
             .html (function(d) { return d.key; })
         ;
-		
-		cpanel.append("p").html("Sort");
-        var sortBinds = cpanel.selectAll("button.sortChoice")
+
+        var sortDiv = cpanel.append("div").attr("class", "taxaControlsSort");
+		sortDiv.append("p").html("Sort");
+        var sortBinds = sortDiv.selectAll("button.sortChoice")
             .data(d3.entries (sortOptions), function(d) { return d.key; });
         var sHolders = sortBinds.enter()
             .append ("span")
@@ -4668,7 +4891,7 @@ VESPER.Tree = function(divid) {
 
 
 	function getNode (id) {
-        return model.getNodeFromID(id);
+        return model.getNodeFromID (id);
     }
 
 
@@ -4716,12 +4939,53 @@ VESPER.Tree = function(divid) {
         var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
         VESPER.log ("Root", root, vals[0]);
 
-        model.countSelectedDesc (root, keyField);
-        //VESPER.DWCAParser.countSelectedDesc (root, model.getSelectionModel(), keyField);
+        model.countSelectedDesc (model.getRoot(), keyField);
+        root = firstBranch (model.getRoot());
         reroot (root);
 	};
 
     this.updateVals = this.update;
+
+
+    // calculate suitable root for vis
+    // suitable root is first node who has more than one child either holding selected descendants or is selected
+    function firstBranch (node) {
+        var nid = model.getIndexedDataPoint (node, keyField);
+        if (node.sdcount == undefined || node.sdcount == 0 || model.getSelectionModel().contains (nid)) {
+            return node;
+        }
+        var children = model.getSubTaxa (node);
+        if (children) {
+            var splitCount = 0;
+            var singleNode;
+            for (var n = 0; n < children.length; n++) {
+                var child = children[n];
+                var cid = model.getIndexedDataPoint (child, keyField);
+                if (model.getSelectionModel().contains (cid)) {
+                    splitCount++;
+                }
+                else if (child.sdcount > 0) {
+                    splitCount++;
+                    singleNode = child;
+                }
+            }
+            // is a split if more than one child is selected or has selected descendants, so make root here
+            if (splitCount > 1) {
+                return node;
+            }
+
+            // if just one child holds selected descendants (and isn't selected itself, guaranteed by else if above) then pursue that path recursively
+            if (singleNode) {
+                node = firstBranch (singleNode);
+            }
+            /*
+            else {
+                node = node; // otherwise return the current node (parent to single selected node)
+            }
+            */
+        }
+        return node;
+    }
 
 
     this.redraw = function () {
@@ -4734,7 +4998,11 @@ VESPER.Tree = function(divid) {
         clearMouseController (treeG.selectAll(".treeNode"));
         treeG.selectAll(".treeNode").remove();
         model.removeView (self);
+        // null model and roots, basically any var that points to the data. Help GC along.
+        // Google chrome profiler says it does so ner
         model = null;
+        absRoot = null;
+        curRoot = null;
         DWCAHelper.twiceUpRemove(divid);
     };
 
@@ -4749,20 +5017,21 @@ VESPER.Tree = function(divid) {
     }
 
 	function mouseController (group) {
-        group.on("click", function (d) {
+        group
+        .on("click", function (d) {
             var node = getNode (d.id) /*d*/;
             reroot ((node == curRoot && node.parent != undefined) ? node.parent : node);
         })
         .on("mouseover", function(d) {
-            d3.select(this).classed("highlight", true);
+            d3.select(this).selectAll("*").classed("highlight", true);
             //handle mouse over
             var node = getNode (d.id) /*d*/;
             var val = tooltipString (node, model);
-            VESPER.tooltip.updateText (model.getTaxaData(node)[nameField], val);
+            VESPER.tooltip.updateText (model.getLabel(node), val);
             VESPER.tooltip.updatePosition (d3.event);
         })
         .on ("mouseout", function(d) {
-            d3.select(this).classed("highlight", false);
+            d3.select(this).selectAll("*").classed("highlight", false);
         })
         .on("contextmenu", function(d) {
             //handle right click
@@ -4781,7 +5050,8 @@ VESPER.Tree = function(divid) {
     }
 
     function selectSubTreeR (node, ids) {
-        var id = model.getTaxaData(node)[keyField];
+        //var id = model.getTaxaData(node)[keyField];
+        var id = model.getIndexedDataPoint (node, keyField);
         ids.push(id);
 
         var taxa = model.getSubTaxa (node);
@@ -4875,12 +5145,11 @@ VESPER.VisLauncher = function (divid) {
 
     var model;
     var self = this;
-    var keyField, nameField, dims, choiceData;
+    var keyField, dims, choiceData;
     var handleElement = "h3";
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
-        nameField = fields.nameField;
         choiceData = fields.visChoiceData;
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
@@ -4922,7 +5191,6 @@ VESPER.VisLauncher = function (divid) {
         if (window.requestFileSystem) {
             d3.select(divid).append("button")
                 .attr ("type", "button")
-                //.attr ("id", "save")
                 .text ("SAVE")
                 .on ("click", function(d) {
                     NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
@@ -4934,13 +5202,15 @@ VESPER.VisLauncher = function (divid) {
 
         d3.select(divid).append("button")
             .attr ("type", "button")
-            //.attr ("id", "compareSel")
             .text ("COMPARE MODEL")
             .on ("click", function() {
-                VESPER.modelBag.push ({"model":model, "name":nameField});
+                VESPER.modelBag.push ({"model":model});
                 VESPER.log ("ModelBag", VESPER.modelBag);
                 if (VESPER.modelBag.length > 1) {
-                    VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model, VESPER.modelBag[0].name, VESPER.modelBag[1].name);
+                    VESPER.modelComparisons.modelCoverageToSelection(VESPER.modelBag[0].model, VESPER.modelBag[1].model,
+                        VESPER.modelBag[0].model.getMetaData().vesperAdds.nameLabelField,
+                        VESPER.modelBag[1].model.getMetaData().vesperAdds.nameLabelField
+                    );
                     VESPER.modelBag.length = 0;
                 }
             })
@@ -4948,12 +5218,21 @@ VESPER.VisLauncher = function (divid) {
 
         d3.select(divid).append("button")
             .attr ("type", "button")
+            .text ("INVERT SELECTION")
+            .on ("click", function() {
+                model.invertSelection ();
+            })
+        ;
+
+
+        d3.select(divid).append("button")
+            .attr ("type", "button")
             //.attr ("id", "clearSel")
             .text ("CLEAR")
             .on ("click", function(d) {
-            model.getSelectionModel().clear();
-            model.getSelectionModel().update();
-        })
+                model.getSelectionModel().clear();
+                model.getSelectionModel().update();
+            })
         ;
     }
 
@@ -4961,12 +5240,12 @@ VESPER.VisLauncher = function (divid) {
         var visChoices = divSel.selectAll("button.visChoice");
         visChoices.style("display", function(d) {
             var fileData = model.getMetaData().fileData;
-            var indices = VESPER.DWCAParser.findFields (fileData, d.attList, "filteredFieldIndex");
+            var indices = model.makeIndices (d.attList);
             var nullCount = NapVisLib.countNulls (indices);
             //VESPER.log (d.title, nullCount);
             return (indices.length == 0 || (d.matchAll && nullCount === 0) || (!d.matchAll && nullCount < indices.length))
                 ? "block" : "none"
-                ;
+            ;
         })
     }
 
@@ -4983,29 +5262,23 @@ VESPER.VisLauncher = function (divid) {
                 .style("width", details.width ? details.width : "50%")
             ;
             newDiv.append(handleElement).text(vid);
-            var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height);
+            var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
 
             var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
-            var coreFieldIndex = fileData[coreType].filteredFieldIndex;
+           // var coreFieldIndex = fileData[coreType].filteredFieldIndex;
 
             var newVis = details.newVisFunc ("#"+id);
             VESPER.log ("newvis", newVis, newVis.set);
-            var keyFields = details.setupFunc (coreFieldIndex) || {};
-            keyFields.identifyingField = VESPER.DWCAParser.getFilteredIdIndex (aModel.getMetaData());
-            newVis.set (keyFields, aModel);
+            var fields = details.setupFunc () || {};
+            var keyFieldName = fileData[coreType].filteredInvFieldIndex [VESPER.DWCAParser.getFilteredIdIndex (aModel.getMetaData())];
+            fields.identifyingField = keyFieldName;
+            newVis.set (fields, aModel);
             aModel.addView (newVis);
             newVis.go (aModel);
 
             DWCAHelper.addKillViewButton (newDiv.select(handleElement), newDiv, newVis);
-            // draggy causing more problems in timeline
-
-            //if (details.title != "Map") { // map selection goes funny if I make it draggable
-                $(function() {
-                    $("#"+id+"container").draggable({ handle: handleElement});
-                });
-           // }
-
+            $("#"+id+"container").draggable({ handle: handleElement});
         }
     };
 

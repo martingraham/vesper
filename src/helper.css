@@ -33,8 +33,9 @@ div.leftColumn {
 }
 
 .leftColumn hr {
-    height: 1px;
     border: 1px solid #add;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
 }
 
 div.fullWidthHolder {

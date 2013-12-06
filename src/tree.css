@@ -50,10 +50,13 @@ th {
 	color: #a040d0;
 }
 
-.treeNode, .treeNode rect {
+.treeNode {
     fill-rule: evenodd;
-    /*fill: #b0b0f0;*/
     stroke: #fff;
+}
+
+.treeNode .holdsSelected {
+    stroke: none;
 }
 
 .treeNode text {
@@ -91,4 +94,16 @@ th.sanityTableHeading {
     font-size: 16pt;
     padding: 0px 2px;
     background: #cfc;
+}
+
+.taxaControlsSpaceAlloc {
+    display: visible;
+}
+
+.taxaControlsLayout {
+    display: visible;
+}
+
+.taxaControlsSort {
+    display: visible;
 }

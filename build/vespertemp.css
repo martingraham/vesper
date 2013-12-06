@@ -142,6 +142,7 @@ DIV .hack {
     border-radius: 10px;
     background: #aadddd;
     opacity: 0.9;
+    z-index: 1;
 }
 
 .vesperTooltip h2 {
@@ -158,6 +159,13 @@ DIV .hack {
     margin: 0px;
     font-size: 10pt;
     color: #222;
+}
+
+.vesperTooltip hr {
+    border-style: solid;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
+    margin: 2px 0px;
 }
 
 .sliderThumb {
@@ -204,6 +212,7 @@ div.selectBox {
     background: #ddf;
     float: left;
     margin: 5px;
+    min-width: 150px;
 }
 
 div.selectBox table {
@@ -231,8 +240,9 @@ div.leftColumn {
 }
 
 .leftColumn hr {
-    height: 1px;
     border: 1px solid #add;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
 }
 
 div.fullWidthHolder {
@@ -309,10 +319,11 @@ span.noShad {
     border-width: 2px;
     /*background: #88a;*/
     background: #88a url('../img/bumpPat.png') 100% 100% repeat;
-    text-shadow: 0 0 2px #fff;
+    text-shadow: 0px 0px 5px #fff;
     -moz-border-radius: 5px;
     border-radius: 5px;
-    padding-left: 8px;
+    padding: 0px 8px 0px 8px;
+    font-size: 16pt;
 }
 
 .filenameLabel {
@@ -396,10 +407,13 @@ th {
 	color: #a040d0;
 }
 
-.treeNode, .treeNode rect {
+.treeNode {
     fill-rule: evenodd;
-    /*fill: #b0b0f0;*/
     stroke: #fff;
+}
+
+.treeNode .holdsSelected {
+    stroke: none;
 }
 
 .treeNode text {
@@ -437,4 +451,16 @@ th.sanityTableHeading {
     font-size: 16pt;
     padding: 0px 2px;
     background: #cfc;
+}
+
+.taxaControlsSpaceAlloc {
+    display: visible;
+}
+
+.taxaControlsLayout {
+    display: visible;
+}
+
+.taxaControlsSort {
+    display: visible;
 }

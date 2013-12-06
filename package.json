@@ -2,11 +2,12 @@
   "name": "vesper",
   "version": "0.1.0",
   "description": "DWCA Visual Components",
-  "main": "demo.js",
+  "main": "src/demo.js",
   "dependencies": {
-    "jquery":"~2.0.2",
+    "jquery":"~2.0.3",
     "jquery-ui":"~1.10.3",
-    "d3":"~3.0"
+    "d3":"~3.0",
+    "leaflet":"~0.7.0"
   },
   "devDependencies": {
       "grunt": "~0.4.1",
@@ -30,6 +31,7 @@
   ],
   "author": "martin graham",
   "license": "Apache V2",
+  "readmeFilename": "README.md",
   "bugs": {
     "url": "https://github.com/martingraham/vesper/issues"
   }

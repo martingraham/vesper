@@ -56,7 +56,6 @@ VESPER.VisLauncher = function (divid) {
         if (window.requestFileSystem) {
             d3.select(divid).append("button")
                 .attr ("type", "button")
-                //.attr ("id", "save")
                 .text ("SAVE")
                 .on ("click", function(d) {
                     NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
@@ -68,7 +67,6 @@ VESPER.VisLauncher = function (divid) {
 
         d3.select(divid).append("button")
             .attr ("type", "button")
-            //.attr ("id", "compareSel")
             .text ("COMPARE MODEL")
             .on ("click", function() {
                 VESPER.modelBag.push ({"model":model});
@@ -85,12 +83,21 @@ VESPER.VisLauncher = function (divid) {
 
         d3.select(divid).append("button")
             .attr ("type", "button")
+            .text ("INVERT SELECTION")
+            .on ("click", function() {
+                model.invertSelection ();
+            })
+        ;
+
+
+        d3.select(divid).append("button")
+            .attr ("type", "button")
             //.attr ("id", "clearSel")
             .text ("CLEAR")
             .on ("click", function(d) {
-            model.getSelectionModel().clear();
-            model.getSelectionModel().update();
-        })
+                model.getSelectionModel().clear();
+                model.getSelectionModel().update();
+            })
         ;
     }
 
@@ -136,13 +143,7 @@ VESPER.VisLauncher = function (divid) {
             newVis.go (aModel);
 
             DWCAHelper.addKillViewButton (newDiv.select(handleElement), newDiv, newVis);
-
-            //if (details.title != "Map") { // map selection goes funny if I make it draggable
-                $(function() {
-                    $("#"+id+"container").draggable({ handle: handleElement});
-                });
-           // }
-
+            $("#"+id+"container").draggable({ handle: handleElement});
         }
     };
 

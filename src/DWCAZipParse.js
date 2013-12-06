@@ -268,6 +268,7 @@ VESPER.DWCAZipParse = new function () {
         VESPER.log ("Time: ", mt/1000, " secs.");
         VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
         VESPER.log ("pulled out "+pb+" characters from zip");
+        sharedMaps.length = 0;  // used, discard, helps GC
         return bigOut;
     };
 
@@ -293,6 +294,7 @@ VESPER.DWCAZipParse = new function () {
 
         VESPER.log (VESPER.DWCAParser.sharedValuesTerms);
         // quick field lookups
+        sharedMaps.length = 0;
         for (var n = 0; n < ifileData.invFieldIndex.length; n++) {
             var field = ifileData.invFieldIndex[n];
             var fieldData = ifileData.fieldData[field];

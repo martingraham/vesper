@@ -227,6 +227,13 @@ VESPER.DWCAParser = new function () {
             VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
         });
 
+        // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
+        $.each (selectedStuff, function (key, value) {
+            var fileData = mdata.fileData[key];
+            var fileName = zip.dwcaFolder + fileData.fileName;
+            zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
+        });
+
         if (VESPER.alerts) { alert ("mem monitor point 1"); }
 
         // make taxonomy (or list)
@@ -319,7 +326,7 @@ VESPER.DWCAParser = new function () {
 		var hidx = fieldIndexer["parentNameUsageID"];
 		var aidx = fieldIndexer["acceptedNameUsageID"];
 
-		
+        // First pass. Add nodes with child ids to nodes with parent ids
 		for (var n = 0, len = tsvData.length; n < len; n++) {
 			var rec = tsvData[n];
             if (rec !== undefined) {
@@ -331,19 +338,49 @@ VESPER.DWCAParser = new function () {
                     // Make child taxa lists
                     addToArrayProp (pRec, VESPER.DWCAParser.TAXA, jsonObj[id]);
                 }
-                else if (pRec == undefined) {
+            }
+		}
+
+        // Second pass. Get synonyms and attach them and any existing children to the proper name node.
+        for (var n = 0, len = tsvData.length; n < len; n++) {
+            var rec = tsvData[n];
+            if (rec !== undefined) {
+                var id = rec[idx];
+                var pid = rec[hidx];
+                var pRec = jsonObj[pid];
+
+                if (pRec == undefined) {
                     // Make synonym lists
                     var aid = rec[aidx];
                     if (id != aid && aid !== undefined) {
                         var aRec = jsonObj[aid];
                         if (aRec != undefined) {
-                            addToArrayProp (aRec, VESPER.DWCAParser.SYN, jsonObj[id]);
+                            var sRec = jsonObj[id];
+                            addToArrayProp (aRec, VESPER.DWCAParser.SYN, sRec);
+                            var sChildren = sRec[VESPER.DWCAParser.TAXA];
+
+                            if (sChildren) {
+                                console.log ("ADDING SYNS CHILDREN", sRec, sChildren, sChildren.length);
+
+                                for (var m = 0; m < sChildren.length; m++) {
+                                    var scObj = sChildren[m];
+                                    var scRec = scObj[VESPER.DWCAParser.TDATA];
+                                    var scid = scRec[idx];
+                                    var scaid = scRec[aidx];
+                                    if ((scid == scaid) && (scaid !== undefined)) {
+                                        addToArrayProp (aRec, VESPER.DWCAParser.TAXA, scObj);
+                                    }
+                                }
+                                sRec[VESPER.DWCAParser.TAXA].length = 0;
+                                //sChildren.length = 0;
+                            }
+
                             //delete jsonObj[id];
                         }
                     }
                 }
             }
-		}
+        }
 		
 		var roots = this.findRoots (jsonObj, idx, fieldIndexer);
 		this.createSuperroot (jsonObj, roots, fileData, metaData, fieldIndexer);
@@ -352,6 +389,10 @@ VESPER.DWCAParser = new function () {
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
 		return {"records":jsonObj, "tree":jsonObj};
 	};
+
+    function isSynonym (id, aid) {
+       return (id != aid && aid !== undefined);
+    }
 
 
     // This uses explicit id linking in the dwca file i.e. kingdom, order, family etc data

@@ -8,8 +8,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 	
 	var keyField, longField, latField;
     var model;
-	
-	var struc;
+
 	var dwcaid2Marker = {};
 	var markerGroup;
 	var map;
@@ -32,6 +31,105 @@ VESPER.DWCAMapLeaflet = function (divid) {
     });
 
     var oldIcon = new L.Icon.Default();
+
+    // what a markercluster does when the mouse is over it
+    var clusterMouseOverListener = function (a) {
+        VESPER.tooltip.updateText (a.latlng,
+            a.layer.getChildCount()+" Records"
+                +(a.layer.getSelectedChildCount() > 0 ? "<br>" + a.layer.getSelectedChildCount()+' Selected' : ""));
+        VESPER.tooltip.updatePosition (a.originalEvent);
+    };
+
+    // what a markercluster does when right clicked
+    var clusterSelectionListener = function (a) {
+        var theseMarkers = [];
+        var sel = [];
+        a.layer.getAllChildMarkers (theseMarkers);
+        if (theseMarkers.length > 0) {
+            for (var n = 0; n < theseMarkers.length; n++) {
+                sel.push (theseMarkers[n].extId);
+            }
+            model.getSelectionModel().clear();
+            model.getSelectionModel().addAllToMap (sel);
+        }
+    };
+
+    var markerMouseOverListener = function (e) {
+        var eid = e.target.extId;
+        var node = model.getNodeFromID (eid);
+        VESPER.tooltip.updateText (model.getLabel (node),
+            e.latlng+(model.getSelectionModel().contains (eid) ? "<br>Selected" : "")
+        );
+        VESPER.tooltip.updatePosition (e.originalEvent);
+    };
+
+    var markerSelectionListener = function (e) {
+        model.getSelectionModel().clear();
+        model.getSelectionModel().addToMap (e.target.extId);
+    };
+
+    // What the map does when a shape is drawn on it
+    var drawListener = function (e) {
+        var type = e.layerType,
+            layer = e.layer;
+
+        var sel = [];
+        var i = 0;
+
+        if (type === 'circle') {
+            VESPER.log ("circle", e);
+            var cll = e.layer._latlng;
+            var rad = e.layer._mRadius;
+            markerGroup.eachLayer(function (layer) {
+                i++;
+                var ll = layer.getLatLng();
+                if (cll.distanceTo (ll) <= rad) {
+                    sel.push(layer.extId);
+                    //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within circle");
+                }
+            });
+        }
+        else if (type === 'rectangle') {
+            VESPER.log ("rectangle", e);
+            var clls = e.layer._latlngs;
+            var bounds = new L.LatLngBounds (clls[0], clls[2]);
+            markerGroup.eachLayer(function (layer) {
+                i++;
+                var ll = layer.getLatLng();
+                if (bounds.contains (ll)) {
+                    sel.push(layer.extId);
+                    //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within rectangle");
+                }
+            });
+        }
+        else if (type === 'polygon') {
+            VESPER.log ("polygon", e);
+            var clls = e.layer._latlngs;
+            var bb = new L.LatLngBounds (clls);
+            markerGroup.eachLayer(function (layer) {
+                i++;
+                var ll = layer.getLatLng();
+                if (containsLatLng (clls, bb, ll)) {
+                    sel.push(layer.extId);
+                    //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within polygon");
+                }
+            });
+        }
+
+        if (curSelLayer) {
+            map.removeLayer (curSelLayer);
+        }
+
+        VESPER.log (sel.length, "specimens within", type);
+
+        // Do whatever else you need to. (save to db, add to map etc)
+        map.addLayer(layer);
+        curSelLayer = layer;
+
+        model.getSelectionModel().clear();
+        model.getSelectionModel().addAllToMap (sel);
+    };
+
 
     this.set = function (fields, mmodel) {
         var ffields = mmodel.makeIndices ([fields.identifyingField, fields.longitude, fields.latitude]);
@@ -57,8 +155,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
             map = L.map(dividsub);//.setView([51.505, -0.09], 13); // set view dependent on markers now, drawControl is for draw toolbar
             map.addLayer (osm);
 
-            VESPER.log ("size", map.getSize());
-
             // Adds leaflet.draw functionality
             var drawControl = new L.Control.Draw({
                 draw: {
@@ -68,171 +164,64 @@ VESPER.DWCAMapLeaflet = function (divid) {
             });
             map.addControl (drawControl);
 
-            map.on('draw:created', function (e) {
-                var type = e.layerType,
-                    layer = e.layer;
+            map.on('draw:created', drawListener);
 
-                var sel = [];
-                var i = 0;
-
-                if (type === 'circle') {
-                    VESPER.log ("circle", e);
-                    var cll = e.layer._latlng;
-                    var rad = e.layer._mRadius;
-                    markerGroup.eachLayer(function (layer) {
-                        i++;
-                        var ll = layer.getLatLng();
-                        if (cll.distanceTo (ll) <= rad) {
-                            sel.push(layer.extId);
-                            //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within circle");
-                        }
-                    });
-                }
-                else if (type === 'rectangle') {
-                    VESPER.log ("rectangle", e);
-                    var clls = e.layer._latlngs;
-                    var bounds = new L.LatLngBounds (clls[0], clls[2]);
-                    markerGroup.eachLayer(function (layer) {
-                        i++;
-                        var ll = layer.getLatLng();
-                        if (bounds.contains (ll)) {
-                            sel.push(layer.extId);
-                            //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within rectangle");
-                        }
-                    });
-                }
-                else if (type === 'polygon') {
-                    VESPER.log ("polygon", e);
-                    var clls = e.layer._latlngs;
-                    var bb = new L.LatLngBounds (clls);
-                    markerGroup.eachLayer(function (layer) {
-                        i++;
-                        var ll = layer.getLatLng();
-                        if (containsLatLng (clls, bb, ll)) {
-                            sel.push(layer.extId);
-                            //VESPER.log ("specimen ",model.getTaxaData (model.getNodeFromID (layer.extId)),"within polygon");
-                        }
-                    });
-                }
-
-                //if (sel.length > 0) {
-
-                    if (curSelLayer) {
-                        map.removeLayer (curSelLayer);
+            markerGroup = new L.MarkerClusterGroup ({
+                iconCreateFunction: function(cluster) {
+                    var clog = Math.log (cluster.getChildCount() + 1);
+                    var height = 10 + (clog * heightMultiplier);
+                    var selHeight = (height * Math.log (cluster.getSelectedChildCount() + 1)) / clog;
+                    var unselHeight = height - selHeight;
+                    // really small heights due to rounding errors emerge as numbers in scientific notation.
+                    // this made them big in the style sheet as they took the mantissa (ooh) as the number so we squash them here.
+                    if (unselHeight < 0.5 && (cluster.getChildCount() == cluster.getSelectedChildCount ())) {
+                        unselHeight = 0;
                     }
 
-                    VESPER.log (sel.length, "specimens within", type);
-
-                    // Do whatever else you need to. (save to db, add to map etc)
-                    map.addLayer(layer);
-                    curSelLayer = layer;
-
-                    model.getSelectionModel().clear();
-                    model.getSelectionModel().addAllToMap (sel);
-                //}
-            });
-
-            markerGroup = new L.MarkerClusterGroup (
-                {
-                    iconCreateFunction: function(cluster) {
-                        var clog = Math.log (cluster.getChildCount() + 1);
-                        var height = 10 + (clog * heightMultiplier);
-                        //var selHeight = Math.log (cluster.getSelectedChildCount() + 1) * heightMultiplier;
-                        var selHeight = (height * Math.log (cluster.getSelectedChildCount() + 1)) / clog;
-                        var unselHeight = height - selHeight;
-
-                        return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
-                                +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
-                            className: 'vesperMapIcon',
-                            //iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
-                            //iconSize: new L.Point(40, 20 + (Math.log (cluster.getSelectedChildCount() + 1) * 5))
-                            iconSize: new L.Point(40, height)
-                        });
-                    }
-                }
-            );
-
-            markerGroup.on('clustermouseover', function (a) {
-                VESPER.tooltip.updateText (a.latlng,
-                    a.layer.getChildCount()+" Records"
-                    +(a.layer.getSelectedChildCount() > 0 ? "<br>" + a.layer.getSelectedChildCount()+' Selected' : ""));
-                VESPER.tooltip.updatePosition (a.originalEvent);
-            });
-
-            markerGroup.on('clustercontextmenu', function (a) {
-                var theseMarkers = [];
-                var sel = [];
-                a.layer.getAllChildMarkers (theseMarkers);
-                if (theseMarkers.length > 0) {
-                    for (var n = 0; n < theseMarkers.length; n++) {
-                        sel.push (theseMarkers[n].extId);
-                    }
-                    model.getSelectionModel().clear();
-                    model.getSelectionModel().addAllToMap (sel);
+                    return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
+                            +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
+                        className: 'vesperMapIcon',
+                        //iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
+                        //iconSize: new L.Point(40, 20 + (Math.log (cluster.getSelectedChildCount() + 1) * 5))
+                        iconSize: new L.Point(40, height)
+                    });
                 }
             });
+
+            markerGroup.on('clustermouseover', clusterMouseOverListener);
+            markerGroup.on('clustercontextmenu', clusterSelectionListener);
         }
 
-		var colourscheme = function(value){
-		    return [value, 1, 0.5, 1];
-		};
-		//var heatmap = new L.TileLayer.HeatCanvas(/*"HeatCanvas", map,*/ {},
-	    //        {'step':0.2, 'degree':HeatCanvas.QUAD, 'opacity':0.4, 'colorscheme':colourscheme}
-		//);
-
-        var maskMap = L.TileLayer.maskCanvas({
-            radius: 5,  // radius in pixels or in meters (see useAbsoluteRadius)
-            useAbsoluteRadius: false,  // true: r in meters, false: r in pixels
-            color: '#000',  // the color of the layer
-            opacity: 0.6  // opacity of the not coverted area
-        });
-        VESPER.log ("maskmap ",maskMap);
-
+        var latlngs = [];
 		var markers = [];
-		var latlngs = [];
-		
-		struc = model.getData();
+
+		var struc = model.getData();
 		if (latField && longField) {
 			 for (var prop in struc) {
 				 if (struc.hasOwnProperty (prop)) {
-					 //var rec = model.getTaxaData(struc[prop]);
                      var lat = +model.getIndexedDataPoint (struc[prop], latField);
                      var longi = +model.getIndexedDataPoint (struc[prop], longField);
-					 //var lat = +rec[latField];
-					 //var longi = +rec[longField];
-					
-					 //narRecs[prop] = [+rec[latI], +rec[lonI], 1, rec[idI]];
-					 //narRecs[prop] = [+rec[latField], +rec[longField]];
+
 					 if (!isNaN(lat) && !isNaN(longi)) {
 						 var coord= [lat, longi];
-                         var key = model.getIndexedDataPoint (struc[prop], keyField);
-						 //VESPER.log (lat, longi);
 						 var marker = L.marker(coord)
-						 	.bindPopup (key+" "+model.getLabel(struc[prop]))
-						 	.on ('contextmenu', function (e) {
-                                model.getSelectionModel().clear();
-                                model.getSelectionModel().addToMap (e.target.extId);
-						 	})
+                            .on ('mouseover', markerMouseOverListener)
+						 	.on ('contextmenu', markerSelectionListener)
 						 ;
 						 marker.extId = prop;
 						 markers.push (marker);
 						 latlngs.push (coord);
 						 dwcaid2Marker[prop] = marker;
-						 
-						// heatmap.pushData (lat, longi, 1);
 					 }
 				 }
 			 } 
 			 markerGroup.addLayers (markers);
-            maskMap.setData (latlngs);
 		}
-		
-		//map.addLayer (heatmap);
+
 		map.addLayer (markerGroup);
-       // map.addLayer (maskMap);
 		map.fitBounds ((new L.LatLngBounds (latlngs)).pad(1.05));
 		
-		L.control.layers ({},{"Marker":markerGroup, /*"Heatmap":heatmap,*/ "Mask":maskMap}).addTo(map);
+		L.control.layers ({},{"Marker":markerGroup}).addTo(map);
 		L.control.scale().addTo (map);
 		
 		VESPER.log ("group ", markerGroup);
@@ -287,12 +276,31 @@ VESPER.DWCAMapLeaflet = function (divid) {
 	};
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        //DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
         model = null;
+
+        markerGroup.removeEventListener();
+        markerGroup.eachLayer (function(layer) {
+            layer.removeEventListener();
+        });
+        markerGroup.clearLayers();
+
+        var lys = [];
+        map.eachLayer (function(layer) {
+            lys.push(layer);
+        });
+        map.removeEventListener();
+        for (var n = 0; n < lys.length; n++) {
+            map.removeLayer (lys[n]);
+        }
+        map.remove();
+
+        dwcaid2Marker = {};
         DWCAHelper.twiceUpRemove(divid);
     };
+
 
     this.updateVals = this.update;
 
@@ -322,17 +330,13 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
 
     // extend Leaflet MarkerClusterGroup classes to count selected marker totals at each cluster, mjg
-    var  mc = 0;
+
     // Extend MarkerClusterGroup
     // mjg
     L.MarkerClusterGroup.include( {
             //mjg
             setAllSelectedChildCounts: function (selectionModel) {
-                //VESPER.log ("recalcing cluster sel counts");
-                mc = 0;
-                var cc = this._topClusterLevel.setAllSelectedChildCounts (selectionModel);
-                //VESPER.log ("MC", mc);
-                return cc;
+                return this._topClusterLevel.setAllSelectedChildCounts (selectionModel);
             }
         }
     );
@@ -345,7 +349,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
             // mjg
             setAllSelectedChildCounts: function (selectionModel) {
                 var curCount = 0;
-                mc++;
 
                 for (var j = this._markers.length - 1; j >= 0; j--) {
                     if (selectionModel.contains (this._markers[j].extId)) {
@@ -359,6 +362,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
                 this._selChildCount = curCount;
                 this._updateIcon ();    // seem to need to poke icon to recalc html, doesn't do it dynamically
+
                 return curCount;
             },
 
@@ -368,6 +372,5 @@ VESPER.DWCAMapLeaflet = function (divid) {
             }
         }
     );
-
 };
 		

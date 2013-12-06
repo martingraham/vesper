@@ -1,7 +1,5 @@
 // TimeLine
 
-
-
 VESPER.BarChart = function(divid) {
 	
 	var svg;	// top level svg
@@ -80,7 +78,6 @@ VESPER.BarChart = function(divid) {
 		;
 
         var controls = d3.select(divid).select(".barChartControl");
-        VESPER.log ("controls", controls);
         var noHashId = divid.substring (1);
         if (controls.empty()) {
             var butdiv = d3.select(divid).append("span")
@@ -241,7 +238,6 @@ VESPER.BarChart = function(divid) {
                 })
                 .on("contextmenu", function(d) {
                     //handle right click
-                    VESPER.log ("hello right click");
                     model.getSelectionModel().clear();
                     var arr = self.returnMatches (model, ffields, d.start, d.end);
                     model.getSelectionModel().addAllToMap (arr);
@@ -285,8 +281,6 @@ VESPER.BarChart = function(divid) {
             .ticks (5, d3.format(",d"))
         );
 
-        VESPER.log ("cds", currentDataSelection);
-
         currentDataSelection
             .transition()
             .duration(500)
@@ -311,7 +305,7 @@ VESPER.BarChart = function(divid) {
         function findMinMax () {
             if (!hardMin || !hardMax) {
                 for (var key in data) {
-                    if (data.hasOwnProperty (key)) {
+                    if (data.hasOwnProperty (key) /*&& (!includeFunc || includeFunc (key, data))*/) {
                         var val = chart.getVal (model, data, key, fields);
                         if (val !== undefined) {
                             val = chart.wrapDataType (val, key);
@@ -434,7 +428,7 @@ VESPER.BarChart = function(divid) {
         }
     };
 
-    this.destroy = function () {
+    this.baseDestroy = function () {
         DWCAHelper.recurseClearEvents (d3.select(divid));
 
         var visBins = timelineG.selectAll(self.barClass);
@@ -443,13 +437,16 @@ VESPER.BarChart = function(divid) {
         model.removeView (self);
         model = null;
         DWCAHelper.twiceUpRemove(divid);
+    };
+
+    this.destroy = function () {
+        this.baseDestroy ();
     }
 };
 
 
 VESPER.TaxaDistribution = function (div) {
     var chart = new VESPER.BarChart (div);
-    //chart.makeTitle = function (d) {return "Subtaxa: "+Math.ceil(d.start)+" to "+Math.floor(d.end)+"<br>Count: "+d.count; };
     chart.makeTitle = function (d) {
         var singleVal = ((d.end - d.start) == 1);
         return "Subtaxa: "+d.start+(singleVal ? "" : " to "+(d.end - 1))+"<br>Count: "+d.count;
@@ -459,12 +456,13 @@ VESPER.TaxaDistribution = function (div) {
     chart.getVal = function (model, data, key, fields) {
         var keyID = model.getIndexedDataPoint (data[key], fields.keyField);
         var realID = model.getIndexedDataPoint (data[key], fields.realField);
-        if (realID == keyID) {
+        if (realID == keyID || realID == undefined) { // don't count synonyms
             var node = model.getNodeFromID(key);
             var subTaxa = model.getSubTaxa(node);
+            //var pid = model.getDataPoint (node, {fieldType:"parentNameUsageID", rowType:model.getMetaData().coreRowType});
             return (subTaxa ? subTaxa.length : 0);
         }
-        else return undefined;
+        return undefined;
     };
     chart.divisions = [1,2,10];
 
@@ -486,12 +484,15 @@ VESPER.TimeLine = function (div) {
     };
     chart.unwrapDataType = function (date) { return date.getTime(); };
     chart.getVal = function (model, data, key, fields) {
-        //var val = model.getTaxaData(data[key])[fields.dateField.fieldIndex];
         var val = model.getIndexedDataPoint(data[key], fields.dateField);
         if (!timeCache[key] && val !== undefined) {
             timeCache[key] = new Date (val);
         }
         return val;
+    };
+    chart.destroy = function () {
+        chart.baseDestroy ();
+        timeCache = {};     // clear time cache
     };
     var oneDayInMs = 24 * 60 * 60 * 1000;
     chart.toNearest = oneDayInMs * 7; // to nearest week

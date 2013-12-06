@@ -36,9 +36,14 @@ function DWCAModel (metaData, data) {
         var d = this.getData();
         var s = this.getSelectionModel();
         var arr = [];
+        var tempField = {fieldType:"acceptedNameUsageID", rowType:this.getMetaData().coreRowType};
         for (var iid in d) {
             if (!s.contains(iid)) {
-                arr.push (iid);
+                var n = this.getNodeFromID(iid);
+                var accv = this.getDataPoint (n, tempField);
+                if (accv == iid) {
+                    arr.push (iid);
+                }
             }
         }
         s.clear ();
@@ -51,6 +56,10 @@ function DWCAModel (metaData, data) {
 
     this.getTaxaData = function (node) {
         return node[VESPER.DWCAParser.TDATA];
+    };
+
+    this.getSynonyms = function (node) {
+        return node[VESPER.DWCAParser.SYN];
     };
 
     this.getRowData = function (node, rid) {
@@ -88,8 +97,6 @@ function DWCAModel (metaData, data) {
     this.getLabel = function (node) {
         var nameField = this.getMetaData().vesperAdds.nameLabelField;
         return this.getDataPoint (node, nameField);
-        //console.log ("LABEL", nameField, this.getTaxaData(node), metaData.fileData[metaData.coreRowType].filteredFieldIndex[nameField.labelType]);
-        //return this.getTaxaData(node)[metaData.fileData[metaData.coreRowType].filteredFieldIndex[nameField.fieldType]];
     };
 
     this.getDataPoint = function (node, fieldAndRowObj) {
@@ -133,7 +140,7 @@ function DWCAModel (metaData, data) {
         }
 
         return null;
-    }
+    };
 
     this.getRowRecords = function (node, rid) {
         if (rid == undefined) {
