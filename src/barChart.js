@@ -61,6 +61,9 @@ VESPER.BarChart = function(divid) {
 
     this.go = function () {
 		self = this;
+
+        // stop annoying scrollbar even when svg is same height as parent div
+        d3.select(divid).style("overflow", "hidden");
 		
 		var svg = d3.select(divid).selectAll("svg").data([0]);
 
@@ -80,13 +83,16 @@ VESPER.BarChart = function(divid) {
         var controls = d3.select(divid).select(".barChartControl");
         var noHashId = divid.substring (1);
         if (controls.empty()) {
-            var butdiv = d3.select(divid).append("span")
+            var butdiv = d3.select(divid).append("div")
                 .attr("class", "visControl")
                 .attr("id", noHashId+"Controls")
             ;
 
+            NapVisLib.addHRGrooves (butdiv);
+            NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"classIgnored");
+
             var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
-            var spans = butdiv.selectAll("span.fieldGroup")
+            var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
                 .data (d3.entries(choices), function(d) { return d.key;})
             ;
 
@@ -118,14 +124,7 @@ VESPER.BarChart = function(divid) {
                 .text (function(d) { return d.key; })
             ;
 
-            $(function() {
-                $( divid+"Controls" ).buttonset();
-            });
-
-            $(function() {
-                $( divid+"Controls" ).draggable();
-            });
-
+            $( divid+"Controls" ).draggable();
         }
 
         self.childScale.range([margin.left, dims[0] - margin.right]);
@@ -434,6 +433,8 @@ VESPER.BarChart = function(divid) {
         var visBins = timelineG.selectAll(self.barClass);
         visBins.remove();
 
+        $(divid+"Controls").draggable("destroy");
+
         model.removeView (self);
         model = null;
         DWCAHelper.twiceUpRemove(divid);
@@ -464,7 +465,7 @@ VESPER.TaxaDistribution = function (div) {
         }
         return undefined;
     };
-    chart.divisions = [1,2,10];
+    chart.divisions = [1,2,10,100];
 
     return chart;
 };

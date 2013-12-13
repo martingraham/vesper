@@ -197,4 +197,4 @@ function DWCAModel (metaData, data) {
 
     this.data = data;
     this.metaData = metaData;
-}
+};

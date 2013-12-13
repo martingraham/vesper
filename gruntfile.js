@@ -7,10 +7,11 @@ module.exports = function(grunt) {
         concat: {
             options: {
                 // define a string to put between each file in the concatenated output
-                separator: ';'
+                separator: '\n'
             },
             js: {
-                src: ['src/vesper.js', 'src/*.js'],
+                // http://stackoverflow.com/questions/18453974/how-to-ignore-files-grunt-uglify
+                src: ['src/vesper.js', 'src/*.js', '!src/DWCAZipParseDB.js', '!src/occList.js'],
                 //src: ['src.vesper.js', 'src/*.js'],
                 dest: 'build/<%= pkg.name %>temp.js'
             },
@@ -20,43 +21,28 @@ module.exports = function(grunt) {
             }
         },
 
-        /*
-        depconcat: {
-            options: {
-                // define a string to put between each file in the concatenated output
-                separator: ';'
-            },
-            js: {
-                src: ['src/*.js'],
-                //src: ['src.vesper.js', 'src/*.js'],
-                dest: 'build/<%= pkg.name %>temp.js'
-            },
-            css: {
-                src: ['src/*.css'],
-                dest: 'build/<%= pkg.name %>temp.css'
-            }
-        },
-        */
         cssmin: {
             css: {
                 src: 'build/<%= pkg.name %>temp.css',
                 dest: 'build/<%= pkg.name %>.min.css'
             }
         },
+
         uglify: {
             options: {
-                banner: '/*! <%= pkg.name %>temp <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+                banner: '/*! <%= pkg.name %>temp <%= grunt.template.today("yyyy-mm-dd") %> */\n',
             },
             build: {
                 src: 'build/<%= pkg.name %>temp.js',
                 dest: 'build/<%= pkg.name %>.min.js'
             }
         },
+
         copy: {
             main: {
                 expand: true,
                 cwd: 'src/',
-                src: ['dwca.xsd', 'demoNewMin.html'],
+                src: ['dwca.xsd', 'demoNewMin.html', 'instructions.html', 'credits.html', 'background.html'],
                 dest: 'build/'
             }
         }

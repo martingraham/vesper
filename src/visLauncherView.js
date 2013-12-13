@@ -11,7 +11,6 @@ VESPER.VisLauncher = function (divid) {
     var model;
     var self = this;
     var keyField, dims, choiceData;
-    var handleElement = "h3";
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
@@ -126,7 +125,11 @@ VESPER.VisLauncher = function (divid) {
                 .attr ("id", id+"container")
                 .style("width", details.width ? details.width : "50%")
             ;
-            newDiv.append(handleElement).text(vid);
+
+            var topBar = newDiv.append("div").attr("class","dragbar").attr("id", id+"dragBar");
+            var buttonSpan = topBar.append("div").attr("class", "buttonBank");
+            topBar.append("div").attr("class", "visTitle").text(vid);
+
             var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
 
             var coreType = aModel.getMetaData().coreRowType;
@@ -142,10 +145,56 @@ VESPER.VisLauncher = function (divid) {
             aModel.addView (newVis);
             newVis.go (aModel);
 
-            DWCAHelper.addKillViewButton (newDiv.select(handleElement), newDiv, newVis);
-            $("#"+id+"container").draggable({ handle: handleElement});
+
+            addHideShowButton (buttonSpan, "#"+id);
+            addKillViewButton (buttonSpan, newVis);
+            $("#"+id+"container").draggable({ handle: "div.dragbar"});
         }
     };
+
+    // where and div are d3 single selections, view is a view object
+    function addKillViewButton (where, view) {
+        where.append("button")
+            .attr("type", "button")
+            .on ("click", function() {
+                if (view && view.destroy) { view.destroy(); }
+                d3.select(d3.event.target).on ("click", null); // remove event from this very button to avoid dom holding refs to data
+            } )
+            .attr ("title", "Close this view")
+            .append ("img")
+            .attr ("src", VESPER.imgbase+"close.png")
+            .attr ("alt", "Close")
+        ;
+    }
+
+    function addHideShowButton (where, toggleThisID) {
+        where.append("button")
+            .attr("type", "button")
+            .on ("click", function() {
+                var vdiv = d3.select(toggleThisID);
+                var dstate = vdiv.style("display");
+                vdiv.style("display", dstate == "none" ? null : "none");
+                var svg = d3.select(this).select("svg polygon");
+                d3.select(this).select("svg polygon")
+                    .attr("points", dstate == "none" ?
+                        "0,12 12,12 6,0" :  "0,0 12,0 6,12"
+                );
+            } )
+            .attr ("title", "Toggle view visibility")
+            .append("svg")
+            .attr ("width", 13)
+            .attr ("height", 13)
+                .append("polygon")
+                .attr("points", "0,12 12,12 6,0")
+                .attr("class", "showHideColours")
+            /*
+            .append ("img")
+                .attr ("src", VESPER.imgbase+"close.png")
+                .attr ("alt", "Hide/Show")
+                */
+        ;
+    }
+
 
     this.destroy = function () {
         var vizzes = model.getSelectionModel().getVis();

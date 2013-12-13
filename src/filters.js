@@ -17,7 +17,7 @@ VESPER.Filters = new function () {
         var nameIndex = rowDescriptor.filteredFieldIndex[nameLabel.fieldType];
         var oneArray = [];
 
-        console.log ("FILTER", nameLabel, nameIndex, rowIndex);
+        //VESPER.log ("FILTER", nameLabel, nameIndex, rowIndex);
 
         var specificFilter = function (model, taxon, regex) {
             var rowRecords = model.getRowRecords (taxon, rowIndex);
@@ -41,7 +41,7 @@ VESPER.Filters = new function () {
 
         model.getSelectionModel().setUpdating (true);
         var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
-        console.log ("selected count", count, model.getSelectionModel().values());
+        //VESPER.log ("selected count", count, model.getSelectionModel().values());
         model.getSelectionModel().setUpdating (false);
         return count;
     }

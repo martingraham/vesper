@@ -31,6 +31,7 @@ var DWCAHelper = new function () {
     function getRowTypeSelection (d) { return d.selected === true; }
     function setRowTypeSelection (d, val) { d.selected = val; }
 
+    this.isIdWrap = function (fd, d) { return isId (fd,d); };
 
     function updateTable (table, metaData, tableKey) {
         VESPER.log ("rt", table, metaData, tableKey);
@@ -264,7 +265,7 @@ var DWCAHelper = new function () {
 
     // check metamodel against list of fieldnames
     // needAll decides whether we need to match all the list or just part of it
-    this.fieldListExistence = function (meta, list, needAll, checkExtRows) {
+    this.fieldListExistence = function (meta, list, needAll, orMatchAtLeast, checkExtRows) {
 
         var listSet = d3.set (list);
         var matchSet = d3.set ();
@@ -287,7 +288,8 @@ var DWCAHelper = new function () {
 
         VESPER.log ("List", list, "Match", all, matchSet.values());
         var matchLength = matchSet.values().length;
-        return {match: (needAll ? matchLength === list.length : matchLength > 0), fields: all} ;
+        var ok = needAll ? matchLength === list.length : (orMatchAtLeast ? matchLength >= orMatchAtLeast : matchLength > 0);
+        return {match: ok, fields: all} ;
     };
 
 
@@ -352,20 +354,13 @@ var DWCAHelper = new function () {
     };
 
 
-    this.configureCheckbox = function (checkBoxSpanSelection, cboxListParentSelection, list, meta, selOptions) {
+    this.configureCheckbox = function (checkBoxSpanSelection, list, clickFunc) {
         if (list) {
             checkBoxSpanSelection.datum().attList = list;
         }
 
         checkBoxSpanSelection.select("input")
-            .on ("click", function (d) {
-                var setVal = d3.select(this).property("checked");
-                DWCAHelper.setAllFields (cboxListParentSelection, setVal, d.attList, isId, meta(), selOptions);
-
-                var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
-                var cGroup = d3.selectAll("span."+cBoxClass+" input[type='checkbox']");
-                DWCAHelper.reselectActiveVisChoices (cGroup, cboxListParentSelection, meta, selOptions);
-            })
+            .on ("click", clickFunc)
         ;
     };
 
@@ -373,13 +368,12 @@ var DWCAHelper = new function () {
         group = group.filter (function() { return d3.select(this).property("checked"); });
         var list = [];
         group.each (function(d) { list.push.apply (list, d.attList); } );
-
         DWCAHelper.setAllFields (cboxListParentSelection, true, list, isId, meta(), selOptions);
+        return group;
     };
 
 
     this.addRadioButton = function (parentSelection, cdata, klass, groupName, textFunc) {
-        console.log ("TEXTFUNC", textFunc);
         var rbutControl = parentSelection
             .selectAll("span")
             .data([cdata], function (d) { return textFunc(d); })
@@ -434,26 +428,11 @@ var DWCAHelper = new function () {
         }
     };
 
-    // where and div are d3 single selections, view is a view object
-    this.addKillViewButton = function (where, div, view) {
-        where.append("button")
-            .attr("type", "button")
-            .attr("class", "killbutton")
-            .on ("click", function() {
-                if (view && view.destroy) { view.destroy(); }
-                d3.select(d3.event.target).on ("click", null);
-            })
-            .attr ("title", "Close this view")
-            .append ("img")
-                .attr ("src", VESPER.imgbase+"close.png")
-                .attr ("alt", "Close")
-        ;
-    };
 
     this.twiceUpRemove = function (divid) {
         var node = d3.select(divid).node();
         var containerNode = node.parentElement;
-        console.log ("CONTAINER", containerNode, $(containerNode));
+        //VESPER.log ("CONTAINER", containerNode, $(containerNode));
         $(function() {
             $(containerNode).draggable("destroy");
         });

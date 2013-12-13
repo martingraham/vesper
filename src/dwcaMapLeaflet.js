@@ -72,16 +72,13 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var drawListener = function (e) {
         var type = e.layerType,
             layer = e.layer;
-
         var sel = [];
-        var i = 0;
 
         if (type === 'circle') {
             VESPER.log ("circle", e);
             var cll = e.layer._latlng;
             var rad = e.layer._mRadius;
             markerGroup.eachLayer(function (layer) {
-                i++;
                 var ll = layer.getLatLng();
                 if (cll.distanceTo (ll) <= rad) {
                     sel.push(layer.extId);
@@ -94,7 +91,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
             var clls = e.layer._latlngs;
             var bounds = new L.LatLngBounds (clls[0], clls[2]);
             markerGroup.eachLayer(function (layer) {
-                i++;
                 var ll = layer.getLatLng();
                 if (bounds.contains (ll)) {
                     sel.push(layer.extId);
@@ -107,7 +103,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
             var clls = e.layer._latlngs;
             var bb = new L.LatLngBounds (clls);
             markerGroup.eachLayer(function (layer) {
-                i++;
                 var ll = layer.getLatLng();
                 if (containsLatLng (clls, bb, ll)) {
                     sel.push(layer.extId);
@@ -181,8 +176,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
                     return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
                             +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
                         className: 'vesperMapIcon',
-                        //iconSize: new L.Point(40, 20 + (cluster.getSelectedChildCount() > 0 ? 20 : 0))
-                        //iconSize: new L.Point(40, 20 + (Math.log (cluster.getSelectedChildCount() + 1) * 5))
                         iconSize: new L.Point(40, height)
                     });
                 }
@@ -241,13 +234,14 @@ VESPER.DWCAMapLeaflet = function (divid) {
 	this.update = function () {
         var vals = model.getSelectionModel().values();
 
-        console.log ("MGROUP COUNT: ", markerGroup._topClusterLevel.getChildCount());
+        //VESPER.log ("MGROUP COUNT: ", markerGroup._topClusterLevel.getChildCount());
 
 		if (map.hasLayer (markerGroup)) {
             recalcHeightMultiplier ();
 
             markerGroup.eachLayer (function(layer) {
                 var sel = model.getSelectionModel().contains(layer.extId);
+                //if (layer.options.icon != )
                 layer.setIcon (sel ? selIcon : oldIcon);
             });
 

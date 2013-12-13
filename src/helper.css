@@ -1,30 +1,80 @@
-@CHARSET "ISO-8859-1";
-
-
-div.choiceHolder {
+div#pageTitle {
     text-align: center;
-    background: #add;
-    padding: 10px;
+    background: #ada;
+    padding: 0px 10px 10px 10px;
     -moz-border-radius: 10px;
     border-radius: 10px;
-    border: solid 2px #8aa;
-    color: #ffffff;
-    font-size: 20pt;
-    font-weight: bolder;
-    text-shadow: -1px -1px 0 #477,
-    1px -1px 0 #477,
-    -1px 1px 0 #477,
-    1px 1px 0 #477;
+    border: 0;
+    /*border: solid 2px #8aa;*/
+    background: linear-gradient(to right, #ada , #fff); /* Standard syntax */
+
 }
 
-span.noShad {
-    text-shadow: none;
+div#pageTitle H1 {
+    color: #fff;
+    text-shadow: -1px -1px 0 #8aa,
+    1px -1px 0 #8aa,
+    -1px 1px 0 #8aa,
+    1px 1px 0 #8aa;
+    text-align: left;
+    font-size: 36pt;
+    padding: 5px 0px 5px 0px;
+    margin: 0px;
+}
+
+div#pageTitle H2 {
+    text-align: left;
+    font-size: 16pt;
+    color: #8aa;
+    padding: 5px 0px 5px 0px;
+    margin: 0px 0px 0px 60px;
+}
+
+.demoPageColours {
+    fill: #ada;
+    background: #ada;
+    stroke: #8aa;
+    border: 1px solid #8aa;
+    stroke-width: 1;
+}
+
+
+#examples table {
+    border: solid 1px #8aa;
+    background: #eff;
+    margin: 0 auto;
+}
+
+#examples table tr:nth-child(2n+1) {
+    background: #dff;
+}
+
+#examples table tr th {
     font-size: 12pt;
+    border-color: #8aa;
+}
+
+#examples table tr td {
+    padding: 0px 10px 0px 10px;
+    border: 1px solid #8aa;
+    border-top: 0;
+    border-bottom: 0;
+}
+
+#examples table tr td:nth-child(2) {
+    max-width: 400px;
 }
 
 button[type="button"].choice {
-    margin: 10px;
+    margin: 4px;
     font-size: 12pt;
+    font-family: "Gill Sans MT",Georgia,Arial;
+}
+
+
+div#small {
+    margin: 0;
+    padding: 0;
 }
 
 
@@ -88,11 +138,10 @@ h4.notoppad {
 }
 
 /* hide advanced option button */
-/*
 #advancedSelectOuter {
     display: none;
 }
-*/
+
 
 
 
@@ -137,6 +186,16 @@ tr.col {
 
 
 
+#allVisDiv {
+    margin: 0 auto;
+    width: 90%;
+    position: relative;
+    clear: both;
+    overflow: hidden;
+    display: none;
+}
+
+
 
 
 .html5lack {
@@ -150,21 +209,43 @@ tr.col {
     float: left;
 }
 
-.visWrapper H3 {
-    border: 2px 0px;
-    border-width: 2px;
-    /*background: #88a;*/
+.visWrapper div.dragbar {
     background: #88a url('../img/bumpPat.png') 100% 100% repeat;
-    text-shadow: 0px 0px 5px #fff;
     -moz-border-radius: 5px;
     border-radius: 5px;
     padding: 0px 8px 0px 8px;
-    font-size: 16pt;
+    height: auto;
 }
 
-button[type="button"].killbutton {
+div.visTitle {
+    float: none;
+    font-size: 16pt;
+    text-shadow: 0px 0px 5px #fff;
+    width: auto;
+}
+
+div.buttonBank {
     float: right;
+    margin-top: 3px;
+    vertical-align: top;
+    width: 65px;
+    text-align: right;
+}
+
+.buttonBank button[type="button"] {
     font-size: 10pt;
-    width: inherit;
     height: 20px;
+    width: 25px;
+}
+
+.showHideColours {
+    stroke: none;
+    stroke-width: 1;
+    fill: #000;
+}
+
+.tabbedStuff {
+    font-size: 12pt;
+    max-width: 90%;
+    margin: 0 auto;
 }

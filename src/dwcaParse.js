@@ -4,10 +4,11 @@ VESPER.DWCAParser = new function () {
     //this.TAXA = "taxa";
     //this.EXT = "ext";
 
-    this.TDATA = 0;
-    this.TAXA = 1;
-    this.EXT = 2;
-    this.SYN = 3;
+    this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
+    this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
+    this.EXT = 2;       // extra data, i.e. non-core data attachments
+    this.SYN = 3;       // synonyms
+    this.PID = 4;       // used when building explicit taxonomies, i.e. ones from name paths, quick ref to parent id;
     this.SPECS = "s";
 
     this.SUPERROOT = "superroot";
@@ -70,11 +71,11 @@ VESPER.DWCAParser = new function () {
     // list of terms that are necessary to do the basics of particular visualisations.
     // e.g. we need latitude and longitude values to do map plots
     // It's a given that we need the id for each entry.
-    this.explicitRanks = ["kingdom", "phylum", "classs", "order", "family", "genus", "subgenus"];
+    this.explicitRanks = ["kingdom", "phylum", "classs", "order", "family", "genus", "subgenus", "specificEpithet", "infraspecificEpithet"];
     this.neccLists = {};
     this.neccLists.geo = ["decimalLatitude", "decimalLongitude", "geodeticDatum"];
     this.neccLists.impTaxonomy = ["acceptedNameUsageID", "parentNameUsageID", "taxonRank"];
-    this.neccLists.expTaxonomy = this.explicitRanks.concat(["taxonRank"]);
+    this.neccLists.expTaxonomy = this.explicitRanks;
     this.neccLists.times = ["eventDate", "modified", "geodeticDatum", "georeferencedDate", "dateIdentified", "verbatimEventDate"];
     this.neccLists.basicTimes = ["eventDate"];
 
@@ -166,9 +167,6 @@ VESPER.DWCAParser = new function () {
             //if (d.charCodeAt(0) > 65000 || d.charCodeAt(0) === 255) {
             //    d = d.slice(2);
             //}
-           // VESPER.log ("yp22", d.charCodeAt(0), d.charCodeAt(1), d.charCodeAt(2), d);
-            //VESPER.log ("Native DOM Parse", NapVisLib.parseXML(d));
-           // VESPER.log ($.parseXML(d));
             VESPER.log ("XSD", d, typeof d);
             VESPER.DWCAParser.xsd = (typeof d == "string" ? $(NapVisLib.parseXML(d)) : $(d));
            // VESPER.log ("XSD", DWCAParser.xsd);
@@ -195,11 +193,14 @@ VESPER.DWCAParser = new function () {
             }
         }
         console.log ("ZIP ENTRIES", zip.zipEntries, newMetaFileName);
-        zip.zipEntries.readLocalFile (newMetaFileName);
-        VESPER.log ("unzipped ", zip, zip.files);
-        var metaFile = zip.zipEntries.getLocalFile (newMetaFileName);
-        var metaData = VESPER.DWCAParser.parseMeta ($.parseXML (metaFile.uncompressedFileData));
-        return {jszip: zip, meta: metaData};
+        if (newMetaFileName !== undefined) {
+            zip.zipEntries.readLocalFile (newMetaFileName);
+            VESPER.log ("unzipped ", zip, zip.files);
+            var metaFile = zip.zipEntries.getLocalFile (newMetaFileName);
+            var metaData = VESPER.DWCAParser.parseMeta ($.parseXML (metaFile.uncompressedFileData));
+            return {jszip: zip, meta: metaData};
+        }
+        return {jszip: zip, meta: {error:"Cannot locate "+metaFileName+" within zip."}};
     };
 
 
@@ -283,9 +284,6 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("fan", VESPER.DWCAParser.fieldAttrNames);
     };
 
-    // load in xsd and populate arrays/maps from it.
-    this.loadxsd ('dwca.xsd');
-
 	
 	function getCurrentTerm (term) {
 		var newTerm = altTerms [term];
@@ -360,7 +358,7 @@ VESPER.DWCAParser = new function () {
                             var sChildren = sRec[VESPER.DWCAParser.TAXA];
 
                             if (sChildren) {
-                                console.log ("ADDING SYNS CHILDREN", sRec, sChildren, sChildren.length);
+                                //VESPER.log ("ADDING SYNS CHILDREN", sRec, sChildren, sChildren.length);
 
                                 for (var m = 0; m < sChildren.length; m++) {
                                     var scObj = sChildren[m];
@@ -395,8 +393,10 @@ VESPER.DWCAParser = new function () {
     }
 
 
-    // This uses explicit id linking in the dwca file i.e. kingdom, order, family etc data
+    // This uses explicit id linking in the dwca file i.e. kingdom, order, family, specificEpithet etc data
     this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, metaData, addOriginalTo) {
+        addFieldToIndices (fileData, "taxonRank");
+
         var idx = fileData.idIndex;
         var fieldIndexer = fileData.filteredFieldIndex;
         var jsonObj = this.occArray2JSONArray (tsvData, idx);
@@ -418,39 +418,77 @@ VESPER.DWCAParser = new function () {
         var treeObj = {};
         //treeObj = jsonObj; // revert
 
+        // some ranks are partial names (below genus). And we need to make them more specific or there are clashes.
+        var addLastNameTo = [], rankFields = [];
+        for (var r = 0; r < rLen; r++) {
+            var rank = rankList[r];
+            if (rank == "specificEpithet" || rank == "infraspecificEpithet") {
+                addLastNameTo[r] = true;
+            }
+            // speed up rank index finding
+            rankFields[r] = fieldIndexer[rank];
+        }
+
+
         for (var n = 0, len = tsvData.length; n < len; n++) {
             var rec = tsvData[n];
 
             if (rec !== undefined) {
-
-                var lastData;
+                var lastData = undefined;
                 var path = [];
+
                 for (var r = 0; r < rLen; r++) {
                     var rank = rankList[r];
-                    var rankField = fieldIndexer[rank];
+                    var rankField = rankFields[r];
 
                     if (rankField) {
                         var val = rec[rankField];
+                        path[r] = val;
 
                         if (val) {
-                            if (!treeObj[val]) {
+                            // if specificEpithet or infraSpecificEpithet, beef up name with previous strings from genus or species
+                            if (addLastNameTo[r] && lastData) {
+                                val = lastData[this.TDATA][nameField]+" "+val;
+                            }
+
+                            var id = val;   // id is normally the name unless there's a name clash
+
+                            // test if this name has already been attached to something that wasn't the last rank used here
+                            // this indicates the same name being used at different points in the taxonomy, i.e. two genus's called "Carex" under different families
+                            // it's perfectly valid, but it knackers a simple id scheme
+                            if (treeObj[id] && lastData) {
+                                var lid = lastData[this.TDATA][idx];
+                                var pid = treeObj[id][this.PID];
+                                if (lid != pid) {
+                                    // aargh. name clash.
+                                    id = lid+id;
+                                    if (!treeObj[id]) {
+                                        VESPER.log ("Introducing new id", id);
+                                    }
+                                }
+                            }
+
+                            if (!treeObj[id]) {
                                 var rdata = [];
-                                rdata[idx] = val;
+                                rdata[idx] = id;
                                 rdata[nameField] = val;
                                 rdata[fieldIndexer["taxonRank"]] = rank;
                                 var obj = {};
                                 obj[this.TDATA] = rdata;
-                                treeObj[val] = obj;
+                                treeObj[id] = obj;
 
                                 if (lastData) {
                                     addToArrayProp (lastData, VESPER.DWCAParser.TAXA, obj);
                                 }
+
+                                // add parent id property used in resolving name clashes
+                                obj[this.PID] = (lastData ? lastData[this.TDATA][idx] : -10);
                             }
 
                             if (!lastData) {
-                                rootObjs[val] = true;
+                                rootObjs[id] = true;
                             }
-                            lastData = treeObj[val];
+                            lastData = treeObj[id];
                         }
                     }
                 }
@@ -468,6 +506,26 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("json", jsonObj, "tree", treeObj);
         return {"records":jsonObj, "tree":treeObj};
     };
+
+
+
+    function addFieldToIndices (fileData, fieldName) {
+
+        VESPER.log ("FIIII", fileData);
+        if (fileData.filteredFieldIndex[fieldName] == undefined) {
+            var addAtIndex = fileData.filteredInvFieldIndex.length;
+            fileData.filteredInvFieldIndex.push (fieldName);
+            fileData.filteredFieldIndex[fieldName] = addAtIndex;
+
+            // add to unfiltered indices. Shouldn't need this, but better safe than sorry.
+            addAtIndex = fileData.invFieldIndex.length;
+            fileData.invFieldIndex.push (fieldName);
+            fileData.fieldIndex[fieldName] = addAtIndex;
+
+            // don't add to fileData.fieldData so we can tell later what columns were in original dwca files and which we've added
+        }
+        VESPER.log ("FIIII2", fileData);
+    }
 
 
     this.addOriginalAsSpecimenEntry = function (lastData, orig, taxa, name, idx, fieldIndexer, nameField) {
@@ -673,92 +731,107 @@ VESPER.DWCAParser = new function () {
   		}
 
   		var metaData = {"coreRowType":coreRowType, "extRowTypes":extRowTypes, "fileData":fileData, "vesperAdds":{}};
-  		VESPER.log ("metadata", metaData);
+
+        if (coreRowType == undefined) {
+            metaData.error = "JQuery cannot find element[attribute]: core[rowType] within xml.";
+        }
+        else if (fileData[coreRowType].error) {
+            metaData.error = fileData[coreRowType].error;
+        }
   		return metaData;
 	};
-	
-	
-	
+
+
+    // returns {error: true} if it can't find the right bits
 	this.parseCore = function (theXML, coreRowType) {
 		return this.parseFrag (theXML, 'archive core[rowType="'+coreRowType+'"]', 'id', coreRowType);
 	};
-	
-	
+
+    // returns {error: true} if it can't find the right bits
 	this.parseExtension = function (theXML, extensionRowType, index) {
 		var extObj = this.parseFrag (theXML, 'extension[rowType="'+extensionRowType+'"]', 'coreid', extensionRowType);
         extObj.extIndex = index;
         return extObj;
 	};
 	
-	
+	// returns {error: true} if it can't find the right bits
 	this.parseFrag = function (theXML, fragQ, idAttrName, rowType) {
         VESPER.log ("thexml", typeof theXML, theXML);
 		var frag = $(theXML).find(fragQ);
-        var ffrag = $(frag[0]);
 
-        var fileData = {};
-		var fileNames = ffrag.find('files location').contents();
-        fileData.fileName = fileNames[0].data;
-        fileData.rowType = rowType;
-        fileData.mappedRowType = this.recordURIMap [rowType] || rowType;
-        for (var attrName in this.rowTypeDefaults) {
-            if (this.rowTypeDefaults.hasOwnProperty (attrName)) {
-                // AARGH. Remember, there is a difference between something being undefined and an empty value.
-                // Both equate to false, but only one (attribute is undefined) says there is no
-                // such attribute there and we should fall back to the default.
-                // The other, the attribute has been given an empty value, means the value is empty and we should use that, not the default.
-                // Caused Error. Grrrr.
-                //if (ffrag.attr(attrName) === undefined)
-                fileData[attrName] = (ffrag.attr(attrName) !== undefined ? ffrag.attr(attrName) : this.rowTypeDefaults[attrName]);
-                VESPER.log ("att", attrName, "#", fileData[attrName], "#")
-            }
-        }
-        VESPER.log (ffrag.attr("fieldsEnclosedBy"));
+        if (frag[0] !== undefined) {
+            var ffrag = $(frag[0]);
 
+            var fileData = {};
+            var fileNames = ffrag.find('files location').contents();
 
-		var idIndex = +ffrag.find(idAttrName).attr('index'); // '+' makes it a number not a string
-        fileData.idIndex = idIndex;
-		var fields = ffrag.find('field');
-		
-		VESPER.log ("fieldsTerminatedBy", fileData.fieldsTerminatedBy);
-		
-		fileData.fieldIndex = {}; fileData.invFieldIndex = [];
-        fileData.fieldData = {};
-        fileData.fieldIndex[idAttrName] = idIndex;
-        fileData.invFieldIndex[idIndex] = idAttrName;
-		for (var fidx = 0; fidx < fields.length; fidx++) {
-            var fXml = $(fields[fidx]);
-            var fieldAttrs = {};
-            for (var fieldAttr in VESPER.DWCAParser.fieldAttrNames) {
-                if (VESPER.DWCAParser.fieldAttrNames.hasOwnProperty (fieldAttr)) {
-                    var fieldAttrType = VESPER.DWCAParser.fieldAttrNames[fieldAttr];
-                    var val = fXml.attr (fieldAttr);
-                    if (fieldAttrType == "xs:integer") {
-                        val = +val; // '+' makes it a number not a string
+            if (fileNames[0] !== undefined) {
+                fileData.fileName = fileNames[0].data;
+
+                fileData.rowType = rowType;
+                fileData.mappedRowType = this.recordURIMap [rowType] || rowType;
+                for (var attrName in this.rowTypeDefaults) {
+                    if (this.rowTypeDefaults.hasOwnProperty (attrName)) {
+                        // AARGH. Remember, there is a difference between something being undefined and an empty value.
+                        // Both equate to false, but only one (attribute is undefined) says there is no
+                        // such attribute there and we should fall back to the default.
+                        // The other, the attribute has been given an empty value, means the value is empty and we should use that, not the default.
+                        // Caused Error. Grrrr.
+                        //if (ffrag.attr(attrName) === undefined)
+                        fileData[attrName] = (ffrag.attr(attrName) !== undefined ? ffrag.attr(attrName) : this.rowTypeDefaults[attrName]);
+                        VESPER.log ("att", attrName, "#", fileData[attrName], "#")
                     }
-                    fieldAttrs[fieldAttr] = val;
                 }
+                VESPER.log (ffrag.attr("fieldsEnclosedBy"));
+
+
+                var idIndex = +ffrag.find(idAttrName).attr('index'); // '+' makes it a number not a string
+                fileData.idIndex = idIndex;
+                var fields = ffrag.find('field');
+
+                VESPER.log ("fieldsTerminatedBy", fileData.fieldsTerminatedBy);
+
+                fileData.fieldIndex = {}; fileData.invFieldIndex = [];
+                fileData.fieldData = {};
+                fileData.fieldIndex[idAttrName] = idIndex;
+                fileData.invFieldIndex[idIndex] = idAttrName;
+                for (var fidx = 0; fidx < fields.length; fidx++) {
+                    var fXml = $(fields[fidx]);
+                    var fieldAttrs = {};
+                    for (var fieldAttr in VESPER.DWCAParser.fieldAttrNames) {
+                        if (VESPER.DWCAParser.fieldAttrNames.hasOwnProperty (fieldAttr)) {
+                            var fieldAttrType = VESPER.DWCAParser.fieldAttrNames[fieldAttr];
+                            var val = fXml.attr (fieldAttr);
+                            if (fieldAttrType == "xs:integer") {
+                                val = +val; // '+' makes it a number not a string
+                            }
+                            fieldAttrs[fieldAttr] = val;
+                        }
+                    }
+                    fieldAttrs.shortTerm = getCurrentTerm (chopToLastSlash (fieldAttrs.term));
+                    var index = fieldAttrs.index;
+                    var fieldName = fieldAttrs.shortTerm;
+                    fieldAttrs.discreteTermList = (VESPER.DWCAParser.discreteTermSet[fieldName] ? {} : undefined);
+
+                   // VESPER.log ("FieldAttrs:", fieldAttrs);
+
+                    if (!isNaN(index)) {
+                        fileData.fieldIndex[fieldName] = index;
+                        fileData.invFieldIndex[fileData.fieldIndex[fieldName]] = fieldName;
+                    }
+
+                    fileData.fieldData[fieldName] = fieldAttrs;
+                }
+
+                fileData.filteredFieldIndex = {}; //$.extend ({}, fileData.fieldIndex);
+                fileData.filteredInvFieldIndex = []; //fileData.invFieldIndex.slice();
+
+                VESPER.log ("filenames: ", fileNames);
+                return fileData;
             }
-            fieldAttrs.shortTerm = getCurrentTerm (chopToLastSlash (fieldAttrs.term));
-            var index = fieldAttrs.index;
-            var fieldName = fieldAttrs.shortTerm;
-            fieldAttrs.discreteTermList = (VESPER.DWCAParser.discreteTermSet[fieldName] ? {} : undefined);
-
-           // VESPER.log ("FieldAttrs:", fieldAttrs);
-
-			if (!isNaN(index)) {
-                fileData.fieldIndex[fieldName] = index;
-                fileData.invFieldIndex[fileData.fieldIndex[fieldName]] = fieldName;
-			}
-
-            fileData.fieldData[fieldName] = fieldAttrs;
-		}
-
-        fileData.filteredFieldIndex = {}; //$.extend ({}, fileData.fieldIndex);
-        fileData.filteredInvFieldIndex = []; //fileData.invFieldIndex.slice();
-		
-		VESPER.log ("filenames: ", fileNames);
-		return fileData;
+            return {"error": "JQuery cannot find path [files location] within "+fragQ+" section of xml."};
+        }
+        return {"error": "JQuery cannot find path ["+fragQ+"] within xml."};
 	};
 
 
@@ -832,5 +905,9 @@ VESPER.DWCAParser = new function () {
         }
 
         return count;
-    }
+    };
+
+
+    // load in xsd and populate arrays/maps from it.
+    this.loadxsd ('dwca.xsd');
 };

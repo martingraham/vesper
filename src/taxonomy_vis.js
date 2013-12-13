@@ -29,6 +29,7 @@ VESPER.Tree = function(divid) {
     var color = d3.scale.category20c();
     var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
     var cstore = {}, pstore = {};
+    var textHide = "collapse";
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
@@ -44,21 +45,21 @@ VESPER.Tree = function(divid) {
 										}
 										s1 = s1 || 0;
 										s2 = s2 || 0;
-										return s1 > s2 ? 1 : ((s1 < s2) ? -1 : 0);
+										return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
 		},
         "Selected": function (a,b) {
             var sModel = model.getSelectionModel();
             //console.log (a,b);
             var sel1 = sModel.contains(model.getIndexedDataPoint (a,keyField));
             var sel2 = sModel.contains(model.getIndexedDataPoint (b,keyField));
-            return (sel1 === sel2) ? 0 :  (sel1 === true ? 1 : -1);
+            return (sel1 === sel2) ? 0 :  (sel1 === true ? -1 : 1);
         },
         "Selected Desc": function (a,b) {
             var sModel = model.getSelectionModel();
             //console.log (a,b);
             var sel1 = a.sdcount;
             var sel2 = b.sdcount
-            return (sel1 === sel2) ? 0 :  (sel1 === undefined ? -1 : (sel2 === undefined ? 1 : (sel1 - sel2)));
+            return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
 
@@ -71,7 +72,9 @@ VESPER.Tree = function(divid) {
         var tooltipStr = "";
 
         for (var n = 0; n < ffields.length; n++) {
-            tooltipStr += ((n > 0) ? "<br>" : "")+ffields[n].fieldType+": "+model.getIndexedDataPoint (node, ffields[n]);
+            if (ffields[n]) {
+                tooltipStr += ((n > 0) ? "<br>" : "")+ffields[n].fieldType+": "+model.getIndexedDataPoint (node, ffields[n]);
+            }
         }
 
         tooltipStr += (subt === undefined ?
@@ -196,14 +199,12 @@ VESPER.Tree = function(divid) {
             ;
 
             newNodes.append ("svg:rect")
-                .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
                 .call (partitionLayout.booleanSelectedAttrs)
                 //.call (mouseController)
             ;
 
 
             newNodes.append ("svg:rect")
-                .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
                 .style ("opacity", 0.75)
                 .call (partitionLayout.propSharedAttrs, this.xFunc, this.widthLogFunc)
                 //.call (mouseController)
@@ -212,7 +213,8 @@ VESPER.Tree = function(divid) {
 
             newNodes.append ("svg:text")
                 .text (function(d) { var node = getNode (d.id) /*d*/; return model.getLabel(node); })
-                .style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": "hidden"; })
+                //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
+                .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
                 .call (partitionLayout.sharedTextAttrs)
                 //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
             ;
@@ -222,7 +224,6 @@ VESPER.Tree = function(divid) {
 
         redrawExistingNodes: function (group, delay) {
             group.select("rect:not(.holdsSelected)")
-                .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
                 .transition()
                 .delay (delay)
                 .duration (updateDur)
@@ -230,7 +231,6 @@ VESPER.Tree = function(divid) {
             ;
 
             group.select("rect.holdsSelected")
-                .style ("visibility", function (d) { return d.dx >= partitionLayout.cutoffVal ? "visible": "hidden"; })
                 .transition()
                 .delay (delay)
                 .duration (updateDur)
@@ -238,7 +238,8 @@ VESPER.Tree = function(divid) {
             ;
 
             group.select("text")
-                .style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": "hidden"; })
+                //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
+                .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
                 //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
                 .transition()
                 .delay (delay)
@@ -303,7 +304,7 @@ VESPER.Tree = function(divid) {
 
     var sunburstLayout = {
 
-        cutoffVal: 0.1,
+        cutoffVal: 0.05,
 
         sizeBounds: function () {
             var radius = d3.min(dims) / 2;
@@ -378,7 +379,7 @@ VESPER.Tree = function(divid) {
             //VESPER.log ("a", a, a.dx0);
             var cs = cstore [a.id];
             if (cs === undefined) {
-                console.log ("No STORE", a.id, a);
+                VESPER.log ("No STORE", a.id, a);
             }
             if (cs) {
                 var i = d3.interpolate({x: cs.x0, dx: cs.dx0, y: cs.y0, dy: cs.dy0}, a);
@@ -491,7 +492,7 @@ VESPER.Tree = function(divid) {
         ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
         keyField = ffields[0];
         rankField = ffields[1];
-        console.log ("FFIELDS", ffields);
+        //VESPER.log ("FFIELDS", ffields);
         dims = NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
@@ -499,7 +500,10 @@ VESPER.Tree = function(divid) {
 	
 	this.go = function () {
 		thisView = this;
-		
+
+        // stop annoying scrollbar even when svg is same height as parent div
+        d3.select(divid).style("overflow", "hidden");
+
 		svg = d3.select(divid)
 			.append("svg:svg")
 			.attr("class", "visContainer")
@@ -545,14 +549,23 @@ VESPER.Tree = function(divid) {
     function setupControls () {
         var noHashId = divid.substring (1);
         var cpanel = d3.select(divid)
-            .append("span")
+            .append("div")
             .attr ("class", "visControl")
             .attr ("id", noHashId+"controls")
         ;
 
-        var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
-        spaceDiv.append("p").html("Space Allocation");
-        var allocBinds = spaceDiv.selectAll("button.allocChoice")
+        NapVisLib.addHRGrooves (cpanel);
+
+        NapVisLib.makeSectionedDiv (cpanel,
+            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
+                {"header":"Sort", sectionID:"Sort"}],
+        "classIgnored");
+
+        //var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
+        //spaceDiv.append("p").html("Space Allocation");
+        //var allocBinds = spaceDiv.selectAll("button.allocChoice")
+        //    .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
+        var allocBinds = d3.select(divid+"controlsSpace").selectAll("button.allocChoice")
             .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
         var aHolders = allocBinds.enter()
             .append ("span")
@@ -578,9 +591,13 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
 
+        /*
         var layoutDiv = cpanel.append("div").attr("class", "taxaControlsLayout");
         layoutDiv.append("p").html("Layout Style");
         var layoutBinds = layoutDiv.selectAll("button.layoutChoice")
+            .data(d3.entries (layoutOptions), function(d) { return d.key; });
+            */
+        var layoutBinds = d3.select(divid+"controlsLayout").selectAll("button.layoutChoice")
             .data(d3.entries (layoutOptions), function(d) { return d.key; });
         var lHolders = layoutBinds.enter()
             .append ("span")
@@ -609,9 +626,13 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
 
+        /*
         var sortDiv = cpanel.append("div").attr("class", "taxaControlsSort");
 		sortDiv.append("p").html("Sort");
         var sortBinds = sortDiv.selectAll("button.sortChoice")
+            .data(d3.entries (sortOptions), function(d) { return d.key; });
+            */
+        var sortBinds = d3.select(divid+"controlsSort").selectAll("button.sortChoice")
             .data(d3.entries (sortOptions), function(d) { return d.key; });
         var sHolders = sortBinds.enter()
             .append ("span")
@@ -637,9 +658,7 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
 
-        $(function() {
-            $("#"+noHashId+"controls").draggable();
-        });
+        $("#"+noHashId+"controls").draggable();
     }
 
 
@@ -666,9 +685,9 @@ VESPER.Tree = function(divid) {
         curRoot = root;
 
         var nodeBind = treeG
-                .selectAll(".treeNode")
-                .data(coordSet, function(d) { return d.id /*d[DWCAParser.TDATA][keyField]*/; })
-            ;
+            .selectAll(".treeNode")
+            .data(coordSet, function(d) { return d.id /*d[DWCAParser.TDATA][keyField]*/; })
+        ;
 
         layout.prep (coordSet);
 
@@ -750,6 +769,7 @@ VESPER.Tree = function(divid) {
     this.destroy = function () {
         clearMouseController (treeG.selectAll(".treeNode"));
         treeG.selectAll(".treeNode").remove();
+        $(divid+"controls").draggable("destroy");
         model.removeView (self);
         // null model and roots, basically any var that points to the data. Help GC along.
         // Google chrome profiler says it does so ner
@@ -758,6 +778,7 @@ VESPER.Tree = function(divid) {
         curRoot = null;
         cstore = {};
         pstore = {};
+
         DWCAHelper.twiceUpRemove(divid);
     };
 

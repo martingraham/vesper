@@ -48,7 +48,7 @@ DIV .hack {
 	and 'hidden' stops ie9 drawing child elements that lie outside the svg bounds */
 .visContainer {
 	width: 100%;
-	height: 98%;
+	height: 100%;
 	overflow: hidden;
 }
 
@@ -84,10 +84,17 @@ DIV .hack {
     border-radius: 5px;
     background: rgba(128,128,128,0.5);
     padding: 4px;
-    padding-top: 10px;
+    /*padding-top: 10px;*/
     position: absolute;
     left:10px;
     top:30px;
+}
+
+.visControl hr {
+    border: 1px solid #888;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
+    margin: 1px;
 }
 
 .visControl P {
@@ -181,4 +188,13 @@ DIV .hack {
     fill: rgba(128,128,128,0.25);
     stroke: black;
     stroke-width: 1px;
+}
+
+.expansionControl {
+    border: 1px solid #a0a0a0;
+    border-radius: 4px;
+    width: 16px;
+    margin-right: 2px;
+    text-align: center;
+    display: inline-block;
 }

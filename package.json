@@ -4,13 +4,11 @@
   "description": "DWCA Visual Components",
   "main": "src/demo.js",
   "dependencies": {
-    "jquery":"~2.0.3",
-    "jquery-ui":"~1.10.3",
+    "jquery":">=2.0.3 <=2.1.0",
+    "jquery-ui":"git://github.com/jquery/jquery-ui.git#master",
     "d3":"~3.0",
     "leaflet":"~0.7.0",
-    //"jszip":"https://github.com/martingraham/jszip/tarball/master",
-    "jszip":"git://github.com/martingraham/jszip.git#master" //,
-    //"jszip":"martingraham/jszip"
+    "jszip":"git://github.com/martingraham/jszip.git#master"
   },
   "devDependencies": {
       "grunt": "~0.4.1",
