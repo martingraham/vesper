@@ -2165,6 +2165,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     this.destroy = function () {
         //DWCAHelper.recurseClearEvents (d3.select(divid));
+        map.addLayer (markerGroup); // add it so it gets removed properly. Makes sense to me.
 
         model.removeView (self);
         model = null;
@@ -2174,6 +2175,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
             layer.removeEventListener();
         });
         markerGroup.clearLayers();
+
+        curSelMaskLayer.setData ([]);
 
         var lys = [];
         map.eachLayer (function(layer) {
