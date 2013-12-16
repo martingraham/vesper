@@ -1850,6 +1850,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var curSelLayer;
     var curSelMaskLayer;
     var markerGroup;
+    var maskGroup;
     var map;
 
     var maxIconHeight = 60;
@@ -2092,7 +2093,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         curSelMaskLayer.setData ([]);
 
 
-        var maskGroup = L.layerGroup ([maskLayer, curSelMaskLayer]);
+        maskGroup = L.layerGroup ([maskLayer, curSelMaskLayer]);
         //map.addLayer (maskLayer);
         //map.addLayer (curSelMaskLayer);
 		
@@ -2165,7 +2166,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     this.destroy = function () {
         //DWCAHelper.recurseClearEvents (d3.select(divid));
-        map.addLayer (markerGroup); // add it so it gets removed properly. Makes sense to me.
+        map.addLayer (markerGroup); // add it so it gets removed properly. Makes sense to me. And Google Chrome profiler.
+        map.addLayer (maskGroup);
 
         model.removeView (self);
         model = null;
