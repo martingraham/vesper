@@ -118,6 +118,22 @@ function DWCAModel (metaData, data) {
         return (this.getExtraData(node)) ? this.getExtraData(node)[index.rowIndex][0][index.fieldIndex] : undefined;
     };
 
+    // Plural indexed data points requires an array to return multiple results
+    this.getIndexedDataPoints = function (node, index, arr) {
+        if (index !== undefined && index.fieldType !== undefined) {
+            if (index.rowIndex == undefined) {
+                arr.push (this.getTaxaData(node)[index.fieldIndex]);
+            }
+            else if (this.getExtraData(node)) {
+                var dats = this.getExtraData(node)[index.rowIndex];
+                //Array.prototype.push.apply (arr, dats);
+                for (var n = 0; n < dats.length; n++) {
+                    arr.push (dats[n]);
+                }
+            }
+        }
+    };
+
     // Finds first instance of field name in filedata structure
     this.makeIndices = function (fieldNames) {
         var fieldData = [];

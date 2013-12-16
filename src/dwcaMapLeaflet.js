@@ -10,10 +10,11 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var model;
 
 	var dwcaid2Marker = {};
-	var markerGroup;
-	var map;
 
     var curSelLayer;
+    var curSelMaskLayer;
+    var markerGroup;
+    var map;
 
     var maxIconHeight = 60;
     var heightMultiplier = 5;
@@ -111,14 +112,14 @@ VESPER.DWCAMapLeaflet = function (divid) {
             });
         }
 
-        if (curSelLayer) {
-            map.removeLayer (curSelLayer);
-        }
+        //if (curSelLayer) {
+        //    map.removeLayer (curSelLayer);
+        //}
 
         VESPER.log (sel.length, "specimens within", type);
 
         // Do whatever else you need to. (save to db, add to map etc)
-        map.addLayer(layer);
+        //map.addLayer(layer);
         curSelLayer = layer;
 
         model.getSelectionModel().clear();
@@ -190,22 +191,44 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
 		var struc = model.getData();
 		if (latField && longField) {
+             var arr = [], arr2 = [];
 			 for (var prop in struc) {
 				 if (struc.hasOwnProperty (prop)) {
-                     var lat = +model.getIndexedDataPoint (struc[prop], latField);
-                     var longi = +model.getIndexedDataPoint (struc[prop], longField);
+                     //var lat = +model.getIndexedDataPoint (struc[prop], latField);
+                     //var longi = +model.getIndexedDataPoint (struc[prop], longField);
 
-					 if (!isNaN(lat) && !isNaN(longi)) {
-						 var coord= [lat, longi];
-						 var marker = L.marker(coord)
-                            .on ('mouseover', markerMouseOverListener)
-						 	.on ('contextmenu', markerSelectionListener)
-						 ;
-						 marker.extId = prop;
-						 markers.push (marker);
-						 latlngs.push (coord);
-						 dwcaid2Marker[prop] = marker;
-					 }
+                     arr.length = 0;
+                     arr2.length = 0;
+                     model.getIndexedDataPoints (struc[prop], latField, arr);
+                     model.getIndexedDataPoints (struc[prop], longField, arr2);
+
+                     for (var d = arr.length; --d >= 0;) {
+                         var lat = +arr[d];
+                         var longi = +arr2[d];
+                         if (!isNaN(lat) && !isNaN(longi)) {
+                             var coord= [lat, longi];
+                             var marker = L.marker(coord)
+                                     .on ('mouseover', markerMouseOverListener)
+                                     .on ('contextmenu', markerSelectionListener)
+                                 ;
+                             marker.extId = prop;
+
+                             markers.push (marker);
+                             latlngs.push (coord);
+                             if (dwcaid2Marker[prop]) {
+                                 var val = dwcaid2Marker[prop];
+                                 // if stored object is marker make an array from it to add second marker to
+                                 if (val.extId) {
+                                     var darr = [val];
+                                     dwcaid2Marker[prop] = darr;
+                                     val = darr;
+                                 }
+                                 val.push (marker);
+                             } else {
+                                dwcaid2Marker[prop] = marker;
+                             }
+                         }
+                     }
 				 }
 			 } 
 			 markerGroup.addLayers (markers);
@@ -213,10 +236,33 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
 		map.addLayer (markerGroup);
 		map.fitBounds ((new L.LatLngBounds (latlngs)).pad(1.05));
+
+
+        // mask layers
+        var maskLayer = L.TileLayer.maskCanvas({opacity: 0.6,
+            radius: 5,  // radius in pixels or in meters (see useAbsoluteRadius)
+            useAbsoluteRadius: false,  // true: r in meters, false: r in pixels
+            color: '#aaf',  // the color of the layer
+            noMask: true
+        });
+        maskLayer.setData (latlngs);
+
+        curSelMaskLayer = L.TileLayer.maskCanvas({opacity: 0.8,
+            radius: 5,  // radius in pixels or in meters (see useAbsoluteRadius)
+            useAbsoluteRadius: false,  // true: r in meters, false: r in pixels
+            color: '#f00',  // the color of the layer
+            noMask: true
+        });
+        curSelMaskLayer.setData ([]);
+
+
+        var maskGroup = L.layerGroup ([maskLayer, curSelMaskLayer]);
+        //map.addLayer (maskLayer);
+        //map.addLayer (curSelMaskLayer);
 		
-		L.control.layers ({},{"Marker":markerGroup}).addTo(map);
+		L.control.layers ({},{"Marker Group":markerGroup, "Direct Plot":maskGroup}).addTo(map);
 		L.control.scale().addTo (map);
-		
+
 		VESPER.log ("group ", markerGroup);
 		VESPER.log ("map ", map);
 
@@ -236,7 +282,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
         //VESPER.log ("MGROUP COUNT: ", markerGroup._topClusterLevel.getChildCount());
 
-		if (map.hasLayer (markerGroup)) {
+		//if (map.hasLayer (markerGroup)) {
+        if (markerGroup !== undefined) {
             recalcHeightMultiplier ();
 
             markerGroup.eachLayer (function(layer) {
@@ -252,8 +299,17 @@ VESPER.DWCAMapLeaflet = function (divid) {
             for (var n = 0; n < vals.length; n++) {
                 var layer = dwcaid2Marker[vals[n]];
                 if (layer) {
-                    lls.push (layer.getLatLng());
-                    lastLayer = layer;
+                    if (layer.extId) {
+                        lls.push (layer.getLatLng());
+                        lastLayer = layer;
+                    }
+                    else {
+                        for (var m = layer.length; --m >= 0;) {
+                            var llayer = layer[m];
+                            lls.push (llayer.getLatLng());
+                            lastLayer = llayer;
+                        }
+                    }
                 }
             }
 
@@ -266,6 +322,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
                 var bb = new L.LatLngBounds (lls);
                 map.fitBounds(bb);
             }
+
+            curSelMaskLayer.setData (lls);
 		}
 	};
 
