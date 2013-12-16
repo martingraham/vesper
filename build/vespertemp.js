@@ -894,11 +894,11 @@ function DWCAModel (metaData, data) {
         var tempField = {fieldType:"acceptedNameUsageID", rowType:this.getMetaData().coreRowType};
         for (var iid in d) {
             if (!s.contains(iid)) {
-                var n = this.getNodeFromID(iid);
-                var accv = this.getDataPoint (n, tempField);
-                if (accv == iid) {
+                //var n = this.getNodeFromID(iid);
+                //var accv = this.getDataPoint (n, tempField);
+                //if (accv == iid) {
                     arr.push (iid);
-                }
+                //}
             }
         }
         s.clear ();
