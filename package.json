@@ -8,6 +8,8 @@
     "jquery-ui":"git://github.com/jquery/jquery-ui.git#master",
     "d3":"~3.0",
     "leaflet":"~0.7.0",
+    "leaflet-draw": "~0.2.2",
+    "leaflet.markercluster": "~1.0",
     "jszip":"git://github.com/martingraham/jszip.git#master"
   },
   "devDependencies": {
@@ -15,10 +17,12 @@
       "grunt-contrib-uglify": "~0.2.0",
       "grunt-contrib-concat": "~0.3.0",
       "grunt-contrib-cssmin": "~0.7.0",
-      "grunt-contrib-copy": "~0.4.1"
+      "grunt-contrib-copy": "~0.4.1",
+      "napa": "~0.2.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "napa domoritz/leaflet-maskcanvas"
   },
   "repository": {
     "type": "git",
