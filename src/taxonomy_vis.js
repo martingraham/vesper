@@ -30,12 +30,17 @@ VESPER.Tree = function(divid) {
     var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
     var cstore = {}, pstore = {};
     var textHide = "collapse";
+    var patternID = "hatchPattern";
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
 		"Alpha": function (a,b) { var n1 = model.getLabel(a); var n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
-		"Descendants": function (a,b) { var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b);
+		"Descendants": function (a,b) {
+                                        var s1 = containsCount (a);
+                                        var s2 = containsCount (b);
+                                        /*
+                                        var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b);
 										//VESPER.log (s1,s2);
 										if (s1 === undefined && s2 === undefined) {
 											var sp1 = model.getSpecimens(a);
@@ -43,6 +48,7 @@ VESPER.Tree = function(divid) {
 											var sp2 = model.getSpecimens(b);
 											s2 = sp2 ? sp2.length : 0;
 										}
+										*/
 										s1 = s1 || 0;
 										s2 = s2 || 0;
 										return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
@@ -123,6 +129,14 @@ VESPER.Tree = function(divid) {
            // .filter (function (d) { return allowedRanks[model.getTaxaData(d)[rankField]]; })
     };
 
+    function patternFill (nodeId) {
+        if (nodeId.charAt(0) == '*') {
+            //return "#000";
+            return ("url(#"+patternID+")");
+        }
+        return null;
+    }
+
 
     var partitionLayout = {
 
@@ -134,7 +148,7 @@ VESPER.Tree = function(divid) {
 
         booleanSelectedAttrs: function (group) {
             group
-                .attr ("class", function(d) { /* var node = getNode (d.id);*/ return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
+                .attr ("class", function(d) { return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
                 .attr ("y", function (d) { return d.x; })
                 .attr ("x", function (d) { return d.y; })
                 .attr("width", function (d) { return d.dy; })
@@ -144,13 +158,15 @@ VESPER.Tree = function(divid) {
 
         widthLogFunc: function (d) {
             var node = getNode (d.id);
-            var prop = node.sdcount > 0 && node.dcount > 0 ? Math.log (node.sdcount + 1) / Math.log (node.dcount + 1) : 0;
+            var containCount = containsCount (node);
+            var prop = node.sdcount > 0 && containCount > 0 ? Math.log (node.sdcount + 1) / Math.log (containCount + 1) : 0;
             return prop * d.dy;
         },
 
         xFunc: function (d) {
             var node = getNode (d.id);
-            var prop = node.sdcount > 0 && node.dcount > 0 ? Math.log (node.sdcount + 1) / Math.log (node.dcount + 1) : 0;
+            var containCount = containsCount (node);
+            var prop = node.sdcount > 0 && containCount > 0 ? Math.log (node.sdcount + 1) / Math.log (containCount + 1) : 0;
             return d.y + ((1.0 - prop) * d.dy);
         },
 
@@ -176,7 +192,7 @@ VESPER.Tree = function(divid) {
                     //: "rotate (0 0,0)"
                     ;
                 })
-                .attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
+                .attr ("clip-path", function (d) { var node = getNode (d.id); return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
             ;
         },
 
@@ -200,19 +216,16 @@ VESPER.Tree = function(divid) {
 
             newNodes.append ("svg:rect")
                 .call (partitionLayout.booleanSelectedAttrs)
-                //.call (mouseController)
+                .style ("fill", function(d) { return patternFill (d.id); })
             ;
-
 
             newNodes.append ("svg:rect")
                 .style ("opacity", 0.75)
                 .call (partitionLayout.propSharedAttrs, this.xFunc, this.widthLogFunc)
-                //.call (mouseController)
             ;
 
-
             newNodes.append ("svg:text")
-                .text (function(d) { var node = getNode (d.id) /*d*/; return model.getLabel(node); })
+                .text (function(d) { var node = getNode (d.id); return model.getLabel(node); })
                 //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
                 .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
                 .call (partitionLayout.sharedTextAttrs)
@@ -314,8 +327,7 @@ VESPER.Tree = function(divid) {
 
         booleanSelectedAttrs: function (group) {
             group
-                //.attr ("class", function(d) { var node = getNode (d.id) /*d*/; return "fatarc "+ (model.getSelectionModel().contains(d.id) ? "selected" : (node.sdcount > 0 ? "holdsSelected" : "unselected")); })
-                .attr ("class", function(d) { return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
+                 .attr ("class", function(d) { return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
             ;
         },
 
@@ -354,8 +366,9 @@ VESPER.Tree = function(divid) {
                 var diff = oRad - Math.sqrt (d.y);
                 var node = getNode (d.id);
                 var prop = 0;
-                if (node.dcount > 0 && node.sdcount > 0) {
-                    var prop = Math.log (node.sdcount + 1) / Math.log (node.dcount + 1);
+                var containCount = containsCount (node);
+                if (containCount > 0 && node.sdcount > 0) {
+                    var prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
                     prop *= prop; // square cos area of ring is square of radius
                 }
                 return oRad - (prop * diff);
@@ -443,6 +456,7 @@ VESPER.Tree = function(divid) {
                 .attr("d", sunburstLayout.arc)
                 .attr ("id", function(d) { return "arc"+ d.id; })
                 .call (sunburstLayout.booleanSelectedAttrs)
+                .style ("fill", function(d) { return patternFill (d.id); })
                 .each(sunburstLayout.cstash)
             ;
 
@@ -511,6 +525,31 @@ VESPER.Tree = function(divid) {
 		;
 		
 		svg.append ("defs");
+        var hatchPattern = svg.select("defs")
+            .append("pattern")
+            .attr("id", patternID)
+        ;
+        hatchPattern
+            .attr ("x", 0)
+            .attr ("y", 0)
+            .attr ("width", 4)
+            .attr ("height", 4)
+            .attr ("patternUnits", "userSpaceOnUse")
+            .attr ("viewBox", "0 0 4 4 ")
+        ;
+
+        var hatch = [0,2];
+        hatchPattern.selectAll("rect").data(hatch)
+            .enter()
+            .append("rect")
+                .attr ("x", function(d,i) { return i * 2; })
+                .attr ("y", function(d,i) { return i * 2; })
+                .attr ("width", 2)
+                .attr ("height", 2)
+                .attr ("class", "indHatch")
+                .classed ("unselected", true)
+        ;
+
 		
 		treeG = svg
 			.append ("svg:g")
@@ -663,7 +702,22 @@ VESPER.Tree = function(divid) {
 
 
 	function getNode (id) {
-        return model.getNodeFromID (id);
+        var node = model.getNodeFromID (id);
+        if (node == undefined) {
+            node = model.getNodeFromID (id.substring(1));
+        }
+        return node;
+    }
+
+    function containsCount (node) {
+        var cc = node.dcount;
+        if (!cc) {
+            var specs = model.getSpecimens(node);
+            if (specs) {
+                cc = specs.length;
+            }
+        }
+        return cc;
     }
 
 
@@ -701,7 +755,7 @@ VESPER.Tree = function(divid) {
 
         // add new nodes
         var newNodes = layout.makeNew (nodeBind.enter());
-        VESPER.log (newNodes);
+        //VESPER.log (newNodes);
         NapVisLib.d3fadeInNewGroups ([newNodes], enterDur, cumDelay);
     }
 

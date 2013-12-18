@@ -107,3 +107,9 @@ th.sanityTableHeading {
 .taxaControlsSort {
     display: visible;
 }
+
+.indHatch {
+    /*fill: #888;*/
+    /*fill-opacity: 0.25;*/
+    stroke: none;
+}
