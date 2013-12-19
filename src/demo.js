@@ -139,7 +139,9 @@ VESPER.demo = function (files, exampleDivID) {
             var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
             DWCAHelper.configureRadioButton (elem, checkListParent,
                 function(result) {
-                    getMeta().vesperAdds.nameLabelField = result;
+                    // had to make copy, as otherwise result passed in has changed and that affects previous metafile objects that took the value directly.
+                    var resCopy = $.extend ({}, result);
+                    getMeta().vesperAdds.nameLabelField = resCopy;
                     reselectVisChoices();
                 },
                 function() { return getMeta(); },

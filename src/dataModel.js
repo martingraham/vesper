@@ -100,10 +100,14 @@ function DWCAModel (metaData, data) {
     };
 
     this.getDataPoint = function (node, fieldAndRowObj) {
-        var findexer = this.getMetaData().fileData[fieldAndRowObj.rowType].filteredFieldIndex;
+        var rowData = this.getMetaData().fileData[fieldAndRowObj.rowType];
+        if (rowData == undefined) {
+            VESPER.log ("UNDEFINED ROW", fieldAndRowObj, this.getMetaData());
+        }
+        var findexer = rowData.filteredFieldIndex;
         var fid = findexer[fieldAndRowObj.fieldType];
         if (fid == undefined) { return undefined; }
-        var rid = this.getMetaData().fileData[fieldAndRowObj.rowType].extIndex;
+        var rid = rowData.extIndex;
         if (rid == undefined) {
             return this.getTaxaData(node)[fid];
         }

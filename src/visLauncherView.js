@@ -207,6 +207,12 @@ VESPER.VisLauncher = function (divid) {
             }
         }
 
+        // remove model from modelbag if it's in there, memory leak if we don't
+        var modelIndex = $.inArray (model, VESPER.modelBag);
+        if (modelIndex >= 0) {
+            VESPER.modelBag[modelIndex] = undefined;
+        }
+
         DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);

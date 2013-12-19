@@ -955,10 +955,14 @@ function DWCAModel (metaData, data) {
     };
 
     this.getDataPoint = function (node, fieldAndRowObj) {
-        var findexer = this.getMetaData().fileData[fieldAndRowObj.rowType].filteredFieldIndex;
+        var rowData = this.getMetaData().fileData[fieldAndRowObj.rowType];
+        if (rowData == undefined) {
+            VESPER.log ("UNDEFINED ROW", fieldAndRowObj, this.getMetaData());
+        }
+        var findexer = rowData.filteredFieldIndex;
         var fid = findexer[fieldAndRowObj.fieldType];
         if (fid == undefined) { return undefined; }
-        var rid = this.getMetaData().fileData[fieldAndRowObj.rowType].extIndex;
+        var rid = rowData.extIndex;
         if (rid == undefined) {
             return this.getTaxaData(node)[fid];
         }
@@ -1211,7 +1215,9 @@ VESPER.demo = function (files, exampleDivID) {
             var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
             DWCAHelper.configureRadioButton (elem, checkListParent,
                 function(result) {
-                    getMeta().vesperAdds.nameLabelField = result;
+                    // had to make copy, as otherwise result passed in has changed and that affects previous metafile objects that took the value directly.
+                    var resCopy = $.extend ({}, result);
+                    getMeta().vesperAdds.nameLabelField = resCopy;
                     reselectVisChoices();
                 },
                 function() { return getMeta(); },
@@ -3257,7 +3263,7 @@ VESPER.modelComparisons = new function () {
         for (var prop in smallData) {
             if (smallData.hasOwnProperty (prop)) {
                 var rec = smallData[prop];
-                var val = smallData.getDataPoint (rec, smallLinkField);
+                var val = small.getDataPoint (rec, smallLinkField);
                 invMap[val] = prop;
             }
         }
@@ -3266,7 +3272,7 @@ VESPER.modelComparisons = new function () {
         for (var prop in largeData) {
             if (largeData.hasOwnProperty (prop)) {
                 var rec = largeData[prop];
-                var val = largeData.getDataPoint (rec, largeLinkField);
+                var val = large.getDataPoint (rec, largeLinkField);
 
                 if (invMap[val]) {
                     small.getSelectionModel().addToMap (invMap[val]);
@@ -5063,6 +5069,12 @@ VESPER.VisLauncher = function (divid) {
                 }
                 model.removeView (vizzes[n]);
             }
+        }
+
+        // remove model from modelbag if it's in there, memory leak if we don't
+        var modelIndex = $.inArray (model, VESPER.modelBag);
+        if (modelIndex >= 0) {
+            VESPER.modelBag[modelIndex] = undefined;
         }
 
         DWCAHelper.recurseClearEvents (d3.select(divid));
