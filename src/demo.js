@@ -16,7 +16,7 @@ VESPER.demo = function (files, exampleDivID) {
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
 
     var visChoiceData = [
-        {title:"VisChoices", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
+        {title:"Controls", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
             newVisFunc: function (div) { return new VESPER.VisLauncher (div);},
             setupFunc: function () {return {"visChoiceData":visChoiceData}}
         },

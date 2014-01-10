@@ -42,7 +42,7 @@ VESPER.VisLauncher = function (divid) {
             .append ("button")
             .attr ("class", "visChoice")
             .attr ("type", "button")
-            .attr ("id", function(d) { return d.title;})
+            //.attr ("id", function(d) { return d.title;})
             .text (function(d) { return d.title; })
             .on ("click", function(d) {
                 self.makeVis (d, model);
@@ -94,11 +94,13 @@ VESPER.VisLauncher = function (divid) {
 
     function setModelCompareOps () {
         var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        encloser.append ("p").attr("class", "controlHeading").text("Cross-Model Comparison");
+        encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
+        var basicText = "Compare This";
 
         encloser.append("button")
             .attr ("type", "button")
-            .text ("Compare Model")
+            .attr ("class", "compareVesperModel")
+            .text (basicText)
             .on ("click", function() {
                 VESPER.modelBag.push ({"model":model});
                 VESPER.log ("ModelBag", VESPER.modelBag);
@@ -108,6 +110,16 @@ VESPER.VisLauncher = function (divid) {
                         VESPER.modelBag[1].model.getMetaData().vesperAdds.nameLabelField
                     );
                     VESPER.modelBag.length = 0;
+                    d3.selectAll("button.compareVesperModel")
+                        .classed ("taxonomyCompareActive", false)
+                        .text (basicText)
+                    ;
+                } else {
+                    var curButtonSel = d3.select(this);
+                    curButtonSel.classed ("taxonomyCompareActive", true);
+                    d3.selectAll("button.compareVesperModel").filter("*:not(.taxonomyCompareActive)").text (basicText+" to "+model.name); // smart alec way using css conditional selectors
+                    //d3.selectAll("button.compareVesperModel").text (basicText+" to "+model.name);
+                    //curButtonSel.text (basicText);
                 }
             })
         ;
@@ -204,11 +216,6 @@ VESPER.VisLauncher = function (divid) {
                 .append("polygon")
                 .attr("points", "0,12 12,12 6,0")
                 .attr("class", "showHideColours")
-            /*
-            .append ("img")
-                .attr ("src", VESPER.imgbase+"close.png")
-                .attr ("alt", "Hide/Show")
-                */
         ;
     }
 

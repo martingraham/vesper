@@ -37,21 +37,11 @@ VESPER.Tree = function(divid) {
 		"Alpha": function (a,b) { var n1 = model.getLabel(a); var n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
 		"Descendants": function (a,b) {
-                                        var s1 = containsCount (a);
-                                        var s2 = containsCount (b);
-                                        /*
-                                        var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b);
-										//VESPER.log (s1,s2);
-										if (s1 === undefined && s2 === undefined) {
-											var sp1 = model.getSpecimens(a);
-											s1 = sp1 ? sp1.length : 0;
-											var sp2 = model.getSpecimens(b);
-											s2 = sp2 ? sp2.length : 0;
-										}
-										*/
-										s1 = s1 || 0;
-										s2 = s2 || 0;
-										return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
+            var s1 = containsCount (a);
+            var s2 = containsCount (b);
+            s1 = s1 || 0;
+            s2 = s2 || 0;
+            return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
 		},
         "Selected": function (a,b) {
             var sModel = model.getSelectionModel();

@@ -12,8 +12,8 @@ VESPER.modelComparisons = new function () {
         var large = (small == model1 ? model2 : model1);
         var smallLinkField = (small == model1 ? linkField1 : linkField2);
         var largeLinkField = (small == model1 ? linkField2 : linkField1);
-        var smallData = small.getData();
-        var largeData = large.getData();
+        var smallData = small.getTaxonomy();
+        var largeData = large.getTaxonomy();
         var smallSelection = small.getSelectionModel();
         var largeSelection = large.getSelectionModel();
         VESPER.log ("lf", linkField1, linkField2);
