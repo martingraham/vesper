@@ -25,6 +25,7 @@ VESPER.VisLauncher = function (divid) {
         setVisChoices (choiceData, buttonVisBlockSel);
         showButtons (buttonVisBlockSel);
         setSelectionOps ();
+        setModelCompareOps ();
     };
 
     this.update = function () {};
@@ -33,8 +34,11 @@ VESPER.VisLauncher = function (divid) {
 
 
     function setVisChoices (data, parentDivSel) {
-        var visChoices = parentDivSel.selectAll("button").data (data);
-        visChoices.enter()
+        var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        encloser.append ("p").attr("class", "controlHeading").text("Launch Visualisation");
+
+        var visChoices = encloser.selectAll("button").data (data);
+        var visButtons = visChoices.enter()
             .append ("button")
             .attr ("class", "visChoice")
             .attr ("type", "button")
@@ -48,25 +52,53 @@ VESPER.VisLauncher = function (divid) {
     }
 
     function setSelectionOps () {
-        d3.select(divid).append("hr");
-        d3.select(divid).append ("h4").text("Selection Ops");
 
+        var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        encloser.append ("p").attr("class", "controlHeading").text("Current Selections");
 
         if (window.requestFileSystem) {
-            d3.select(divid).append("button")
+            encloser.append("button")
                 .attr ("type", "button")
-                .text ("SAVE")
+                .text ("Save")
                 .on ("click", function(d) {
                     NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
                 })
             ;
         } else {
-            NapVisLib.html5Lacks(d3.select(divid), "[Browser does not support FileWriter]");
+            NapVisLib.html5Lacks(encloser, "[Browser does not support FileWriter]");
         }
 
-        d3.select(divid).append("button")
+
+        encloser.append("button")
             .attr ("type", "button")
-            .text ("COMPARE MODEL")
+            .text ("Invert Selection")
+            .on ("click", function() {
+                model.invertSelection ();
+            })
+        ;
+
+        encloser.append("button")
+            .attr ("type", "button")
+            //.attr ("id", "clearSel")
+            .text ("Clear")
+            .on ("click", function(d) {
+                model.getSelectionModel().clear();
+                model.getSelectionModel().update();
+            })
+        ;
+
+        encloser.selectAll("button").style("display", "block");
+    }
+
+
+
+    function setModelCompareOps () {
+        var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        encloser.append ("p").attr("class", "controlHeading").text("Cross-Model Comparison");
+
+        encloser.append("button")
+            .attr ("type", "button")
+            .text ("Compare Model")
             .on ("click", function() {
                 VESPER.modelBag.push ({"model":model});
                 VESPER.log ("ModelBag", VESPER.modelBag);
@@ -80,25 +112,10 @@ VESPER.VisLauncher = function (divid) {
             })
         ;
 
-        d3.select(divid).append("button")
-            .attr ("type", "button")
-            .text ("INVERT SELECTION")
-            .on ("click", function() {
-                model.invertSelection ();
-            })
-        ;
-
-
-        d3.select(divid).append("button")
-            .attr ("type", "button")
-            //.attr ("id", "clearSel")
-            .text ("CLEAR")
-            .on ("click", function(d) {
-                model.getSelectionModel().clear();
-                model.getSelectionModel().update();
-            })
-        ;
+        encloser.selectAll("button").style("display", "block");
     }
+
+
 
     function showButtons (divSel) {
         var visChoices = divSel.selectAll("button.visChoice");
@@ -210,7 +227,10 @@ VESPER.VisLauncher = function (divid) {
         // remove model from modelbag if it's in there, memory leak if we don't
         var modelIndex = $.inArray (model, VESPER.modelBag);
         if (modelIndex >= 0) {
+            // supersafe and redundant code
             VESPER.modelBag[modelIndex] = undefined;
+            VESPER.modelBag = VESPER.modelBag.splice (modelIndex, 1);
+            VESPER.modelBag.length = 0;
         }
 
         DWCAHelper.recurseClearEvents (d3.select(divid));

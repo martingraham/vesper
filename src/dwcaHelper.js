@@ -336,18 +336,25 @@ var DWCAHelper = new function () {
                 .property ("checked", false)
             ;
 
+
+
             var newLabel = newGroup
                 .append("label")
                 .attr ("for", titleOrName)
-                .text ( titleOrName)
+               // .text ( titleOrName)
             ;
 
-            if (cdata.icon) {
+            if (cdata.icon || cdata.image) {
                 newLabel.append ("img")
+                    .attr ("class", "vesperIcon")
                     .attr ("alt",  titleOrName)
                     .attr ("src", function(d) { return d.image || d.icon; })
                 ;
             }
+
+            newLabel.append("span")
+                .text ( titleOrName)
+            ;
         }
 
         return cboxGroup;

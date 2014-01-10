@@ -130,7 +130,7 @@ VESPER.Tree = function(divid) {
     };
 
     function patternFill (nodeId) {
-        if (nodeId.charAt(0) == '*') {
+        if (nodeId !== undefined && nodeId.charAt(0) == '*') {
             //return "#000";
             return ("url(#"+patternID+")");
         }
@@ -598,7 +598,7 @@ VESPER.Tree = function(divid) {
         NapVisLib.makeSectionedDiv (cpanel,
             [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
                 {"header":"Sort", sectionID:"Sort"}],
-        "classIgnored");
+        "section");
 
         //var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
         //spaceDiv.append("p").html("Space Allocation");

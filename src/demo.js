@@ -32,7 +32,7 @@ VESPER.demo = function (files, exampleDivID) {
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
             setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}}
         },
-        {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"geo.png", height: "200px",
+        {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
             //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
             setupFunc: function () { return {"dateField":"eventDate"}}
@@ -139,9 +139,9 @@ VESPER.demo = function (files, exampleDivID) {
             var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
             DWCAHelper.configureRadioButton (elem, checkListParent,
                 function(result) {
-                    // had to make copy, as otherwise result passed in has changed and that affects previous metafile objects that took the value directly.
-                    var resCopy = $.extend ({}, result);
-                    getMeta().vesperAdds.nameLabelField = resCopy;
+                    // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
+                    // (remember, we can have more than one dataset open at a time)
+                    getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
                     reselectVisChoices();
                 },
                 function() { return getMeta(); },
@@ -224,9 +224,15 @@ VESPER.demo = function (files, exampleDivID) {
 
 
     var asyncSetUpFromMeta = function (bufferOrStringData) {
-        d3.select("#filesizePlaceholder").html("zipped: "
-            +(bufferOrStringData.length | bufferOrStringData.byteLength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            +" bytes");
+        var pHolder = d3.select("#filesizePlaceholder");
+        pHolder.html(null);
+        pHolder.append("img")
+            .attr("class", "vesperIcon")
+            .attr("src", VESPER.imgbase+"zipIcon.gif")
+        ;
+        pHolder.append("span")
+            .text ((bufferOrStringData.length | bufferOrStringData.byteLength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") +" bytes")
+        ;
 
         if (VESPER.alerts) { alert ("check memory use in task manager"); }
         var accessZip = VESPER.DWCAParser.accessZip (bufferOrStringData, "meta.xml");

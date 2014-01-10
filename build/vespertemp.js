@@ -428,7 +428,7 @@ VESPER.BarChart = function(divid) {
             ;
 
             NapVisLib.addHRGrooves (butdiv);
-            NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"classIgnored");
+            NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
 
             var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
@@ -1108,7 +1108,7 @@ VESPER.demo = function (files, exampleDivID) {
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
             setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}}
         },
-        {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"geo.png", height: "200px",
+        {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
             //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
             setupFunc: function () { return {"dateField":"eventDate"}}
@@ -1215,9 +1215,9 @@ VESPER.demo = function (files, exampleDivID) {
             var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
             DWCAHelper.configureRadioButton (elem, checkListParent,
                 function(result) {
-                    // had to make copy, as otherwise result passed in has changed and that affects previous metafile objects that took the value directly.
-                    var resCopy = $.extend ({}, result);
-                    getMeta().vesperAdds.nameLabelField = resCopy;
+                    // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
+                    // (remember, we can have more than one dataset open at a time)
+                    getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
                     reselectVisChoices();
                 },
                 function() { return getMeta(); },
@@ -1300,9 +1300,15 @@ VESPER.demo = function (files, exampleDivID) {
 
 
     var asyncSetUpFromMeta = function (bufferOrStringData) {
-        d3.select("#filesizePlaceholder").html("zipped: "
-            +(bufferOrStringData.length | bufferOrStringData.byteLength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            +" bytes");
+        var pHolder = d3.select("#filesizePlaceholder");
+        pHolder.html(null);
+        pHolder.append("img")
+            .attr("class", "vesperIcon")
+            .attr("src", VESPER.imgbase+"zipIcon.gif")
+        ;
+        pHolder.append("span")
+            .text ((bufferOrStringData.length | bufferOrStringData.byteLength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") +" bytes")
+        ;
 
         if (VESPER.alerts) { alert ("check memory use in task manager"); }
         var accessZip = VESPER.DWCAParser.accessZip (bufferOrStringData, "meta.xml");
@@ -1716,18 +1722,25 @@ var DWCAHelper = new function () {
                 .property ("checked", false)
             ;
 
+
+
             var newLabel = newGroup
                 .append("label")
                 .attr ("for", titleOrName)
-                .text ( titleOrName)
+               // .text ( titleOrName)
             ;
 
-            if (cdata.icon) {
+            if (cdata.icon || cdata.image) {
                 newLabel.append ("img")
+                    .attr ("class", "vesperIcon")
                     .attr ("alt",  titleOrName)
                     .attr ("src", function(d) { return d.image || d.icon; })
                 ;
             }
+
+            newLabel.append("span")
+                .text ( titleOrName)
+            ;
         }
 
         return cboxGroup;
@@ -3251,19 +3264,20 @@ VESPER.modelComparisons = new function () {
         var largeLinkField = (small == model1 ? linkField2 : linkField1);
         var smallData = small.getData();
         var largeData = large.getData();
+        var smallSelection = small.getSelectionModel();
+        var largeSelection = large.getSelectionModel();
         VESPER.log ("lf", linkField1, linkField2);
 
-        small.getSelectionModel().clear();
-        large.getSelectionModel().clear();
+        smallSelection.clear();
+        largeSelection.clear();
 
-        small.getSelectionModel().setUpdating (true);
-        large.getSelectionModel().setUpdating (true);
+        smallSelection.setUpdating (true);
+        largeSelection.setUpdating (true);
 
         var invMap = {};
         for (var prop in smallData) {
             if (smallData.hasOwnProperty (prop)) {
-                var rec = smallData[prop];
-                var val = small.getDataPoint (rec, smallLinkField);
+                var val = small.getDataPoint (smallData[prop], smallLinkField);
                 invMap[val] = prop;
             }
         }
@@ -3271,22 +3285,21 @@ VESPER.modelComparisons = new function () {
         var c = 0;
         for (var prop in largeData) {
             if (largeData.hasOwnProperty (prop)) {
-                var rec = largeData[prop];
-                var val = large.getDataPoint (rec, largeLinkField);
+                var val = large.getDataPoint (largeData[prop], largeLinkField);
 
                 if (invMap[val]) {
-                    small.getSelectionModel().addToMap (invMap[val]);
-                    large.getSelectionModel().addToMap (prop);
+                    smallSelection.addToMap (invMap[val]);
+                    largeSelection.addToMap (prop);
                     //if (c % 100 == 0) {
                     //    VESPER.log ("match", val, invMap[val], prop);
                     //}
-                    c++;
+                    //c++;
                 }
             }
         }
 
-        small.getSelectionModel().setUpdating (false);
-        large.getSelectionModel().setUpdating (false);
+        smallSelection.setUpdating (false);
+        largeSelection.setUpdating (false);
     };
 
     function smaller (model1, model2) {
@@ -4027,7 +4040,7 @@ VESPER.Tree = function(divid) {
     };
 
     function patternFill (nodeId) {
-        if (nodeId.charAt(0) == '*') {
+        if (nodeId !== undefined && nodeId.charAt(0) == '*') {
             //return "#000";
             return ("url(#"+patternID+")");
         }
@@ -4495,7 +4508,7 @@ VESPER.Tree = function(divid) {
         NapVisLib.makeSectionedDiv (cpanel,
             [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
                 {"header":"Sort", sectionID:"Sort"}],
-        "classIgnored");
+        "section");
 
         //var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
         //spaceDiv.append("p").html("Space Allocation");
@@ -4889,6 +4902,7 @@ VESPER.VisLauncher = function (divid) {
         setVisChoices (choiceData, buttonVisBlockSel);
         showButtons (buttonVisBlockSel);
         setSelectionOps ();
+        setModelCompareOps ();
     };
 
     this.update = function () {};
@@ -4897,8 +4911,11 @@ VESPER.VisLauncher = function (divid) {
 
 
     function setVisChoices (data, parentDivSel) {
-        var visChoices = parentDivSel.selectAll("button").data (data);
-        visChoices.enter()
+        var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        encloser.append ("p").attr("class", "controlHeading").text("Launch Visualisation");
+
+        var visChoices = encloser.selectAll("button").data (data);
+        var visButtons = visChoices.enter()
             .append ("button")
             .attr ("class", "visChoice")
             .attr ("type", "button")
@@ -4912,25 +4929,53 @@ VESPER.VisLauncher = function (divid) {
     }
 
     function setSelectionOps () {
-        d3.select(divid).append("hr");
-        d3.select(divid).append ("h4").text("Selection Ops");
 
+        var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        encloser.append ("p").attr("class", "controlHeading").text("Current Selections");
 
         if (window.requestFileSystem) {
-            d3.select(divid).append("button")
+            encloser.append("button")
                 .attr ("type", "button")
-                .text ("SAVE")
+                .text ("Save")
                 .on ("click", function(d) {
                     NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
                 })
             ;
         } else {
-            NapVisLib.html5Lacks(d3.select(divid), "[Browser does not support FileWriter]");
+            NapVisLib.html5Lacks(encloser, "[Browser does not support FileWriter]");
         }
 
-        d3.select(divid).append("button")
+
+        encloser.append("button")
             .attr ("type", "button")
-            .text ("COMPARE MODEL")
+            .text ("Invert Selection")
+            .on ("click", function() {
+                model.invertSelection ();
+            })
+        ;
+
+        encloser.append("button")
+            .attr ("type", "button")
+            //.attr ("id", "clearSel")
+            .text ("Clear")
+            .on ("click", function(d) {
+                model.getSelectionModel().clear();
+                model.getSelectionModel().update();
+            })
+        ;
+
+        encloser.selectAll("button").style("display", "block");
+    }
+
+
+
+    function setModelCompareOps () {
+        var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        encloser.append ("p").attr("class", "controlHeading").text("Cross-Model Comparison");
+
+        encloser.append("button")
+            .attr ("type", "button")
+            .text ("Compare Model")
             .on ("click", function() {
                 VESPER.modelBag.push ({"model":model});
                 VESPER.log ("ModelBag", VESPER.modelBag);
@@ -4944,25 +4989,10 @@ VESPER.VisLauncher = function (divid) {
             })
         ;
 
-        d3.select(divid).append("button")
-            .attr ("type", "button")
-            .text ("INVERT SELECTION")
-            .on ("click", function() {
-                model.invertSelection ();
-            })
-        ;
-
-
-        d3.select(divid).append("button")
-            .attr ("type", "button")
-            //.attr ("id", "clearSel")
-            .text ("CLEAR")
-            .on ("click", function(d) {
-                model.getSelectionModel().clear();
-                model.getSelectionModel().update();
-            })
-        ;
+        encloser.selectAll("button").style("display", "block");
     }
+
+
 
     function showButtons (divSel) {
         var visChoices = divSel.selectAll("button.visChoice");
@@ -5074,7 +5104,10 @@ VESPER.VisLauncher = function (divid) {
         // remove model from modelbag if it's in there, memory leak if we don't
         var modelIndex = $.inArray (model, VESPER.modelBag);
         if (modelIndex >= 0) {
+            // supersafe and redundant code
             VESPER.modelBag[modelIndex] = undefined;
+            VESPER.modelBag = VESPER.modelBag.splice (modelIndex, 1);
+            VESPER.modelBag.length = 0;
         }
 
         DWCAHelper.recurseClearEvents (d3.select(divid));

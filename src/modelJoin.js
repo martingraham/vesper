@@ -14,19 +14,20 @@ VESPER.modelComparisons = new function () {
         var largeLinkField = (small == model1 ? linkField2 : linkField1);
         var smallData = small.getData();
         var largeData = large.getData();
+        var smallSelection = small.getSelectionModel();
+        var largeSelection = large.getSelectionModel();
         VESPER.log ("lf", linkField1, linkField2);
 
-        small.getSelectionModel().clear();
-        large.getSelectionModel().clear();
+        smallSelection.clear();
+        largeSelection.clear();
 
-        small.getSelectionModel().setUpdating (true);
-        large.getSelectionModel().setUpdating (true);
+        smallSelection.setUpdating (true);
+        largeSelection.setUpdating (true);
 
         var invMap = {};
         for (var prop in smallData) {
             if (smallData.hasOwnProperty (prop)) {
-                var rec = smallData[prop];
-                var val = small.getDataPoint (rec, smallLinkField);
+                var val = small.getDataPoint (smallData[prop], smallLinkField);
                 invMap[val] = prop;
             }
         }
@@ -34,22 +35,21 @@ VESPER.modelComparisons = new function () {
         var c = 0;
         for (var prop in largeData) {
             if (largeData.hasOwnProperty (prop)) {
-                var rec = largeData[prop];
-                var val = large.getDataPoint (rec, largeLinkField);
+                var val = large.getDataPoint (largeData[prop], largeLinkField);
 
                 if (invMap[val]) {
-                    small.getSelectionModel().addToMap (invMap[val]);
-                    large.getSelectionModel().addToMap (prop);
+                    smallSelection.addToMap (invMap[val]);
+                    largeSelection.addToMap (prop);
                     //if (c % 100 == 0) {
                     //    VESPER.log ("match", val, invMap[val], prop);
                     //}
-                    c++;
+                    //c++;
                 }
             }
         }
 
-        small.getSelectionModel().setUpdating (false);
-        large.getSelectionModel().setUpdating (false);
+        smallSelection.setUpdating (false);
+        largeSelection.setUpdating (false);
     };
 
     function smaller (model1, model2) {

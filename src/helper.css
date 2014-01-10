@@ -131,11 +131,6 @@ span.fieldGroup {
     display: block;
 }
 
-h4.notoppad {
-    padding-top: 0px;
-    margin-top: 0px;
-    margin-bottom: 5px;
-}
 
 /* hide advanced option button */
 #advancedSelectOuter {
@@ -144,7 +139,9 @@ h4.notoppad {
 
 
 
-
+img.vesperIcon {
+    margin-right: 7px;
+}
 
 
 
@@ -202,6 +199,7 @@ tr.col {
     font-size: 10pt;
     font-weight: normal;
     font-family: "OCR A Extended", Courier, monospace;
+    display: inline-block;
 }
 
 .visWrapper {

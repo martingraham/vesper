@@ -90,6 +90,10 @@ DIV .hack {
     top:30px;
 }
 
+.visControl DIV.section {
+    margin-top: 6px;
+}
+
 .visControl hr {
     border: 1px solid #888;
     border-top-width: 1px;
@@ -97,17 +101,25 @@ DIV .hack {
     margin: 1px;
 }
 
-.visControl P {
+.controlHeading {
     font-weight: bold;
-    /*text-decoration: underline;*/
-    margin-top : 6px;
+    margin-top : 0px;
     margin-bottom: 0px;
 }
-
 
 .visControl input {
     display: inline-block;
 }
+
+.expansionControl {
+    border: 1px solid #a0a0a0;
+    border-radius: 4px;
+    width: 16px;
+    margin-right: 2px;
+    text-align: center;
+    display: inline-block;
+}
+
 
 .selected {
     fill: #f00;
@@ -190,11 +202,12 @@ DIV .hack {
     stroke-width: 1px;
 }
 
-.expansionControl {
-    border: 1px solid #a0a0a0;
-    border-radius: 4px;
-    width: 16px;
-    margin-right: 2px;
-    text-align: center;
+
+DIV.encloser {
+    padding: 6px;
+    margin-top: 6px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background: #f8f8f8;
     display: inline-block;
 }
