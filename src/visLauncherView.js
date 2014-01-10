@@ -38,16 +38,25 @@ VESPER.VisLauncher = function (divid) {
         encloser.append ("p").attr("class", "controlHeading").text("Launch Visualisation");
 
         var visChoices = encloser.selectAll("button").data (data);
-        var visButtons = visChoices.enter()
+        var buttons = visChoices.enter()
             .append ("button")
             .attr ("class", "visChoice")
             .attr ("type", "button")
             //.attr ("id", function(d) { return d.title;})
-            .text (function(d) { return d.title; })
+            //.text (function(d) { return d.title; })
             .on ("click", function(d) {
                 self.makeVis (d, model);
                 return false;
             })
+        ;
+
+        buttons.append ("img")
+                .attr("src", function(d) { return d.icon || d.image; })
+                .attr ("class", "vesperIcon")
+        ;
+
+        buttons.append ("span")
+            .text (function(d) { return d.title; })
         ;
     }
 

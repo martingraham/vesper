@@ -16,7 +16,7 @@ DIV .vis {
 	margin: 0px;
 	padding: 0;
 	border: 0px solid black;
-	resize: horizontal;
+	/*resize: horizontal; */
     overflow: auto;
 }
 
@@ -210,6 +210,10 @@ DIV.encloser {
     border-radius: 8px;
     background: #f8f8f8;
     display: inline-block;
+}
+
+.taxonomyCompareActive {
+    background: yellow;
 }
 
 .timeBin {

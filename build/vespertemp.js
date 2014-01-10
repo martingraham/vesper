@@ -1092,7 +1092,7 @@ VESPER.demo = function (files, exampleDivID) {
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
 
     var visChoiceData = [
-        {title:"VisChoices", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
+        {title:"Controls", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
             newVisFunc: function (div) { return new VESPER.VisLauncher (div);},
             setupFunc: function () {return {"visChoiceData":visChoiceData}}
         },
@@ -1113,15 +1113,15 @@ VESPER.demo = function (files, exampleDivID) {
             //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
             setupFunc: function () { return {"dateField":"eventDate"}}
         },
-        {title:"Sanity Check", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"geo.png", height: "400px",
+        {title:"Sanity Check", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.Sanity (div);},
             setupFunc: function () { return undefined; }
         },
-        {title:"Taxa Distribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "200px",
+        {title:"Taxa Distribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"dist.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TaxaDistribution (div);},
             setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}}
         },
-        {title:"Search Box", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"geo.png", height: "150px", width: "200px",
+        {title:"Search Box", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "150px", width: "200px",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
             setupFunc: function () { return {} ;}
         }
@@ -3262,8 +3262,8 @@ VESPER.modelComparisons = new function () {
         var large = (small == model1 ? model2 : model1);
         var smallLinkField = (small == model1 ? linkField1 : linkField2);
         var largeLinkField = (small == model1 ? linkField2 : linkField1);
-        var smallData = small.getData();
-        var largeData = large.getData();
+        var smallData = small.getTaxonomy();
+        var largeData = large.getTaxonomy();
         var smallSelection = small.getSelectionModel();
         var largeSelection = large.getSelectionModel();
         VESPER.log ("lf", linkField1, linkField2);
@@ -3947,21 +3947,11 @@ VESPER.Tree = function(divid) {
 		"Alpha": function (a,b) { var n1 = model.getLabel(a); var n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
 		"Descendants": function (a,b) {
-                                        var s1 = containsCount (a);
-                                        var s2 = containsCount (b);
-                                        /*
-                                        var s1 = model.getDescendantCount(a); var s2 = model.getDescendantCount(b);
-										//VESPER.log (s1,s2);
-										if (s1 === undefined && s2 === undefined) {
-											var sp1 = model.getSpecimens(a);
-											s1 = sp1 ? sp1.length : 0;
-											var sp2 = model.getSpecimens(b);
-											s2 = sp2 ? sp2.length : 0;
-										}
-										*/
-										s1 = s1 || 0;
-										s2 = s2 || 0;
-										return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
+            var s1 = containsCount (a);
+            var s2 = containsCount (b);
+            s1 = s1 || 0;
+            s2 = s2 || 0;
+            return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
 		},
         "Selected": function (a,b) {
             var sModel = model.getSelectionModel();
@@ -4915,16 +4905,25 @@ VESPER.VisLauncher = function (divid) {
         encloser.append ("p").attr("class", "controlHeading").text("Launch Visualisation");
 
         var visChoices = encloser.selectAll("button").data (data);
-        var visButtons = visChoices.enter()
+        var buttons = visChoices.enter()
             .append ("button")
             .attr ("class", "visChoice")
             .attr ("type", "button")
-            .attr ("id", function(d) { return d.title;})
-            .text (function(d) { return d.title; })
+            //.attr ("id", function(d) { return d.title;})
+            //.text (function(d) { return d.title; })
             .on ("click", function(d) {
                 self.makeVis (d, model);
                 return false;
             })
+        ;
+
+        buttons.append ("img")
+                .attr("src", function(d) { return d.icon || d.image; })
+                .attr ("class", "vesperIcon")
+        ;
+
+        buttons.append ("span")
+            .text (function(d) { return d.title; })
         ;
     }
 
@@ -4971,11 +4970,13 @@ VESPER.VisLauncher = function (divid) {
 
     function setModelCompareOps () {
         var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        encloser.append ("p").attr("class", "controlHeading").text("Cross-Model Comparison");
+        encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
+        var basicText = "Compare This";
 
         encloser.append("button")
             .attr ("type", "button")
-            .text ("Compare Model")
+            .attr ("class", "compareVesperModel")
+            .text (basicText)
             .on ("click", function() {
                 VESPER.modelBag.push ({"model":model});
                 VESPER.log ("ModelBag", VESPER.modelBag);
@@ -4985,6 +4986,16 @@ VESPER.VisLauncher = function (divid) {
                         VESPER.modelBag[1].model.getMetaData().vesperAdds.nameLabelField
                     );
                     VESPER.modelBag.length = 0;
+                    d3.selectAll("button.compareVesperModel")
+                        .classed ("taxonomyCompareActive", false)
+                        .text (basicText)
+                    ;
+                } else {
+                    var curButtonSel = d3.select(this);
+                    curButtonSel.classed ("taxonomyCompareActive", true);
+                    d3.selectAll("button.compareVesperModel").filter("*:not(.taxonomyCompareActive)").text (basicText+" to "+model.name); // smart alec way using css conditional selectors
+                    //d3.selectAll("button.compareVesperModel").text (basicText+" to "+model.name);
+                    //curButtonSel.text (basicText);
                 }
             })
         ;
@@ -5081,11 +5092,6 @@ VESPER.VisLauncher = function (divid) {
                 .append("polygon")
                 .attr("points", "0,12 12,12 6,0")
                 .attr("class", "showHideColours")
-            /*
-            .append ("img")
-                .attr ("src", VESPER.imgbase+"close.png")
-                .attr ("alt", "Hide/Show")
-                */
         ;
     }
 
