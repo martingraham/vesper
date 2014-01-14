@@ -24,6 +24,7 @@ function DWCAModel (metaData, data) {
     this.getData = function (){ return this.data.records; };
     this.getTaxonomy = function () { return this.data.tree; };
     this.getRoot = function (){ return this.data.root; };
+    this.getExplicitTaxonomy = function () { return this.data.tree; };
 
     var viewCount = 0;
     var sessionModelViewID = 0;

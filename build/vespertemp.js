@@ -879,6 +879,7 @@ function DWCAModel (metaData, data) {
     this.getData = function (){ return this.data.records; };
     this.getTaxonomy = function () { return this.data.tree; };
     this.getRoot = function (){ return this.data.root; };
+    this.getExplicitTaxonomy = function () { return this.data.tree; };
 
     var viewCount = 0;
     var sessionModelViewID = 0;
@@ -2288,10 +2289,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
 		
 VESPER.DWCAParser = new function () {
 
-    //this.TDATA = "tdata";
-    //this.TAXA = "taxa";
-    //this.EXT = "ext";
-
     this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
     this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
     this.EXT = 2;       // extra data, i.e. non-core data attachments
@@ -2408,8 +2405,8 @@ VESPER.DWCAParser = new function () {
 
     // sets of terms for which values can be shared, again opening them up to memory saving through a map.
     // When terms holds the same index in the object below, it indicates a shared value map could be common to those terms.
-    // The most common example is parent and taxon ids, all parent name ids must turn up as name ids in another record (unless it's a root)
-    // and parent name ids are often repeated anyways. It also works for the base ids which are often just copies of name ids.
+    // The most common example is parent and acceptedName ids, all parent name ids must turn up as name ids in another record (unless it's a root)
+    // and parent name ids are often repeated anyways. It also works for the base taxonids which are often just copies of name ids.
     this.sharedValuesTerms = {"taxonID":1, "acceptedNameUsageID":1, "parentNameUsageID":1, "originalNameUsageID":1};
 
 
@@ -2449,7 +2446,6 @@ VESPER.DWCAParser = new function () {
     this.xsd = null;
 
     this.loadxsd = function (xsdFile) {
-        VESPER.log ("yp2", xsdFile);
         $.get(xsdFile, function(d){
             // stupid firefox reads in a BOM mark (probably stupid me somewhere else, but I ain't got time)
             //if (d.charCodeAt(0) > 65000 || d.charCodeAt(0) === 255) {
@@ -2457,10 +2453,8 @@ VESPER.DWCAParser = new function () {
             //}
             VESPER.log ("XSD", d, typeof d);
             VESPER.DWCAParser.xsd = (typeof d == "string" ? $(NapVisLib.parseXML(d)) : $(d));
-           // VESPER.log ("XSD", DWCAParser.xsd);
             VESPER.DWCAParser.makeRowTypeDefaults (VESPER.DWCAParser.xsd);
             VESPER.DWCAParser.makeFieldAttrNames (VESPER.DWCAParser.xsd);
-
         });
     };
 
@@ -2480,7 +2474,8 @@ VESPER.DWCAParser = new function () {
                 break;
             }
         }
-        console.log ("ZIP ENTRIES", zip.zipEntries, newMetaFileName);
+
+        VESPER.log ("ZIP ENTRIES", zip.zipEntries, newMetaFileName);
         if (newMetaFileName !== undefined) {
             zip.zipEntries.readLocalFile (newMetaFileName);
             VESPER.log ("unzipped ", zip, zip.files);
@@ -2497,7 +2492,7 @@ VESPER.DWCAParser = new function () {
     this.filterReadZipEntriesToMakeModel = function (zip, mdata) {
         var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
         var fileRows = {};
-        VESPER.log ("ZIP:", zip);
+        //VESPER.log ("ZIP:", zip);
 
         // read selected data from zip
         $.each (selectedStuff, function (key, value) {
@@ -2509,7 +2504,7 @@ VESPER.DWCAParser = new function () {
                 readFields [fileData.fieldIndex[key]] = value;
             });
 
-            VESPER.log ("readFields", readFields);
+            //VESPER.log ("readFields", readFields);
             VESPER.DWCAZipParse.set (fileData, readFields);
             zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
             fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
@@ -2532,7 +2527,7 @@ VESPER.DWCAParser = new function () {
 
     $.fn.filterNode = function(name) {
         return this.find('*').filter(function() {
-            VESPER.log (this);
+            //VESPER.log (this);
             return this.nodeName ? (this.nodeName.toUpperCase() == name.toUpperCase()) : false;
         });
     };
@@ -2553,7 +2548,7 @@ VESPER.DWCAParser = new function () {
             VESPER.DWCAParser.rowTypeDefaults[xmlthis.attr('name')] = val;
         });
 
-        VESPER.log ("rtd", VESPER.DWCAParser.rowTypeDefaults);
+        VESPER.log ("Row Type Defaults", VESPER.DWCAParser.rowTypeDefaults);
     };
 
 
@@ -2569,7 +2564,7 @@ VESPER.DWCAParser = new function () {
             VESPER.DWCAParser.fieldAttrNames[name] = type;
         });
 
-        VESPER.log ("fan", VESPER.DWCAParser.fieldAttrNames);
+        VESPER.log ("Field Attribute Names", VESPER.DWCAParser.fieldAttrNames);
     };
 
 	
@@ -2594,6 +2589,7 @@ VESPER.DWCAParser = new function () {
 		
 		return jsonObj;
 	};
+
 
     function addToArrayProp (obj, pname, addObj) {
         if (!obj[pname]) {
@@ -2673,7 +2669,7 @@ VESPER.DWCAParser = new function () {
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
-		return {"records":jsonObj, "tree":jsonObj};
+		return {"records":jsonObj, "tree":jsonObj}; // basically the record set here is the tree (taxonomy)
 	};
 
     function isSynonym (id, aid) {
@@ -2682,6 +2678,7 @@ VESPER.DWCAParser = new function () {
 
 
     // This uses explicit id linking in the dwca file i.e. kingdom, order, family, specificEpithet etc data
+    // Make a taxonomy from the explicitly declared ranks
     this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, metaData, addOriginalTo) {
         addFieldToIndices (fileData, "taxonRank");
 
@@ -2692,11 +2689,10 @@ VESPER.DWCAParser = new function () {
         if (VESPER.alerts) { alert ("mem monitor point 1.5a ex"); }
         VESPER.log ("SPECS", VESPER.DWCAParser.SPECS);
         var rankList = VESPER.DWCAParser.explicitRanks;
-        console.log ("Vesper adds", metaData.vesperAdds);
+        VESPER.log ("Vesper adds", metaData.vesperAdds);
         var nameField = fieldIndexer[metaData.vesperAdds.nameLabelField.fieldType];
         var rootObjs = {};
         var rLen = rankList.length;
-        // Make a taxonomy from the explicitly declared ranks
 
         var data = jsonObj;
 
@@ -2799,7 +2795,6 @@ VESPER.DWCAParser = new function () {
 
     function addFieldToIndices (fileData, fieldName) {
 
-        VESPER.log ("FIIII", fileData);
         if (fileData.filteredFieldIndex[fieldName] == undefined) {
             var addAtIndex = fileData.filteredInvFieldIndex.length;
             fileData.filteredInvFieldIndex.push (fieldName);
@@ -2812,7 +2807,6 @@ VESPER.DWCAParser = new function () {
 
             // don't add to fileData.fieldData so we can tell later what columns were in original dwca files and which we've added
         }
-        VESPER.log ("FIIII2", fileData);
     }
 
 
@@ -2881,6 +2875,8 @@ VESPER.DWCAParser = new function () {
 		var rowDescriptors = metaData.fileData;
 		var coreFileData = rowDescriptors[metaData.coreRowType];
 		var jsoned;
+
+        // TODO. monday. look for ways to generate both trees for data sets if present.
 		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
 			jsoned = this.taxaArray2JSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData);
 		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
@@ -3927,6 +3923,7 @@ VESPER.Tree = function(divid) {
 
     var thisView;
     var model;
+    var noHashID;
 
     var ffields;
 
@@ -3940,7 +3937,8 @@ VESPER.Tree = function(divid) {
     var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
     var cstore = {}, pstore = {};
     var textHide = "collapse";
-    var patternID = "hatchPattern";
+    var patternName = "hatch";
+    var patternID = "hatch";
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
@@ -4208,7 +4206,7 @@ VESPER.Tree = function(divid) {
             clipBind.enter()
                 .append ("clipPath")
                 .attr ("class", "napierClip")
-                .attr ("id", function(d) { return "depthclip"+d.depth; })
+                .attr ("id", function(d) { return noHashID+"depthclip"+d.depth; })
                 .append ("rect")
                 .call (sharedClipAttrs)
             ;
@@ -4247,7 +4245,7 @@ VESPER.Tree = function(divid) {
                     //: "rotate (0 0,0)"
                     ;
                 })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
+                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)"; /*"url(#"+noHashID+"depthclip"+node.depth+")";*/})
             ;
         },
 
@@ -4354,7 +4352,7 @@ VESPER.Tree = function(divid) {
                 .append("path")
                 //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
                 .attr("d", sunburstLayout.arc)
-                .attr ("id", function(d) { return "arc"+ d.id; })
+                //.attr ("id", function(d) { return "arc"+ d.id; })
                 .call (sunburstLayout.booleanSelectedAttrs)
                 .style ("fill", function(d) { return patternFill (d.id); })
                 .each(sunburstLayout.cstash)
@@ -4364,7 +4362,7 @@ VESPER.Tree = function(divid) {
                 .append("path")
                 //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
                 .attr("d", sunburstLayout.parc)
-                .attr ("id", function(d) { return "parc"+ d.id; })
+                //.attr ("id", function(d) { return "parc"+ d.id; })
                 .style ("opacity", 0.75)
                 .call (sunburstLayout.propSelectedAttrs)
                 .each(sunburstLayout.pstash)
@@ -4417,6 +4415,11 @@ VESPER.Tree = function(divid) {
 
         // stop annoying scrollbar even when svg is same height as parent div
         d3.select(divid).style("overflow", "hidden");
+        noHashID = divid.substring(1);
+
+        // make patternid unique to view, as having the same id in different views caused problems
+        // i.e. the pattern would be regarded as undisplayable in other taxonomies if the view it was first connected to was hidden
+        patternID = patternName + noHashID;
 
 		svg = d3.select(divid)
 			.append("svg:svg")
@@ -4486,11 +4489,10 @@ VESPER.Tree = function(divid) {
 
 
     function setupControls () {
-        var noHashId = divid.substring (1);
         var cpanel = d3.select(divid)
             .append("div")
             .attr ("class", "visControl")
-            .attr ("id", noHashId+"controls")
+            .attr ("id", noHashID+"controls")
         ;
 
         NapVisLib.addHRGrooves (cpanel);
@@ -4513,8 +4515,8 @@ VESPER.Tree = function(divid) {
         aHolders.append("input")
             .attr ("class", "allocChoice")
             .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashId+ d.key; })
-            .attr ("name", function(d) { return noHashId+"alloc"; })
+            .attr ("id", function(d) { return noHashID+ d.key; })
+            .attr ("name", function(d) { return noHashID+"alloc"; })
             .property ("checked", function(d) { return spaceAlloc === d.value; })
             .on ("change", function(d) {
                // if (spaceAlloc !== d.value) {
@@ -4526,7 +4528,7 @@ VESPER.Tree = function(divid) {
             })
         ;
         aHolders.append("label")
-            .attr ("for", function(d) { return noHashId+ d.key; })
+            .attr ("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return d.key; })
         ;
 
@@ -4545,8 +4547,8 @@ VESPER.Tree = function(divid) {
         lHolders.append ("input")
             .attr ("class", "layoutChoice")
             .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashId+ d.key; })
-            .attr ("name", function(d) { return noHashId+"layout"; })
+            .attr ("id", function(d) { return noHashID+ d.key; })
+            .attr ("name", function(d) { return noHashID+"layout"; })
             .property ("checked", function(d) { return layout === d.value; })
             .on ("change", function(d) {
                // if (layout !== d.value) {
@@ -4561,7 +4563,7 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
         lHolders.append ("label")
-            .attr("for", function(d) { return noHashId+ d.key; })
+            .attr("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return d.key; })
         ;
 
@@ -4580,8 +4582,8 @@ VESPER.Tree = function(divid) {
         sHolders.append ("input")
             .attr ("class", "sortChoice")
             .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashId+ d.key; })
-            .attr ("name", function(d) { return noHashId+"sort"; })
+            .attr ("id", function(d) { return noHashID+ d.key; })
+            .attr ("name", function(d) { return noHashID+"sort"; })
             .property ("checked", function(d) { return curSort === d.value; })
             .on ("change", function(d) {
                // if (layout !== d.value) {
@@ -4593,11 +4595,11 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
         sHolders.append ("label")
-            .attr("for", function(d) { return noHashId+ d.key; })
+            .attr("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return d.key; })
         ;
 
-        $("#"+noHashId+"controls").draggable();
+        $("#"+noHashID+"controls").draggable();
     }
 
 

@@ -52,6 +52,9 @@ DIV .hack {
 	overflow: hidden;
 }
 
+.visWrapper {
+    overflow: hidden;
+}
 
 .tagCloudFont {
 	font-family: Gill Sans MT;

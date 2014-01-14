@@ -1,9 +1,5 @@
 VESPER.DWCAParser = new function () {
 
-    //this.TDATA = "tdata";
-    //this.TAXA = "taxa";
-    //this.EXT = "ext";
-
     this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
     this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
     this.EXT = 2;       // extra data, i.e. non-core data attachments
@@ -120,8 +116,8 @@ VESPER.DWCAParser = new function () {
 
     // sets of terms for which values can be shared, again opening them up to memory saving through a map.
     // When terms holds the same index in the object below, it indicates a shared value map could be common to those terms.
-    // The most common example is parent and taxon ids, all parent name ids must turn up as name ids in another record (unless it's a root)
-    // and parent name ids are often repeated anyways. It also works for the base ids which are often just copies of name ids.
+    // The most common example is parent and acceptedName ids, all parent name ids must turn up as name ids in another record (unless it's a root)
+    // and parent name ids are often repeated anyways. It also works for the base taxonids which are often just copies of name ids.
     this.sharedValuesTerms = {"taxonID":1, "acceptedNameUsageID":1, "parentNameUsageID":1, "originalNameUsageID":1};
 
 
@@ -161,7 +157,6 @@ VESPER.DWCAParser = new function () {
     this.xsd = null;
 
     this.loadxsd = function (xsdFile) {
-        VESPER.log ("yp2", xsdFile);
         $.get(xsdFile, function(d){
             // stupid firefox reads in a BOM mark (probably stupid me somewhere else, but I ain't got time)
             //if (d.charCodeAt(0) > 65000 || d.charCodeAt(0) === 255) {
@@ -169,10 +164,8 @@ VESPER.DWCAParser = new function () {
             //}
             VESPER.log ("XSD", d, typeof d);
             VESPER.DWCAParser.xsd = (typeof d == "string" ? $(NapVisLib.parseXML(d)) : $(d));
-           // VESPER.log ("XSD", DWCAParser.xsd);
             VESPER.DWCAParser.makeRowTypeDefaults (VESPER.DWCAParser.xsd);
             VESPER.DWCAParser.makeFieldAttrNames (VESPER.DWCAParser.xsd);
-
         });
     };
 
@@ -192,7 +185,8 @@ VESPER.DWCAParser = new function () {
                 break;
             }
         }
-        console.log ("ZIP ENTRIES", zip.zipEntries, newMetaFileName);
+
+        VESPER.log ("ZIP ENTRIES", zip.zipEntries, newMetaFileName);
         if (newMetaFileName !== undefined) {
             zip.zipEntries.readLocalFile (newMetaFileName);
             VESPER.log ("unzipped ", zip, zip.files);
@@ -209,7 +203,7 @@ VESPER.DWCAParser = new function () {
     this.filterReadZipEntriesToMakeModel = function (zip, mdata) {
         var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
         var fileRows = {};
-        VESPER.log ("ZIP:", zip);
+        //VESPER.log ("ZIP:", zip);
 
         // read selected data from zip
         $.each (selectedStuff, function (key, value) {
@@ -221,7 +215,7 @@ VESPER.DWCAParser = new function () {
                 readFields [fileData.fieldIndex[key]] = value;
             });
 
-            VESPER.log ("readFields", readFields);
+            //VESPER.log ("readFields", readFields);
             VESPER.DWCAZipParse.set (fileData, readFields);
             zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
             fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
@@ -244,7 +238,7 @@ VESPER.DWCAParser = new function () {
 
     $.fn.filterNode = function(name) {
         return this.find('*').filter(function() {
-            VESPER.log (this);
+            //VESPER.log (this);
             return this.nodeName ? (this.nodeName.toUpperCase() == name.toUpperCase()) : false;
         });
     };
@@ -265,7 +259,7 @@ VESPER.DWCAParser = new function () {
             VESPER.DWCAParser.rowTypeDefaults[xmlthis.attr('name')] = val;
         });
 
-        VESPER.log ("rtd", VESPER.DWCAParser.rowTypeDefaults);
+        VESPER.log ("Row Type Defaults", VESPER.DWCAParser.rowTypeDefaults);
     };
 
 
@@ -281,7 +275,7 @@ VESPER.DWCAParser = new function () {
             VESPER.DWCAParser.fieldAttrNames[name] = type;
         });
 
-        VESPER.log ("fan", VESPER.DWCAParser.fieldAttrNames);
+        VESPER.log ("Field Attribute Names", VESPER.DWCAParser.fieldAttrNames);
     };
 
 	
@@ -306,6 +300,7 @@ VESPER.DWCAParser = new function () {
 		
 		return jsonObj;
 	};
+
 
     function addToArrayProp (obj, pname, addObj) {
         if (!obj[pname]) {
@@ -385,7 +380,7 @@ VESPER.DWCAParser = new function () {
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
-		return {"records":jsonObj, "tree":jsonObj};
+		return {"records":jsonObj, "tree":jsonObj}; // basically the record set here is the tree (taxonomy)
 	};
 
     function isSynonym (id, aid) {
@@ -394,6 +389,7 @@ VESPER.DWCAParser = new function () {
 
 
     // This uses explicit id linking in the dwca file i.e. kingdom, order, family, specificEpithet etc data
+    // Make a taxonomy from the explicitly declared ranks
     this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, metaData, addOriginalTo) {
         addFieldToIndices (fileData, "taxonRank");
 
@@ -404,11 +400,10 @@ VESPER.DWCAParser = new function () {
         if (VESPER.alerts) { alert ("mem monitor point 1.5a ex"); }
         VESPER.log ("SPECS", VESPER.DWCAParser.SPECS);
         var rankList = VESPER.DWCAParser.explicitRanks;
-        console.log ("Vesper adds", metaData.vesperAdds);
+        VESPER.log ("Vesper adds", metaData.vesperAdds);
         var nameField = fieldIndexer[metaData.vesperAdds.nameLabelField.fieldType];
         var rootObjs = {};
         var rLen = rankList.length;
-        // Make a taxonomy from the explicitly declared ranks
 
         var data = jsonObj;
 
@@ -511,7 +506,6 @@ VESPER.DWCAParser = new function () {
 
     function addFieldToIndices (fileData, fieldName) {
 
-        VESPER.log ("FIIII", fileData);
         if (fileData.filteredFieldIndex[fieldName] == undefined) {
             var addAtIndex = fileData.filteredInvFieldIndex.length;
             fileData.filteredInvFieldIndex.push (fieldName);
@@ -524,7 +518,6 @@ VESPER.DWCAParser = new function () {
 
             // don't add to fileData.fieldData so we can tell later what columns were in original dwca files and which we've added
         }
-        VESPER.log ("FIIII2", fileData);
     }
 
 
@@ -593,6 +586,8 @@ VESPER.DWCAParser = new function () {
 		var rowDescriptors = metaData.fileData;
 		var coreFileData = rowDescriptors[metaData.coreRowType];
 		var jsoned;
+
+        // TODO. monday. look for ways to generate both trees for data sets if present.
 		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
 			jsoned = this.taxaArray2JSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData);
 		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {

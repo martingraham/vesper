@@ -93,6 +93,7 @@ div.leftColumn {
     padding: 4px;
     -moz-border-radius: 10px;
     border-radius: 10px;
+    overflow: hidden;
 }
 
 .leftColumn hr {

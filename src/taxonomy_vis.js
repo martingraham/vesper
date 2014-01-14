@@ -17,6 +17,7 @@ VESPER.Tree = function(divid) {
 
     var thisView;
     var model;
+    var noHashID;
 
     var ffields;
 
@@ -30,7 +31,8 @@ VESPER.Tree = function(divid) {
     var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
     var cstore = {}, pstore = {};
     var textHide = "collapse";
-    var patternID = "hatchPattern";
+    var patternName = "hatch";
+    var patternID = "hatch";
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
@@ -298,7 +300,7 @@ VESPER.Tree = function(divid) {
             clipBind.enter()
                 .append ("clipPath")
                 .attr ("class", "napierClip")
-                .attr ("id", function(d) { return "depthclip"+d.depth; })
+                .attr ("id", function(d) { return noHashID+"depthclip"+d.depth; })
                 .append ("rect")
                 .call (sharedClipAttrs)
             ;
@@ -337,7 +339,7 @@ VESPER.Tree = function(divid) {
                     //: "rotate (0 0,0)"
                     ;
                 })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
+                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)"; /*"url(#"+noHashID+"depthclip"+node.depth+")";*/})
             ;
         },
 
@@ -444,7 +446,7 @@ VESPER.Tree = function(divid) {
                 .append("path")
                 //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
                 .attr("d", sunburstLayout.arc)
-                .attr ("id", function(d) { return "arc"+ d.id; })
+                //.attr ("id", function(d) { return "arc"+ d.id; })
                 .call (sunburstLayout.booleanSelectedAttrs)
                 .style ("fill", function(d) { return patternFill (d.id); })
                 .each(sunburstLayout.cstash)
@@ -454,7 +456,7 @@ VESPER.Tree = function(divid) {
                 .append("path")
                 //.attr("display", function(d) { var node = getNode (d.id); return node.depth ? null : "none"; }) // hide inner ring
                 .attr("d", sunburstLayout.parc)
-                .attr ("id", function(d) { return "parc"+ d.id; })
+                //.attr ("id", function(d) { return "parc"+ d.id; })
                 .style ("opacity", 0.75)
                 .call (sunburstLayout.propSelectedAttrs)
                 .each(sunburstLayout.pstash)
@@ -507,6 +509,11 @@ VESPER.Tree = function(divid) {
 
         // stop annoying scrollbar even when svg is same height as parent div
         d3.select(divid).style("overflow", "hidden");
+        noHashID = divid.substring(1);
+
+        // make patternid unique to view, as having the same id in different views caused problems
+        // i.e. the pattern would be regarded as undisplayable in other taxonomies if the view it was first connected to was hidden
+        patternID = patternName + noHashID;
 
 		svg = d3.select(divid)
 			.append("svg:svg")
@@ -576,11 +583,10 @@ VESPER.Tree = function(divid) {
 
 
     function setupControls () {
-        var noHashId = divid.substring (1);
         var cpanel = d3.select(divid)
             .append("div")
             .attr ("class", "visControl")
-            .attr ("id", noHashId+"controls")
+            .attr ("id", noHashID+"controls")
         ;
 
         NapVisLib.addHRGrooves (cpanel);
@@ -603,8 +609,8 @@ VESPER.Tree = function(divid) {
         aHolders.append("input")
             .attr ("class", "allocChoice")
             .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashId+ d.key; })
-            .attr ("name", function(d) { return noHashId+"alloc"; })
+            .attr ("id", function(d) { return noHashID+ d.key; })
+            .attr ("name", function(d) { return noHashID+"alloc"; })
             .property ("checked", function(d) { return spaceAlloc === d.value; })
             .on ("change", function(d) {
                // if (spaceAlloc !== d.value) {
@@ -616,7 +622,7 @@ VESPER.Tree = function(divid) {
             })
         ;
         aHolders.append("label")
-            .attr ("for", function(d) { return noHashId+ d.key; })
+            .attr ("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return d.key; })
         ;
 
@@ -635,8 +641,8 @@ VESPER.Tree = function(divid) {
         lHolders.append ("input")
             .attr ("class", "layoutChoice")
             .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashId+ d.key; })
-            .attr ("name", function(d) { return noHashId+"layout"; })
+            .attr ("id", function(d) { return noHashID+ d.key; })
+            .attr ("name", function(d) { return noHashID+"layout"; })
             .property ("checked", function(d) { return layout === d.value; })
             .on ("change", function(d) {
                // if (layout !== d.value) {
@@ -651,7 +657,7 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
         lHolders.append ("label")
-            .attr("for", function(d) { return noHashId+ d.key; })
+            .attr("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return d.key; })
         ;
 
@@ -670,8 +676,8 @@ VESPER.Tree = function(divid) {
         sHolders.append ("input")
             .attr ("class", "sortChoice")
             .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashId+ d.key; })
-            .attr ("name", function(d) { return noHashId+"sort"; })
+            .attr ("id", function(d) { return noHashID+ d.key; })
+            .attr ("name", function(d) { return noHashID+"sort"; })
             .property ("checked", function(d) { return curSort === d.value; })
             .on ("change", function(d) {
                // if (layout !== d.value) {
@@ -683,11 +689,11 @@ VESPER.Tree = function(divid) {
             .html (function(d) { return d.key; })
         ;
         sHolders.append ("label")
-            .attr("for", function(d) { return noHashId+ d.key; })
+            .attr("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return d.key; })
         ;
 
-        $("#"+noHashId+"controls").draggable();
+        $("#"+noHashID+"controls").draggable();
     }
 
 
