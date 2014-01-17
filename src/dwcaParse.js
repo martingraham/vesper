@@ -8,6 +8,7 @@ VESPER.DWCAParser = new function () {
     this.SPECS = "s";
 
     this.SUPERROOT = "superroot";
+    var superrootID = "-1000";
 
 
 	// terms from old darwin core archive format superseded by newer ones
@@ -198,15 +199,34 @@ VESPER.DWCAParser = new function () {
     };
 
 
+
+    function afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback) {
+        // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
+        $.each (selectedStuff, function (key, value) {
+            var fileData = mdata.fileData[key];
+            var fileName = zip.dwcaFolder + fileData.fileName;
+            zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
+        });
+
+        if (VESPER.alerts) { alert ("mem monitor point 1"); }
+    }
+
+
     // Read in csv files that are zip entries. Use selectedStuff and readField to pick out
     // which columns to snatch out the zip parsing routines.
-    this.filterReadZipEntriesToMakeModel = function (zip, mdata) {
+    this.filterReadZipEntriesToMakeModel = function (zip, mdata, doneCallback) {
         var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
         var fileRows = {};
         //VESPER.log ("ZIP:", zip);
 
         // read selected data from zip
-        $.each (selectedStuff, function (key, value) {
+        var entries = d3.entries (selectedStuff);
+
+        var i = 0;
+
+        for (; i < entries.length; i++) {
+            var key = entries[i].key;
+            var value = entries[i].value;
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
             var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
@@ -217,23 +237,33 @@ VESPER.DWCAParser = new function () {
 
             //VESPER.log ("readFields", readFields);
             VESPER.DWCAZipParse.set (fileData, readFields);
+            VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ = [];
+            VESPER.DWCAZipParse.zipStreamSVParser2.fileName = fileName;
+            var ii = i; // copy i otherwise it might(will) change before we run onLoad
+
+            var onLoad = function (results) {
+                fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
+                VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
+                // final file dealt with
+                if (ii == entries.length - 1) {
+                    afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
+                    // make taxonomy (or list)
+                    doneCallback (new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
+                }
+
+                VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ.length = 0;
+                VESPER.DWCAZipParse.zipStreamSVParser2.fileName = undefined;
+            };
+            VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ.push (onLoad);
             zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
-            fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
-            VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
-        });
 
-        // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
-        $.each (selectedStuff, function (key, value) {
-            var fileData = mdata.fileData[key];
-            var fileName = zip.dwcaFolder + fileData.fileName;
-            zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
-        });
+            //fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
+            //VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
+        }
 
-        if (VESPER.alerts) { alert ("mem monitor point 1"); }
-
-        // make taxonomy (or list)
-        return new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata));
+        //afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
     };
+
 
 
     $.fn.filterNode = function(name) {
@@ -310,10 +340,10 @@ VESPER.DWCAParser = new function () {
     }
 
 	// This uses implicit id linking in the dwca file i.e. acceptedNameUsageID to parentNameUsageID
-	this.taxaArray2JSONTree = function (tsvData, fileData, metaData) {
+	this.jsonTaxaObj2JSONTree = function (jsonObj, tsvData, fileData, metaData) {
         var fieldIndexer = fileData.filteredFieldIndex;
         var idx = fileData.idIndex;
-		var jsonObj = this.occArray2JSONArray (tsvData, idx);
+		//var jsonObj = this.occArray2JSONArray (tsvData, idx);
 
         if (VESPER.alerts) { alert ("mem monitor point 1.5"); }
 		var hidx = fieldIndexer["parentNameUsageID"];
@@ -380,7 +410,7 @@ VESPER.DWCAParser = new function () {
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
-		return {"records":jsonObj, "tree":jsonObj}; // basically the record set here is the tree (taxonomy)
+		return jsonObj; // basically the record set here is the tree (taxonomy)
 	};
 
     function isSynonym (id, aid) {
@@ -390,12 +420,12 @@ VESPER.DWCAParser = new function () {
 
     // This uses explicit id linking in the dwca file i.e. kingdom, order, family, specificEpithet etc data
     // Make a taxonomy from the explicitly declared ranks
-    this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, metaData, addOriginalTo) {
+    this.jsonTaxaObj2ExplicitJSONTree = function (jsonObj, tsvData, fileData, metaData, addOriginalTo) {
         addFieldToIndices (fileData, "taxonRank");
 
         var idx = fileData.idIndex;
         var fieldIndexer = fileData.filteredFieldIndex;
-        var jsonObj = this.occArray2JSONArray (tsvData, idx);
+        //var jsonObj = this.occArray2JSONArray (tsvData, idx);
 
         if (VESPER.alerts) { alert ("mem monitor point 1.5a ex"); }
         VESPER.log ("SPECS", VESPER.DWCAParser.SPECS);
@@ -499,7 +529,7 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("roots", roots);
 
         VESPER.log ("json", jsonObj, "tree", treeObj);
-        return {"records":jsonObj, "tree":treeObj};
+        return treeObj;
     };
 
 
@@ -585,16 +615,22 @@ VESPER.DWCAParser = new function () {
 	this.makeTreeFromAllFileRows = function (theFileRows, metaData) {
 		var rowDescriptors = metaData.fileData;
 		var coreFileData = rowDescriptors[metaData.coreRowType];
-		var jsoned;
+
+        var rawData = theFileRows[coreFileData.rowType];
+        var jsonObj = this.occArray2JSONArray (rawData, coreFileData.idIndex);
+        var impTree = undefined;
+        var expTree = undefined;
 
         // TODO. monday. look for ways to generate both trees for data sets if present.
 		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
-			jsoned = this.taxaArray2JSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData);
+			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
 		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
-            jsoned = this.taxaArray2ExplicitJSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData,
+            expTree = this.jsonTaxaObj2ExplicitJSONTree (jsonObj, rawData, coreFileData, metaData,
                 VESPER.DWCAParser.addOriginalAsSpecimenEntry
             );
 		}
+
+        var jsoned = {"records": jsonObj, "impTree":impTree, "expTree":expTree};
   		
   		for (var indRowDescriptorProp in rowDescriptors) {
   			if (rowDescriptors.hasOwnProperty (indRowDescriptorProp)) {
@@ -614,12 +650,26 @@ VESPER.DWCAParser = new function () {
 	this.setupStrucFromRows = function (theFileRows, metaData) {
   		var struc = this.makeTreeFromAllFileRows (theFileRows, metaData);
         if (VESPER.alerts) { alert ("mem monitor point 2"); }
-    	struc.root = struc.tree["-1000"]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
-    	if (struc.root) {
-    		this.countDescendants (struc.root);
-    	}
+
+        if (struc.impTree) {
+            struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
+            VESPER.log ("root", struc.impRoot);
+            if (struc.impRoot) {
+                this.countDescendants (struc.impRoot);
+            }
+        }
+
+        if (struc.expTree) {
+            struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
+            if (struc.expRoot) {
+                this.countDescendants (struc.expRoot);
+            }
+        }
+
+        VESPER.log ("STRUC", struc);
+
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        VESPER.log ("root", struc.root);
+        VESPER.log ("root", struc.impRoot, struc.expRoot);
     	return struc;
 	};
 	
@@ -657,7 +707,7 @@ VESPER.DWCAParser = new function () {
 		}
 		
 		if (roots.length == 1) {
-            jsonObj["-1000"] = jsonObj[roots[0]];
+            jsonObj[superrootID] = jsonObj[roots[0]];
 			return jsonObj[roots[0]];
 		}
 
@@ -666,23 +716,22 @@ VESPER.DWCAParser = new function () {
         var nameName = fileData.invFieldIndex[nameField];
 
 		var hidx = fieldIndexer["parentNameUsageID"];
-		var srID = "-1000";
 		var srData = {
-            //id: srID,
-            acceptedNameUsageID: srID,
-            parentNameUsageID: srID,
+            //id: superrootID,
+            acceptedNameUsageID: superrootID,
+            parentNameUsageID: superrootID,
             acceptedNameUsage: VESPER.DWCAParser.SUPERROOT,
             taxonRank: VESPER.DWCAParser.SUPERROOT,
             nameAccordingTo: "dwcaParse.js"
 		};
         srData[nameName] = VESPER.DWCAParser.SUPERROOT;
-        srData[idName] = srID;
+        srData[idName] = superrootID;
 		var srObj = {};
 	
 		srObj[this.TAXA] = [];
 		for (var n = 0; n < roots.length; n++) {
 			srObj[this.TAXA].push (jsonObj[roots[n]]);	// add root as child taxon of superroot
-			jsonObj[roots[n]][VESPER.DWCAParser.TDATA][hidx] = srID;	// make superroot parent taxon of root
+			jsonObj[roots[n]][VESPER.DWCAParser.TDATA][hidx] = superrootID;	// make superroot parent taxon of root
 		}
 		
 		srObj[VESPER.DWCAParser.TDATA] = [];
@@ -696,7 +745,7 @@ VESPER.DWCAParser = new function () {
 		
 		VESPER.log ("superroot", srObj);
 
-        jsonObj[srID] = srObj;  // add it to the json obj so it gets treated like a node everywhere else
+        jsonObj[superrootID] = srObj;  // add it to the json obj so it gets treated like a node everywhere else
 		return srObj;	
 	};
 	

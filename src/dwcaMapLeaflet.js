@@ -141,7 +141,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
 	
 	this.go = function () {
 
-        VESPER.log ("map go");
         if (!map) {
             // create the tile layer with correct attribution
             var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';

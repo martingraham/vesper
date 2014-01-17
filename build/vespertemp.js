@@ -8,7 +8,7 @@
 var VESPER = (function() {
     var vesper = {};
     vesper.alerts = false;
-    vesper.logRun = true;
+    vesper.logRun = false;
     vesper.log = function (obj) {
         if (vesper.logRun) {
             //console.log.apply (console, arguments);
@@ -122,21 +122,13 @@ VESPER.DWCAZipParse = new function () {
         lineNo++;
 
         if (lineNo % 10000 === 0 || lineNo === 10998) {
-            if (notifyFunc) {
-                notifyFunc (lineNo, str);
-            } else {
-                VESPER.log (lineNo, ": ", str);
-            }
+            VESPER.log (lineNo, ": ", str);
         }
         if (lineNo % 100 === 0) {
             var tt = NapVisLib.makeTime();
             if (tt - pTime > 1000) {
                 pTime = tt;
-                if (notifyFunc) {
-                    notifyFunc (lineNo, str);
-                } else {
-                    VESPER.log (lineNo, ": ", str);
-                }
+                VESPER.log (lineNo, ": ", str);
             }
         }
         //VESPER.log (str);
@@ -149,8 +141,9 @@ VESPER.DWCAZipParse = new function () {
         //return [];
 
         if (VESPER.alerts) { alert ("start partial parse with charcodes"); }
-        var buff = new Array(1024);
+
         var blength = 1024;
+        var buff = new Array (blength);
         var out = [];
         var i, j;
         var bigOut = [];
@@ -161,8 +154,9 @@ VESPER.DWCAZipParse = new function () {
         var ch, ch2, c;
         var utfwrap = 0;
 
-        var mt = NapVisLib.makeTime();
-        pTime = mt;
+        var startt = NapVisLib.makeTime();
+        pTime = startt;
+        var segmentLengthMs = 200;
 
         function matchEol (c, buf, off) {
             var fcmatch = (lineDelimVal == c);
@@ -171,14 +165,14 @@ VESPER.DWCAZipParse = new function () {
                 return fcmatch;
             } else if (fcmatch) {
                 if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
-                    for (var l = lineDelimiter.length; --l >= 1;) { // first char matched remember (fcmatch)
+                    for (var l = lineDelimiter.length; --l >= 1;) { // 1 'cos first char matched remember (fcmatch)
                         if (lineDelimiter.charCodeAt(l) != buf[off+l]) {
                             return false;
                         }
                     }
                     j += lineDelimiter.length - 1;  // move along over these read bytes
                     return true;
-                } else {
+                } else { // eol string (obv >1 character) is divided between this buffer and the next
                     utfwrap = i - j;
                     j = i;
                     ch = undefined;
@@ -187,110 +181,131 @@ VESPER.DWCAZipParse = new function () {
             return false;
         }
 
-        while((i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
+        function doWork () {
 
-            //if (lineNo > 10992 && lineNo < 10998) {
-            //    VESPER.log (lineNo, utfwrap, "\nout", out.join(), "\nbuff", buff.length, i, buff.join(), "\n", buff[1023]);
-            //}
+            var mt = NapVisLib.makeTime();
+            while ((NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
 
-            i += utfwrap; // cos we may have chars left over from not processing utf chars chopped between buffer calls
-            // and i only returns new chars added to the buffer from inflateFunc. Led to off by one(or two) errors.
+                //if (lineNo > 10992 && lineNo < 10998) {
+                //    VESPER.log (lineNo, utfwrap, "\nout", out.join(), "\nbuff", buff.length, i, buff.join(), "\n", buff[1023]);
+                //}
 
-            var n = 0;
-            utfwrap = 0;
+                i += utfwrap; // 'cos we may have chars left over from not processing utf chars / eol strings chopped between buffer calls
+                // and i only returns new chars added to the buffer from inflateFunc. Led to off by one(or two) errors.
+
+                var n = 0;
+                utfwrap = 0;
 
 
-            if (stt) {
-                var possbom = String.fromCharCode(buff[0]) + String.fromCharCode(buff[1]) + String.fromCharCode(buff[2]);
-                VESPER.log ("possbom [", possbom, "]");
-                if (possbom == "\xEF\xBB\xBF") {
-                    VESPER.log ("UTF8 bytemark detected");
-                    n = 3;
+                if (stt) {
+                    var possbom = String.fromCharCode(buff[0]) + String.fromCharCode(buff[1]) + String.fromCharCode(buff[2]);
+                    VESPER.log ("possbom [", possbom, "]");
+                    if (possbom == "\xEF\xBB\xBF") {
+                        VESPER.log ("UTF8 bytemark detected");
+                        n = 3;
+                    }
+                    stt = false;
                 }
-                stt = false;
-            }
 
-            for (j = n; j < i; j++) {
-                ch = buff[j];
-                if (ch >= 128) {
-                    if( ch >= 0xC2 && ch < 0xE0 ) {
-                        if (j < i - 1) {
-                            ch = (((ch&0x1F)<<6) + (buff[++j]&0x3F));
-                        } else {
-                            utfwrap = 1;
-                            j = i;
-                            ch = undefined;
-                        }
-                    } else if( ch >= 0xE0 && ch < 0xF0 ) {
-                        if (j < i - 2) {
-                            ch = (((ch&0xFF)<<12) + ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F));
-                        } else {
-                            utfwrap = i - j;
-                            j = i;
-                            ch = undefined;
-                        }
-                    } else if( ch >= 0xF0 && ch < 0xF5) {
-                        if (j < i - 3) {
-                            var codepoint = ((ch&0x07)<<18) + ((buff[++j]&0x3F)<<12)+ ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F);
-                            codepoint -= 0x10000;
-                            var s = (
-                                (codepoint>>10) + 0xD800,
-                                (codepoint&0x3FF) + 0xDC00
-                            );
-                            ch = s.charAt[0];
-                            ch2 = s.charAt[1];
-                        } else {
-                            utfwrap = i - j;
-                            j = i;
-                            ch = undefined;
+                for (j = n; j < i; j++) {
+                    ch = buff[j];
+                    if (ch >= 128) {
+                        if( ch >= 0xC2 && ch < 0xE0 ) {
+                            if (j < i - 1) {
+                                ch = (((ch&0x1F)<<6) + (buff[++j]&0x3F));
+                            } else {
+                                utfwrap = 1;
+                                j = i;
+                                ch = undefined;
+                            }
+                        } else if( ch >= 0xE0 && ch < 0xF0 ) {
+                            if (j < i - 2) {
+                                ch = (((ch&0xFF)<<12) + ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F));
+                            } else {
+                                utfwrap = i - j;
+                                j = i;
+                                ch = undefined;
+                            }
+                        } else if( ch >= 0xF0 && ch < 0xF5) {
+                            if (j < i - 3) {
+                                var codepoint = ((ch&0x07)<<18) + ((buff[++j]&0x3F)<<12)+ ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F);
+                                codepoint -= 0x10000;
+                                var s = (
+                                    (codepoint>>10) + 0xD800,
+                                    (codepoint&0x3FF) + 0xDC00
+                                );
+                                ch = s.charAt[0];
+                                ch2 = s.charAt[1];
+                            } else {
+                                utfwrap = i - j;
+                                j = i;
+                                ch = undefined;
+                            }
                         }
                     }
-                }
 
 
-                if (quoteDelimiter && !esc && ch == qDelimVal) {
-                    quotes = !quotes;
-                    out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
+                    if (quoteDelimiter && !esc && ch == qDelimVal) {
+                        quotes = !quotes;
+                        out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
+                    }
+                    //else if (!quotes && ch == lineDelimVal) {  // end of line
+                    else if (!quotes && matchEol (ch, buff, j)) {  // end of line
+                        bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
+                        k++;
+                        out.length = 0;
+                       // if (k % 1000 == 0 && window.opera) {
+                       //     window.opera.collect();
+                      // }
+                    } else if (ch !== undefined) {
+                        out.push (ch);
+                        if (ch2 !== undefined) {
+                            out.push (ch2);
+                            ch2 = undefined;
+                        }
+                    }
+
+                    esc = (ch == escapeCharVal);
                 }
-                //else if (!quotes && ch == lineDelimVal) {  // end of line
-                else if (!quotes && matchEol (ch, buff, j)) {  // end of line
-                    bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
-                    k++;
-                    out.length = 0;
-                   // if (k % 1000 == 0 && window.opera) {
-                   //     window.opera.collect();
-                  // }
-                } else if (ch !== undefined) {
-                    out.push (ch);
-                    if (ch2 !== undefined) {
-                        out.push (ch2);
-                        ch2 = undefined;
+                // VESPER.log (out.length);
+
+                if (utfwrap) {
+                    //VESPER.log ("buffer ends during utf character sequence, ", utfwrap);
+                    for (var m = 0; m < utfwrap; m++) {
+                        buff[m] = buff [i - utfwrap + m];
                     }
                 }
-
-                esc = (ch == escapeCharVal);
             }
-            // VESPER.log (out.length);
 
-            if (utfwrap) {
-                //VESPER.log ("buffer ends during utf character sequence, ", utfwrap);
-                for (var m = 0; m < utfwrap; m++) {
-                    buff[m] = buff [i - utfwrap + m];
+            if (notifyFunc) {
+                notifyFunc (VESPER.DWCAZipParse.zipStreamSVParser2.fileName, lineNo);
+            }
+
+            if (i > 0) {
+                //VESPER.log ("SEGMENT");
+                setTimeout (doWork, 1);
+            }
+            else {
+                if (out.length > 0) {
+                    bigOut.push (VESPER.DWCAZipParse.rowReader2 (out));
+                }
+
+                startt = NapVisLib.makeTime() - startt;
+                VESPER.log ("Time: ", startt/1000, " secs.");
+                VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
+                VESPER.log ("pulled out "+pb+" characters from zip");
+                sharedMaps.length = 0;  // used, discard, helps GC
+                //return bigOut;
+                var callbacks = VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ;
+                VESPER.log ("callback queue length", callbacks.length);
+                for (var cb = callbacks.length; --cb >= 0;) {
+                    callbacks[cb](bigOut);
                 }
             }
+
         }
 
-        // Last line may not be returned
-        if (out.length > 0) {
-            bigOut.push (VESPER.DWCAZipParse.rowReader2 (out));
-        }
-
-        mt = NapVisLib.makeTime() - mt;
-        VESPER.log ("Time: ", mt/1000, " secs.");
-        VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
-        VESPER.log ("pulled out "+pb+" characters from zip");
-        sharedMaps.length = 0;  // used, discard, helps GC
-        return bigOut;
+        setTimeout (doWork, 1);
     };
 
 
@@ -427,7 +442,8 @@ VESPER.BarChart = function(divid) {
                 .attr("id", noHashId+"Controls")
             ;
 
-            NapVisLib.addHRGrooves (butdiv);
+            //NapVisLib.addHRGrooves (butdiv);
+            DWCAHelper.addDragArea (butdiv);
             NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
 
             var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
@@ -506,7 +522,7 @@ VESPER.BarChart = function(divid) {
         //var binCount = Math.ceil ((self.childScale.range()[1] - self.childScale.range()[0]) / self.minBarWidth);
         binned = self.chunkInfo (model, model.getData(), ffields/*, undefined, binCount, true*/);
         self.childScale.domain (binned.extremes);
-        VESPER.log ("bin stuff", binned.extremes, binned);
+        VESPER.log ("bin data", binned.extremes, binned);
     }
 
 	function getNode (id) {
@@ -529,9 +545,9 @@ VESPER.BarChart = function(divid) {
             function (key, data) { return model.getSelectionModel().contains (key)});
 
         var bins = binned.bins;
-        VESPER.log ("SEL BINS", selBinned);
+        VESPER.log ("Selection bins", selBinned);
         var maxh = d3.max(bins, function(d) { return d.count + 1; });
-        VESPER.log ("maxh", maxh);
+        VESPER.log ("Max height", maxh);
         var wh = dims[1] - margin.bottom;
         currentCountScale.domain([1, maxh]).range ([wh, margin.top]).nice();
 
@@ -671,12 +687,12 @@ VESPER.BarChart = function(divid) {
             var mind = chart.unwrapDataType (min); //min.getTime() / this.msinaday;
             var maxd = chart.unwrapDataType (max); //max.getTime() / this.msinaday;
             var domRange = (Math.ceil (maxd / self.toNearest) * self.toNearest) - (Math.floor (mind / self.toNearest) * self.toNearest);
-            VESPER.log ("MINS", maxd, mind, min, max, domRange, self.childScale.range());
+            VESPER.log ("Mins and Maxs", maxd, mind, min, max, domRange, self.childScale.range());
 
             var newBarVals = chart.makeBarSizes (self.childScale.range()[1] - self.childScale.range()[0], domRange);
             var binSize = newBarVals.newBinSize;
             var binCount = newBarVals.newBinCount;
-            VESPER.log ("bb", binSize, binCount);
+            VESPER.log ("Bin size & count", binSize, binCount);
             var fmind = Math.floor (mind / binSize) * binSize;
 
             for (var n = 0; n < binCount + 1; n++) {
@@ -725,7 +741,7 @@ VESPER.BarChart = function(divid) {
                 }
             }
         }
-        VESPER.log ("Arr", min, max, arr);
+        VESPER.log ("Min, max, array of matches", min, max, arr);
         return arr;
     };
 
@@ -750,7 +766,7 @@ VESPER.BarChart = function(divid) {
             }
         }
 
-        VESPER.log ("bdw: ", barDomainWidth, range, width);
+        VESPER.log ("Bar domain width, phys range, phys width", barDomainWidth, range, width);
 
         var binCount = Math.ceil (range / binSize);
         return {newBinSize: binSize, newBinCount: binCount};
@@ -804,7 +820,7 @@ VESPER.TaxaDistribution = function (div) {
         }
         return undefined;
     };
-    chart.divisions = [1,2,10,100];
+    chart.divisions = [1,2,10,100,1000];
 
     return chart;
 };
@@ -877,9 +893,10 @@ function DWCAModel (metaData, data) {
     // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
     this.getData = function (){ return this.data.records; };
-    this.getTaxonomy = function () { return this.data.tree; };
-    this.getRoot = function (){ return this.data.root; };
-    this.getExplicitTaxonomy = function () { return this.data.tree; };
+    this.getImplicitTaxonomy = function () { return this.data.impTree; };
+    this.getImplicitRoot = function (){ return this.data.impRoot; };
+    this.getExplicitTaxonomy = function () { return this.data.expTree; };
+    this.getExplicitRoot = function (){ return this.data.expRoot; };
 
     var viewCount = 0;
     var sessionModelViewID = 0;
@@ -947,7 +964,7 @@ function DWCAModel (metaData, data) {
     };
 
     this.getNodeFromID = function (id) {
-        return this.getData()[id] || this.getTaxonomy()[id];
+        return this.getData()[id] || (this.getExplicitTaxonomy() ? this.getExplicitTaxonomy()[id] : undefined);
     };
 
     this.getLabel = function (node) {
@@ -1098,11 +1115,11 @@ VESPER.demo = function (files, exampleDivID) {
             setupFunc: function () {return {"visChoiceData":visChoiceData}}
         },
         {title:"Implicit Taxonomy", multiple: true,  attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
-            newVisFunc: function (div) { return new VESPER.Tree (div);},
+            newVisFunc: function (div) { return new VESPER.ImplicitTaxonomy (div);},
             setupFunc: function () {return {"rankField":"taxonRank"}}
         },
         {title:"Explicit Taxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
-            newVisFunc: function (div) { return new VESPER.Tree (div);},
+            newVisFunc: function (div) { return new VESPER.ExplicitTaxonomy (div);},
             setupFunc: function () {return {"rankField":"taxonRank"}}
         },
         {title:"Map", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
@@ -1128,6 +1145,7 @@ VESPER.demo = function (files, exampleDivID) {
         }
     ];
     var visTiedToSpecificAttrs = visChoiceData.slice (0, 6);
+    var progressBarID = "vesperProgressBar"; // from id in demoNew.html
 
     var model;
     var meta;
@@ -1179,6 +1197,8 @@ VESPER.demo = function (files, exampleDivID) {
         rows.append("td").text(function(d) { return d.description; });
         rows.append("td").text(function(d) { return d.origin; });
 
+        // make progress bar
+        DWCAHelper.makeProgressBar (undefined, progressBarID, "loadProgressDiv");
 
         NapVisLib.makeFileLoadButton (d3.select("#yourData"), "choice", "localLoader", "Load",
             function (file, content) {
@@ -1278,23 +1298,34 @@ VESPER.demo = function (files, exampleDivID) {
 
 
     function proceed (zip, mdata) {
-        function notifyFunc (str, obj) {
-            d3.select("#notifyStatusID").html(str+":"+obj);
-            d3.select("#loadStatDiv").attr("offsetWidth");
-        }
-        //DWCAZipParse.setNotifyFunc (notifyFunc);
 
-        model = VESPER.DWCAParser.filterReadZipEntriesToMakeModel (zip, mdata);
+        DWCAHelper.divDisplay(["#"+progressBarID], "block");
+        function notifyFunc (fileName, lines) {
+            d3.select("#"+progressBarID).select("p").html("Zip processing: "+fileName+". Parsed "+lines+" records.");
+        }
+        VESPER.DWCAZipParse.setNotifyFunc (notifyFunc);
+
+        var doneCallback = function (modelGen) {
+            model = modelGen;
+            afterZipFilesRead ();
+        };
+        //model =
+            VESPER.DWCAParser.filterReadZipEntriesToMakeModel (zip, mdata, doneCallback);
+    }
+
+    function afterZipFilesRead () {
         VESPER.log ("META", meta);
         VESPER.log ("MODEL", model);
         if (VESPER.alerts) { alert ("mem monitor point X"); }
 
-        DWCAHelper.divDisplay(["#selDiv"], "none");
+        DWCAHelper.divDisplay(["#selDiv", "#"+progressBarID], "none");
         DWCAHelper.divDisplay(["#allVisDiv"], "block");
 
         // the replace regex rips out nonalphanueric strings as dots and hashes cause trouble when passing the name as an id to d3selectors
         model.name = d3.select("#filenamePlaceholder").text().replace(/\W/g, '');
         (new VESPER.VisLauncher()).makeVis (visChoiceData[0], model);
+
+        // Aid G.C.
         model = null;
         meta = null;
     }
@@ -1365,7 +1396,6 @@ VESPER.demo = function (files, exampleDivID) {
     // Decide which vis options to show
     function refilterVisChoices (metaData) {
         var visCheckBoxGroup = d3.select("#dynamicSelectDiv").selectAll("span.fieldGroup");
-        VESPER.log (visCheckBoxGroup);
         visCheckBoxGroup
             .property ("checked", false)
             .style ("display", function(d) {
@@ -1421,7 +1451,7 @@ var DWCAHelper = new function () {
     this.isIdWrap = function (fd, d) { return isId (fd,d); };
 
     function updateTable (table, metaData, tableKey) {
-        VESPER.log ("rt", table, metaData, tableKey);
+        VESPER.log ("Table, metadata, table key", table, metaData, tableKey);
         var fd = metaData.fileData[tableKey];
         var s = getRowTypeSelection (fd);
 
@@ -1506,14 +1536,13 @@ var DWCAHelper = new function () {
         ;
 
        // tables.each (makeRows);
-        VESPER.log ("divs", divs);
         divs.selectAll("table").each (makeRows);
 
 
         function makeRows (d, i) {
             VESPER.log ("makerow args", arguments);
             var fdEntry = d;
-            VESPER.log ("table", i, d);
+            VESPER.log ("table index and datum", i, d);
             var table = d3.select(this);
             var tableId = table.attr ("id");
             var suffixNames = d.value.invFieldIndex.filter (function (elem) { return elem !== undefined; });
@@ -1546,7 +1575,7 @@ var DWCAHelper = new function () {
                 .on ("click", function (d, i) {
                     var check = this.checked;
                     //setBackground.call (this, d, i);
-                    VESPER.log ("fdEntry", fdEntry, check, this);
+                    VESPER.log ("File data object entry", fdEntry, check, this);
                     setItemSelection (fdEntry.value, d, check);
                     updateTable (table, metaData, fdEntry.key);
                     return true;
@@ -1571,7 +1600,7 @@ var DWCAHelper = new function () {
 
                 if (rowType.selected) {
                     var selItems = rowType.selectedItems;
-                    VESPER.log ("so", selItems);
+                    VESPER.log ("selected items", selItems);
                     var nums = {};
                     var l = 0;
                     for (var i in selItems) {
@@ -1591,7 +1620,7 @@ var DWCAHelper = new function () {
             }
         }
 
-        VESPER.log ("Sel Struc", struc);
+        VESPER.log ("Selected File and Fields Structure", struc);
         return struc;
     };
 
@@ -1636,7 +1665,7 @@ var DWCAHelper = new function () {
                 var vals = d3.values (si);
                 var uniq = d3.set(vals);
                 setRowTypeSelection (f, uniq.has("true")); // set whether 'row' i.e. core or extension file is selected
-                VESPER.log (f.rowType, uniq.has("true"));
+                //VESPER.log (f.rowType, uniq.has("true"));
             }
         }
 
@@ -1673,7 +1702,7 @@ var DWCAHelper = new function () {
             }
         }
 
-        VESPER.log ("List", list, "Match", all, matchSet.values());
+        VESPER.log ("Field List", list, "Match", all, matchSet.values());
         var matchLength = matchSet.values().length;
         var ok = needAll ? matchLength === list.length : (orMatchAtLeast ? matchLength >= orMatchAtLeast : matchLength > 0);
         return {match: ok, fields: all} ;
@@ -1681,7 +1710,7 @@ var DWCAHelper = new function () {
 
 
     this.addHelperButton = function (parentSelection, fieldParentSelection, listName, list, add, img, klass, metaFunc, selOptions) {
-        VESPER.log ("IN", listName, list, add, parentSelection.selectAll("button[type=button]."+klass));
+        //VESPER.log ("IN", listName, list, add, parentSelection.selectAll("button[type=button]."+klass));
         var buttons = parentSelection
             .selectAll("button[type=button]."+klass)
             .data([{key: listName, value: list, add: add}], function (d) { return d.key; })
@@ -1815,6 +1844,37 @@ var DWCAHelper = new function () {
     };
 
 
+    // make progress bar areas
+    // if divid is not found, make a div with that id and attach it to the parentD3elem
+    // then, for all cases, set the class and add the child p element if required
+    // not using jquery-ui progressbar because indeterminate progress bars don't allow text updates easily
+    this.makeProgressBar = function (parentD3Elem, divid, divClass) {
+        var makeDiv = d3.select("#"+divid);
+        if (makeDiv.empty() && parentD3Elem) {
+            parentD3Elem.append("div").attr ("id", divid);
+        }
+
+        makeDiv = d3.select("#"+divid);
+
+        if (!makeDiv.empty()) {
+            makeDiv.attr("class", divClass);
+
+            if (makeDiv.select("p").empty()) {
+                makeDiv.append("p");
+            }
+        }
+
+        return makeDiv;
+    };
+
+
+    this.addDragArea = function (parentD3Elem) {
+        if (parentD3Elem) {
+            var id = parentD3Elem.attr("id");
+            parentD3Elem.append("div").attr("class", "dragHandle").attr("id", id+"dragger");
+        }
+    };
+
 
     this.divDisplay = function (divArray, displayStatus) {
         for (var n = 0; n < divArray.length; n++) {
@@ -1843,7 +1903,7 @@ var DWCAHelper = new function () {
             .on ("contextmenu", null)
         ;
 
-        VESPER.log ("REC SEL", sel);
+        //VESPER.log ("REC SEL", sel);
 
         sel.each (function() {
            var obj = d3.select(this);
@@ -1997,7 +2057,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
 	
 	this.go = function () {
 
-        VESPER.log ("map go");
         if (!map) {
             // create the tile layer with correct attribution
             var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -2297,6 +2356,7 @@ VESPER.DWCAParser = new function () {
     this.SPECS = "s";
 
     this.SUPERROOT = "superroot";
+    var superrootID = "-1000";
 
 
 	// terms from old darwin core archive format superseded by newer ones
@@ -2487,15 +2547,34 @@ VESPER.DWCAParser = new function () {
     };
 
 
+
+    function afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback) {
+        // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
+        $.each (selectedStuff, function (key, value) {
+            var fileData = mdata.fileData[key];
+            var fileName = zip.dwcaFolder + fileData.fileName;
+            zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
+        });
+
+        if (VESPER.alerts) { alert ("mem monitor point 1"); }
+    }
+
+
     // Read in csv files that are zip entries. Use selectedStuff and readField to pick out
     // which columns to snatch out the zip parsing routines.
-    this.filterReadZipEntriesToMakeModel = function (zip, mdata) {
+    this.filterReadZipEntriesToMakeModel = function (zip, mdata, doneCallback) {
         var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
         var fileRows = {};
         //VESPER.log ("ZIP:", zip);
 
         // read selected data from zip
-        $.each (selectedStuff, function (key, value) {
+        var entries = d3.entries (selectedStuff);
+
+        var i = 0;
+
+        for (; i < entries.length; i++) {
+            var key = entries[i].key;
+            var value = entries[i].value;
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
             var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
@@ -2506,23 +2585,33 @@ VESPER.DWCAParser = new function () {
 
             //VESPER.log ("readFields", readFields);
             VESPER.DWCAZipParse.set (fileData, readFields);
+            VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ = [];
+            VESPER.DWCAZipParse.zipStreamSVParser2.fileName = fileName;
+            var ii = i; // copy i otherwise it might(will) change before we run onLoad
+
+            var onLoad = function (results) {
+                fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
+                VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
+                // final file dealt with
+                if (ii == entries.length - 1) {
+                    afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
+                    // make taxonomy (or list)
+                    doneCallback (new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
+                }
+
+                VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ.length = 0;
+                VESPER.DWCAZipParse.zipStreamSVParser2.fileName = undefined;
+            };
+            VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ.push (onLoad);
             zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
-            fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
-            VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
-        });
 
-        // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
-        $.each (selectedStuff, function (key, value) {
-            var fileData = mdata.fileData[key];
-            var fileName = zip.dwcaFolder + fileData.fileName;
-            zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
-        });
+            //fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
+            //VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
+        }
 
-        if (VESPER.alerts) { alert ("mem monitor point 1"); }
-
-        // make taxonomy (or list)
-        return new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata));
+        //afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
     };
+
 
 
     $.fn.filterNode = function(name) {
@@ -2599,10 +2688,10 @@ VESPER.DWCAParser = new function () {
     }
 
 	// This uses implicit id linking in the dwca file i.e. acceptedNameUsageID to parentNameUsageID
-	this.taxaArray2JSONTree = function (tsvData, fileData, metaData) {
+	this.jsonTaxaObj2JSONTree = function (jsonObj, tsvData, fileData, metaData) {
         var fieldIndexer = fileData.filteredFieldIndex;
         var idx = fileData.idIndex;
-		var jsonObj = this.occArray2JSONArray (tsvData, idx);
+		//var jsonObj = this.occArray2JSONArray (tsvData, idx);
 
         if (VESPER.alerts) { alert ("mem monitor point 1.5"); }
 		var hidx = fieldIndexer["parentNameUsageID"];
@@ -2669,7 +2758,7 @@ VESPER.DWCAParser = new function () {
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
-		return {"records":jsonObj, "tree":jsonObj}; // basically the record set here is the tree (taxonomy)
+		return jsonObj; // basically the record set here is the tree (taxonomy)
 	};
 
     function isSynonym (id, aid) {
@@ -2679,12 +2768,12 @@ VESPER.DWCAParser = new function () {
 
     // This uses explicit id linking in the dwca file i.e. kingdom, order, family, specificEpithet etc data
     // Make a taxonomy from the explicitly declared ranks
-    this.taxaArray2ExplicitJSONTree = function (tsvData, fileData, metaData, addOriginalTo) {
+    this.jsonTaxaObj2ExplicitJSONTree = function (jsonObj, tsvData, fileData, metaData, addOriginalTo) {
         addFieldToIndices (fileData, "taxonRank");
 
         var idx = fileData.idIndex;
         var fieldIndexer = fileData.filteredFieldIndex;
-        var jsonObj = this.occArray2JSONArray (tsvData, idx);
+        //var jsonObj = this.occArray2JSONArray (tsvData, idx);
 
         if (VESPER.alerts) { alert ("mem monitor point 1.5a ex"); }
         VESPER.log ("SPECS", VESPER.DWCAParser.SPECS);
@@ -2788,7 +2877,7 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("roots", roots);
 
         VESPER.log ("json", jsonObj, "tree", treeObj);
-        return {"records":jsonObj, "tree":treeObj};
+        return treeObj;
     };
 
 
@@ -2874,16 +2963,22 @@ VESPER.DWCAParser = new function () {
 	this.makeTreeFromAllFileRows = function (theFileRows, metaData) {
 		var rowDescriptors = metaData.fileData;
 		var coreFileData = rowDescriptors[metaData.coreRowType];
-		var jsoned;
+
+        var rawData = theFileRows[coreFileData.rowType];
+        var jsonObj = this.occArray2JSONArray (rawData, coreFileData.idIndex);
+        var impTree = undefined;
+        var expTree = undefined;
 
         // TODO. monday. look for ways to generate both trees for data sets if present.
 		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
-			jsoned = this.taxaArray2JSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData);
+			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
 		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
-            jsoned = this.taxaArray2ExplicitJSONTree (theFileRows[coreFileData.rowType], coreFileData, metaData,
+            expTree = this.jsonTaxaObj2ExplicitJSONTree (jsonObj, rawData, coreFileData, metaData,
                 VESPER.DWCAParser.addOriginalAsSpecimenEntry
             );
 		}
+
+        var jsoned = {"records": jsonObj, "impTree":impTree, "expTree":expTree};
   		
   		for (var indRowDescriptorProp in rowDescriptors) {
   			if (rowDescriptors.hasOwnProperty (indRowDescriptorProp)) {
@@ -2903,12 +2998,26 @@ VESPER.DWCAParser = new function () {
 	this.setupStrucFromRows = function (theFileRows, metaData) {
   		var struc = this.makeTreeFromAllFileRows (theFileRows, metaData);
         if (VESPER.alerts) { alert ("mem monitor point 2"); }
-    	struc.root = struc.tree["-1000"]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
-    	if (struc.root) {
-    		this.countDescendants (struc.root);
-    	}
+
+        if (struc.impTree) {
+            struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
+            VESPER.log ("root", struc.impRoot);
+            if (struc.impRoot) {
+                this.countDescendants (struc.impRoot);
+            }
+        }
+
+        if (struc.expTree) {
+            struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
+            if (struc.expRoot) {
+                this.countDescendants (struc.expRoot);
+            }
+        }
+
+        VESPER.log ("STRUC", struc);
+
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        VESPER.log ("root", struc.root);
+        VESPER.log ("root", struc.impRoot, struc.expRoot);
     	return struc;
 	};
 	
@@ -2946,7 +3055,7 @@ VESPER.DWCAParser = new function () {
 		}
 		
 		if (roots.length == 1) {
-            jsonObj["-1000"] = jsonObj[roots[0]];
+            jsonObj[superrootID] = jsonObj[roots[0]];
 			return jsonObj[roots[0]];
 		}
 
@@ -2955,23 +3064,22 @@ VESPER.DWCAParser = new function () {
         var nameName = fileData.invFieldIndex[nameField];
 
 		var hidx = fieldIndexer["parentNameUsageID"];
-		var srID = "-1000";
 		var srData = {
-            //id: srID,
-            acceptedNameUsageID: srID,
-            parentNameUsageID: srID,
+            //id: superrootID,
+            acceptedNameUsageID: superrootID,
+            parentNameUsageID: superrootID,
             acceptedNameUsage: VESPER.DWCAParser.SUPERROOT,
             taxonRank: VESPER.DWCAParser.SUPERROOT,
             nameAccordingTo: "dwcaParse.js"
 		};
         srData[nameName] = VESPER.DWCAParser.SUPERROOT;
-        srData[idName] = srID;
+        srData[idName] = superrootID;
 		var srObj = {};
 	
 		srObj[this.TAXA] = [];
 		for (var n = 0; n < roots.length; n++) {
 			srObj[this.TAXA].push (jsonObj[roots[n]]);	// add root as child taxon of superroot
-			jsonObj[roots[n]][VESPER.DWCAParser.TDATA][hidx] = srID;	// make superroot parent taxon of root
+			jsonObj[roots[n]][VESPER.DWCAParser.TDATA][hidx] = superrootID;	// make superroot parent taxon of root
 		}
 		
 		srObj[VESPER.DWCAParser.TDATA] = [];
@@ -2985,7 +3093,7 @@ VESPER.DWCAParser = new function () {
 		
 		VESPER.log ("superroot", srObj);
 
-        jsonObj[srID] = srObj;  // add it to the json obj so it gets treated like a node everywhere else
+        jsonObj[superrootID] = srObj;  // add it to the json obj so it gets treated like a node everywhere else
 		return srObj;	
 	};
 	
@@ -3258,8 +3366,8 @@ VESPER.modelComparisons = new function () {
         var large = (small == model1 ? model2 : model1);
         var smallLinkField = (small == model1 ? linkField1 : linkField2);
         var largeLinkField = (small == model1 ? linkField2 : linkField1);
-        var smallData = small.getTaxonomy();
-        var largeData = large.getTaxonomy();
+        var smallData = small.getExplicitTaxonomy() || small.getImplicitTaxonomy();
+        var largeData = large.getExplicitTaxonomy() || large.getImplicitTaxonomy();
         var smallSelection = small.getSelectionModel();
         var largeSelection = large.getSelectionModel();
         VESPER.log ("lf", linkField1, linkField2);
@@ -4266,7 +4374,7 @@ VESPER.Tree = function(divid) {
                 var prop = 0;
                 var containCount = containsCount (node);
                 if (containCount > 0 && node.sdcount > 0) {
-                    var prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
+                    prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
                     prop *= prop; // square cos area of ring is square of radius
                 }
                 return oRad - (prop * diff);
@@ -4460,9 +4568,9 @@ VESPER.Tree = function(divid) {
 		;
 
         var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
+        var root = (vals.length == 1) ? getNode(vals[0]) : self.getRoot(model);
         if (root === undefined) {
-            VESPER.log ("no root defined for tree");
+            VESPER.log ("no root defined for tree", self.getRoot());
             return;
         }
 
@@ -4495,7 +4603,8 @@ VESPER.Tree = function(divid) {
             .attr ("id", noHashID+"controls")
         ;
 
-        NapVisLib.addHRGrooves (cpanel);
+        //NapVisLib.addHRGrooves (cpanel);
+        DWCAHelper.addDragArea (cpanel);
 
         NapVisLib.makeSectionedDiv (cpanel,
             [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
@@ -4664,13 +4773,18 @@ VESPER.Tree = function(divid) {
 
 	this.update = function () {
         var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
+        var root = (vals.length == 1) ? getNode(vals[0]) : self.getRoot(model);
         VESPER.log ("Root", root, vals[0]);
 
-        model.countSelectedDesc (model.getRoot(), keyField);
-        root = firstBranch (model.getRoot());
+        model.countSelectedDesc (self.getRoot(model), keyField);
+        root = firstBranch (self.getRoot(model));
         reroot (root);
 	};
+
+
+    this.getRoot = function (mod) {
+        return mod.getImplicitRoot();
+    };
 
     this.updateVals = this.update;
 
@@ -4807,6 +4921,24 @@ VESPER.Tree = function(divid) {
 		zoomObj.translate([0,0]).scale(1);
 		//redraw ();
 	}
+};
+
+VESPER.ImplicitTaxonomy = function (div) {
+    var tree = new VESPER.Tree (div);
+    tree.type = "impTree";
+    tree.getRoot = function (mod) {
+        return mod.getImplicitRoot();
+    };
+    return tree;
+};
+
+VESPER.ExplicitTaxonomy = function (div) {
+    var tree = new VESPER.Tree (div);
+    tree.type = "expTree";
+    tree.getRoot = function (mod) {
+        return mod.getExplicitRoot();
+    };
+    return tree;
 };
 VESPER.tooltip = new function () {
     this.holdDuration = 10000;

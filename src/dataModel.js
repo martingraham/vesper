@@ -22,9 +22,10 @@ function DWCAModel (metaData, data) {
     // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
     this.getData = function (){ return this.data.records; };
-    this.getTaxonomy = function () { return this.data.tree; };
-    this.getRoot = function (){ return this.data.root; };
-    this.getExplicitTaxonomy = function () { return this.data.tree; };
+    this.getImplicitTaxonomy = function () { return this.data.impTree; };
+    this.getImplicitRoot = function (){ return this.data.impRoot; };
+    this.getExplicitTaxonomy = function () { return this.data.expTree; };
+    this.getExplicitRoot = function (){ return this.data.expRoot; };
 
     var viewCount = 0;
     var sessionModelViewID = 0;
@@ -92,7 +93,7 @@ function DWCAModel (metaData, data) {
     };
 
     this.getNodeFromID = function (id) {
-        return this.getData()[id] || this.getTaxonomy()[id];
+        return this.getData()[id] || (this.getExplicitTaxonomy() ? this.getExplicitTaxonomy()[id] : undefined);
     };
 
     this.getLabel = function (node) {

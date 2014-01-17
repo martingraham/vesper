@@ -88,7 +88,8 @@ VESPER.BarChart = function(divid) {
                 .attr("id", noHashId+"Controls")
             ;
 
-            NapVisLib.addHRGrooves (butdiv);
+            //NapVisLib.addHRGrooves (butdiv);
+            DWCAHelper.addDragArea (butdiv);
             NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
 
             var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
@@ -167,7 +168,7 @@ VESPER.BarChart = function(divid) {
         //var binCount = Math.ceil ((self.childScale.range()[1] - self.childScale.range()[0]) / self.minBarWidth);
         binned = self.chunkInfo (model, model.getData(), ffields/*, undefined, binCount, true*/);
         self.childScale.domain (binned.extremes);
-        VESPER.log ("bin stuff", binned.extremes, binned);
+        VESPER.log ("bin data", binned.extremes, binned);
     }
 
 	function getNode (id) {
@@ -190,9 +191,9 @@ VESPER.BarChart = function(divid) {
             function (key, data) { return model.getSelectionModel().contains (key)});
 
         var bins = binned.bins;
-        VESPER.log ("SEL BINS", selBinned);
+        VESPER.log ("Selection bins", selBinned);
         var maxh = d3.max(bins, function(d) { return d.count + 1; });
-        VESPER.log ("maxh", maxh);
+        VESPER.log ("Max height", maxh);
         var wh = dims[1] - margin.bottom;
         currentCountScale.domain([1, maxh]).range ([wh, margin.top]).nice();
 
@@ -332,12 +333,12 @@ VESPER.BarChart = function(divid) {
             var mind = chart.unwrapDataType (min); //min.getTime() / this.msinaday;
             var maxd = chart.unwrapDataType (max); //max.getTime() / this.msinaday;
             var domRange = (Math.ceil (maxd / self.toNearest) * self.toNearest) - (Math.floor (mind / self.toNearest) * self.toNearest);
-            VESPER.log ("MINS", maxd, mind, min, max, domRange, self.childScale.range());
+            VESPER.log ("Mins and Maxs", maxd, mind, min, max, domRange, self.childScale.range());
 
             var newBarVals = chart.makeBarSizes (self.childScale.range()[1] - self.childScale.range()[0], domRange);
             var binSize = newBarVals.newBinSize;
             var binCount = newBarVals.newBinCount;
-            VESPER.log ("bb", binSize, binCount);
+            VESPER.log ("Bin size & count", binSize, binCount);
             var fmind = Math.floor (mind / binSize) * binSize;
 
             for (var n = 0; n < binCount + 1; n++) {
@@ -386,7 +387,7 @@ VESPER.BarChart = function(divid) {
                 }
             }
         }
-        VESPER.log ("Arr", min, max, arr);
+        VESPER.log ("Min, max, array of matches", min, max, arr);
         return arr;
     };
 
@@ -411,7 +412,7 @@ VESPER.BarChart = function(divid) {
             }
         }
 
-        VESPER.log ("bdw: ", barDomainWidth, range, width);
+        VESPER.log ("Bar domain width, phys range, phys width", barDomainWidth, range, width);
 
         var binCount = Math.ceil (range / binSize);
         return {newBinSize: binSize, newBinCount: binCount};
@@ -465,7 +466,7 @@ VESPER.TaxaDistribution = function (div) {
         }
         return undefined;
     };
-    chart.divisions = [1,2,10,100];
+    chart.divisions = [1,2,10,100,1000];
 
     return chart;
 };

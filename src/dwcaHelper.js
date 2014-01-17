@@ -34,7 +34,7 @@ var DWCAHelper = new function () {
     this.isIdWrap = function (fd, d) { return isId (fd,d); };
 
     function updateTable (table, metaData, tableKey) {
-        VESPER.log ("rt", table, metaData, tableKey);
+        VESPER.log ("Table, metadata, table key", table, metaData, tableKey);
         var fd = metaData.fileData[tableKey];
         var s = getRowTypeSelection (fd);
 
@@ -119,14 +119,13 @@ var DWCAHelper = new function () {
         ;
 
        // tables.each (makeRows);
-        VESPER.log ("divs", divs);
         divs.selectAll("table").each (makeRows);
 
 
         function makeRows (d, i) {
             VESPER.log ("makerow args", arguments);
             var fdEntry = d;
-            VESPER.log ("table", i, d);
+            VESPER.log ("table index and datum", i, d);
             var table = d3.select(this);
             var tableId = table.attr ("id");
             var suffixNames = d.value.invFieldIndex.filter (function (elem) { return elem !== undefined; });
@@ -159,7 +158,7 @@ var DWCAHelper = new function () {
                 .on ("click", function (d, i) {
                     var check = this.checked;
                     //setBackground.call (this, d, i);
-                    VESPER.log ("fdEntry", fdEntry, check, this);
+                    VESPER.log ("File data object entry", fdEntry, check, this);
                     setItemSelection (fdEntry.value, d, check);
                     updateTable (table, metaData, fdEntry.key);
                     return true;
@@ -184,7 +183,7 @@ var DWCAHelper = new function () {
 
                 if (rowType.selected) {
                     var selItems = rowType.selectedItems;
-                    VESPER.log ("so", selItems);
+                    VESPER.log ("selected items", selItems);
                     var nums = {};
                     var l = 0;
                     for (var i in selItems) {
@@ -204,7 +203,7 @@ var DWCAHelper = new function () {
             }
         }
 
-        VESPER.log ("Sel Struc", struc);
+        VESPER.log ("Selected File and Fields Structure", struc);
         return struc;
     };
 
@@ -249,7 +248,7 @@ var DWCAHelper = new function () {
                 var vals = d3.values (si);
                 var uniq = d3.set(vals);
                 setRowTypeSelection (f, uniq.has("true")); // set whether 'row' i.e. core or extension file is selected
-                VESPER.log (f.rowType, uniq.has("true"));
+                //VESPER.log (f.rowType, uniq.has("true"));
             }
         }
 
@@ -286,7 +285,7 @@ var DWCAHelper = new function () {
             }
         }
 
-        VESPER.log ("List", list, "Match", all, matchSet.values());
+        VESPER.log ("Field List", list, "Match", all, matchSet.values());
         var matchLength = matchSet.values().length;
         var ok = needAll ? matchLength === list.length : (orMatchAtLeast ? matchLength >= orMatchAtLeast : matchLength > 0);
         return {match: ok, fields: all} ;
@@ -294,7 +293,7 @@ var DWCAHelper = new function () {
 
 
     this.addHelperButton = function (parentSelection, fieldParentSelection, listName, list, add, img, klass, metaFunc, selOptions) {
-        VESPER.log ("IN", listName, list, add, parentSelection.selectAll("button[type=button]."+klass));
+        //VESPER.log ("IN", listName, list, add, parentSelection.selectAll("button[type=button]."+klass));
         var buttons = parentSelection
             .selectAll("button[type=button]."+klass)
             .data([{key: listName, value: list, add: add}], function (d) { return d.key; })
@@ -428,6 +427,37 @@ var DWCAHelper = new function () {
     };
 
 
+    // make progress bar areas
+    // if divid is not found, make a div with that id and attach it to the parentD3elem
+    // then, for all cases, set the class and add the child p element if required
+    // not using jquery-ui progressbar because indeterminate progress bars don't allow text updates easily
+    this.makeProgressBar = function (parentD3Elem, divid, divClass) {
+        var makeDiv = d3.select("#"+divid);
+        if (makeDiv.empty() && parentD3Elem) {
+            parentD3Elem.append("div").attr ("id", divid);
+        }
+
+        makeDiv = d3.select("#"+divid);
+
+        if (!makeDiv.empty()) {
+            makeDiv.attr("class", divClass);
+
+            if (makeDiv.select("p").empty()) {
+                makeDiv.append("p");
+            }
+        }
+
+        return makeDiv;
+    };
+
+
+    this.addDragArea = function (parentD3Elem) {
+        if (parentD3Elem) {
+            var id = parentD3Elem.attr("id");
+            parentD3Elem.append("div").attr("class", "dragHandle").attr("id", id+"dragger");
+        }
+    };
+
 
     this.divDisplay = function (divArray, displayStatus) {
         for (var n = 0; n < divArray.length; n++) {
@@ -456,7 +486,7 @@ var DWCAHelper = new function () {
             .on ("contextmenu", null)
         ;
 
-        VESPER.log ("REC SEL", sel);
+        //VESPER.log ("REC SEL", sel);
 
         sel.each (function() {
            var obj = d3.select(this);

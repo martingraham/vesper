@@ -360,7 +360,7 @@ VESPER.Tree = function(divid) {
                 var prop = 0;
                 var containCount = containsCount (node);
                 if (containCount > 0 && node.sdcount > 0) {
-                    var prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
+                    prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
                     prop *= prop; // square cos area of ring is square of radius
                 }
                 return oRad - (prop * diff);
@@ -554,9 +554,9 @@ VESPER.Tree = function(divid) {
 		;
 
         var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
+        var root = (vals.length == 1) ? getNode(vals[0]) : self.getRoot(model);
         if (root === undefined) {
-            VESPER.log ("no root defined for tree");
+            VESPER.log ("no root defined for tree", self.getRoot());
             return;
         }
 
@@ -589,7 +589,8 @@ VESPER.Tree = function(divid) {
             .attr ("id", noHashID+"controls")
         ;
 
-        NapVisLib.addHRGrooves (cpanel);
+        //NapVisLib.addHRGrooves (cpanel);
+        DWCAHelper.addDragArea (cpanel);
 
         NapVisLib.makeSectionedDiv (cpanel,
             [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
@@ -758,13 +759,18 @@ VESPER.Tree = function(divid) {
 
 	this.update = function () {
         var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : model.getRoot();
+        var root = (vals.length == 1) ? getNode(vals[0]) : self.getRoot(model);
         VESPER.log ("Root", root, vals[0]);
 
-        model.countSelectedDesc (model.getRoot(), keyField);
-        root = firstBranch (model.getRoot());
+        model.countSelectedDesc (self.getRoot(model), keyField);
+        root = firstBranch (self.getRoot(model));
         reroot (root);
 	};
+
+
+    this.getRoot = function (mod) {
+        return mod.getImplicitRoot();
+    };
 
     this.updateVals = this.update;
 
@@ -901,4 +907,22 @@ VESPER.Tree = function(divid) {
 		zoomObj.translate([0,0]).scale(1);
 		//redraw ();
 	}
+};
+
+VESPER.ImplicitTaxonomy = function (div) {
+    var tree = new VESPER.Tree (div);
+    tree.type = "impTree";
+    tree.getRoot = function (mod) {
+        return mod.getImplicitRoot();
+    };
+    return tree;
+};
+
+VESPER.ExplicitTaxonomy = function (div) {
+    var tree = new VESPER.Tree (div);
+    tree.type = "expTree";
+    tree.getRoot = function (mod) {
+        return mod.getExplicitRoot();
+    };
+    return tree;
 };

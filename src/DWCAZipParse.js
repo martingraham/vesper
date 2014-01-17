@@ -101,21 +101,13 @@ VESPER.DWCAZipParse = new function () {
         lineNo++;
 
         if (lineNo % 10000 === 0 || lineNo === 10998) {
-            if (notifyFunc) {
-                notifyFunc (lineNo, str);
-            } else {
-                VESPER.log (lineNo, ": ", str);
-            }
+            VESPER.log (lineNo, ": ", str);
         }
         if (lineNo % 100 === 0) {
             var tt = NapVisLib.makeTime();
             if (tt - pTime > 1000) {
                 pTime = tt;
-                if (notifyFunc) {
-                    notifyFunc (lineNo, str);
-                } else {
-                    VESPER.log (lineNo, ": ", str);
-                }
+                VESPER.log (lineNo, ": ", str);
             }
         }
         //VESPER.log (str);
@@ -128,8 +120,9 @@ VESPER.DWCAZipParse = new function () {
         //return [];
 
         if (VESPER.alerts) { alert ("start partial parse with charcodes"); }
-        var buff = new Array(1024);
+
         var blength = 1024;
+        var buff = new Array (blength);
         var out = [];
         var i, j;
         var bigOut = [];
@@ -140,8 +133,9 @@ VESPER.DWCAZipParse = new function () {
         var ch, ch2, c;
         var utfwrap = 0;
 
-        var mt = NapVisLib.makeTime();
-        pTime = mt;
+        var startt = NapVisLib.makeTime();
+        pTime = startt;
+        var segmentLengthMs = 200;
 
         function matchEol (c, buf, off) {
             var fcmatch = (lineDelimVal == c);
@@ -150,14 +144,14 @@ VESPER.DWCAZipParse = new function () {
                 return fcmatch;
             } else if (fcmatch) {
                 if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
-                    for (var l = lineDelimiter.length; --l >= 1;) { // first char matched remember (fcmatch)
+                    for (var l = lineDelimiter.length; --l >= 1;) { // 1 'cos first char matched remember (fcmatch)
                         if (lineDelimiter.charCodeAt(l) != buf[off+l]) {
                             return false;
                         }
                     }
                     j += lineDelimiter.length - 1;  // move along over these read bytes
                     return true;
-                } else {
+                } else { // eol string (obv >1 character) is divided between this buffer and the next
                     utfwrap = i - j;
                     j = i;
                     ch = undefined;
@@ -166,110 +160,131 @@ VESPER.DWCAZipParse = new function () {
             return false;
         }
 
-        while((i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
+        function doWork () {
 
-            //if (lineNo > 10992 && lineNo < 10998) {
-            //    VESPER.log (lineNo, utfwrap, "\nout", out.join(), "\nbuff", buff.length, i, buff.join(), "\n", buff[1023]);
-            //}
+            var mt = NapVisLib.makeTime();
+            while ((NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
 
-            i += utfwrap; // cos we may have chars left over from not processing utf chars chopped between buffer calls
-            // and i only returns new chars added to the buffer from inflateFunc. Led to off by one(or two) errors.
+                //if (lineNo > 10992 && lineNo < 10998) {
+                //    VESPER.log (lineNo, utfwrap, "\nout", out.join(), "\nbuff", buff.length, i, buff.join(), "\n", buff[1023]);
+                //}
 
-            var n = 0;
-            utfwrap = 0;
+                i += utfwrap; // 'cos we may have chars left over from not processing utf chars / eol strings chopped between buffer calls
+                // and i only returns new chars added to the buffer from inflateFunc. Led to off by one(or two) errors.
+
+                var n = 0;
+                utfwrap = 0;
 
 
-            if (stt) {
-                var possbom = String.fromCharCode(buff[0]) + String.fromCharCode(buff[1]) + String.fromCharCode(buff[2]);
-                VESPER.log ("possbom [", possbom, "]");
-                if (possbom == "\xEF\xBB\xBF") {
-                    VESPER.log ("UTF8 bytemark detected");
-                    n = 3;
+                if (stt) {
+                    var possbom = String.fromCharCode(buff[0]) + String.fromCharCode(buff[1]) + String.fromCharCode(buff[2]);
+                    VESPER.log ("possbom [", possbom, "]");
+                    if (possbom == "\xEF\xBB\xBF") {
+                        VESPER.log ("UTF8 bytemark detected");
+                        n = 3;
+                    }
+                    stt = false;
                 }
-                stt = false;
-            }
 
-            for (j = n; j < i; j++) {
-                ch = buff[j];
-                if (ch >= 128) {
-                    if( ch >= 0xC2 && ch < 0xE0 ) {
-                        if (j < i - 1) {
-                            ch = (((ch&0x1F)<<6) + (buff[++j]&0x3F));
-                        } else {
-                            utfwrap = 1;
-                            j = i;
-                            ch = undefined;
-                        }
-                    } else if( ch >= 0xE0 && ch < 0xF0 ) {
-                        if (j < i - 2) {
-                            ch = (((ch&0xFF)<<12) + ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F));
-                        } else {
-                            utfwrap = i - j;
-                            j = i;
-                            ch = undefined;
-                        }
-                    } else if( ch >= 0xF0 && ch < 0xF5) {
-                        if (j < i - 3) {
-                            var codepoint = ((ch&0x07)<<18) + ((buff[++j]&0x3F)<<12)+ ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F);
-                            codepoint -= 0x10000;
-                            var s = (
-                                (codepoint>>10) + 0xD800,
-                                (codepoint&0x3FF) + 0xDC00
-                            );
-                            ch = s.charAt[0];
-                            ch2 = s.charAt[1];
-                        } else {
-                            utfwrap = i - j;
-                            j = i;
-                            ch = undefined;
+                for (j = n; j < i; j++) {
+                    ch = buff[j];
+                    if (ch >= 128) {
+                        if( ch >= 0xC2 && ch < 0xE0 ) {
+                            if (j < i - 1) {
+                                ch = (((ch&0x1F)<<6) + (buff[++j]&0x3F));
+                            } else {
+                                utfwrap = 1;
+                                j = i;
+                                ch = undefined;
+                            }
+                        } else if( ch >= 0xE0 && ch < 0xF0 ) {
+                            if (j < i - 2) {
+                                ch = (((ch&0xFF)<<12) + ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F));
+                            } else {
+                                utfwrap = i - j;
+                                j = i;
+                                ch = undefined;
+                            }
+                        } else if( ch >= 0xF0 && ch < 0xF5) {
+                            if (j < i - 3) {
+                                var codepoint = ((ch&0x07)<<18) + ((buff[++j]&0x3F)<<12)+ ((buff[++j]&0x3F)<<6) + (buff[++j]&0x3F);
+                                codepoint -= 0x10000;
+                                var s = (
+                                    (codepoint>>10) + 0xD800,
+                                    (codepoint&0x3FF) + 0xDC00
+                                );
+                                ch = s.charAt[0];
+                                ch2 = s.charAt[1];
+                            } else {
+                                utfwrap = i - j;
+                                j = i;
+                                ch = undefined;
+                            }
                         }
                     }
-                }
 
 
-                if (quoteDelimiter && !esc && ch == qDelimVal) {
-                    quotes = !quotes;
-                    out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
+                    if (quoteDelimiter && !esc && ch == qDelimVal) {
+                        quotes = !quotes;
+                        out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
+                    }
+                    //else if (!quotes && ch == lineDelimVal) {  // end of line
+                    else if (!quotes && matchEol (ch, buff, j)) {  // end of line
+                        bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
+                        k++;
+                        out.length = 0;
+                       // if (k % 1000 == 0 && window.opera) {
+                       //     window.opera.collect();
+                      // }
+                    } else if (ch !== undefined) {
+                        out.push (ch);
+                        if (ch2 !== undefined) {
+                            out.push (ch2);
+                            ch2 = undefined;
+                        }
+                    }
+
+                    esc = (ch == escapeCharVal);
                 }
-                //else if (!quotes && ch == lineDelimVal) {  // end of line
-                else if (!quotes && matchEol (ch, buff, j)) {  // end of line
-                    bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
-                    k++;
-                    out.length = 0;
-                   // if (k % 1000 == 0 && window.opera) {
-                   //     window.opera.collect();
-                  // }
-                } else if (ch !== undefined) {
-                    out.push (ch);
-                    if (ch2 !== undefined) {
-                        out.push (ch2);
-                        ch2 = undefined;
+                // VESPER.log (out.length);
+
+                if (utfwrap) {
+                    //VESPER.log ("buffer ends during utf character sequence, ", utfwrap);
+                    for (var m = 0; m < utfwrap; m++) {
+                        buff[m] = buff [i - utfwrap + m];
                     }
                 }
-
-                esc = (ch == escapeCharVal);
             }
-            // VESPER.log (out.length);
 
-            if (utfwrap) {
-                //VESPER.log ("buffer ends during utf character sequence, ", utfwrap);
-                for (var m = 0; m < utfwrap; m++) {
-                    buff[m] = buff [i - utfwrap + m];
+            if (notifyFunc) {
+                notifyFunc (VESPER.DWCAZipParse.zipStreamSVParser2.fileName, lineNo);
+            }
+
+            if (i > 0) {
+                //VESPER.log ("SEGMENT");
+                setTimeout (doWork, 1);
+            }
+            else {
+                if (out.length > 0) {
+                    bigOut.push (VESPER.DWCAZipParse.rowReader2 (out));
+                }
+
+                startt = NapVisLib.makeTime() - startt;
+                VESPER.log ("Time: ", startt/1000, " secs.");
+                VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
+                VESPER.log ("pulled out "+pb+" characters from zip");
+                sharedMaps.length = 0;  // used, discard, helps GC
+                //return bigOut;
+                var callbacks = VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ;
+                VESPER.log ("callback queue length", callbacks.length);
+                for (var cb = callbacks.length; --cb >= 0;) {
+                    callbacks[cb](bigOut);
                 }
             }
+
         }
 
-        // Last line may not be returned
-        if (out.length > 0) {
-            bigOut.push (VESPER.DWCAZipParse.rowReader2 (out));
-        }
-
-        mt = NapVisLib.makeTime() - mt;
-        VESPER.log ("Time: ", mt/1000, " secs.");
-        VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
-        VESPER.log ("pulled out "+pb+" characters from zip");
-        sharedMaps.length = 0;  // used, discard, helps GC
-        return bigOut;
+        setTimeout (doWork, 1);
     };
 
 

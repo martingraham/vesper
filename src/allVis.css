@@ -97,11 +97,18 @@ DIV .hack {
     margin-top: 6px;
 }
 
+/*
 .visControl hr {
     border: 1px solid #888;
     border-top-width: 1px;
     border-bottom-width: 0px;
     margin: 1px;
+}
+*/
+
+.visControl DIV.dragHandle {
+    background: #aaa url('../img/bumpPat.png') 100% 100% repeat;
+    height: 14px;
 }
 
 .controlHeading {

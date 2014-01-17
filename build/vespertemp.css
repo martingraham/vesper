@@ -97,11 +97,18 @@ DIV .hack {
     margin-top: 6px;
 }
 
+/*
 .visControl hr {
     border: 1px solid #888;
     border-top-width: 1px;
     border-bottom-width: 0px;
     margin: 1px;
+}
+*/
+
+.visControl DIV.dragHandle {
+    background: #aaa url('../img/bumpPat.png') 100% 100% repeat;
+    height: 14px;
 }
 
 .controlHeading {
@@ -492,6 +499,25 @@ div.buttonBank {
     font-size: 12pt;
     max-width: 90%;
     margin: 0 auto;
+}
+
+.loadProgressDiv {
+    border: 1px solid #cdc;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    background: #ded;
+    width: 100%;
+    /*height: 24px;*/
+    margin: 2px;
+    display: none; /* not shown at first */
+}
+
+.loadProgressDiv p, .loadProgressDiv span {
+    font-size: 12pt;
+    color: #333;
+    width: 100%;
+    margin: 2px 8px;
+    font-weight: bold;
 }
 td.value {
 	font-weight:bold;

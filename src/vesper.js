@@ -8,7 +8,7 @@
 var VESPER = (function() {
     var vesper = {};
     vesper.alerts = false;
-    vesper.logRun = true;
+    vesper.logRun = false;
     vesper.log = function (obj) {
         if (vesper.logRun) {
             //console.log.apply (console, arguments);
