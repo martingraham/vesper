@@ -250,6 +250,10 @@ DIV.encloser {
     top:30px;
 }
 
+BODY {
+    position: relative;
+}
+
 div#pageTitle {
     text-align: center;
     background: #ada;
@@ -290,6 +294,10 @@ div#pageTitle H2 {
     stroke-width: 1;
 }
 
+#tabs {
+    font-family: "Gill Sans MT";
+    margin-bottom: 4px;
+}
 
 #examples table {
     border: solid 1px #8aa;
@@ -370,32 +378,37 @@ button[type="button"].selButtonStyle {
     font-size: 10pt;
 }
 
-.filenameLabel {
+#filenamePlaceholder {
     text-align: center;
     font-size: 14pt;
+    margin: 0px;
+    text-align: left;
 }
 
-.filesizeLabel {
-    text-align: center;
+#filesizePlaceholder {
+    text-align: left;
     font-size: 11pt;
+    margin: 0px;
 }
 
 span.fieldGroup {
     display: block;
 }
 
-
-/* hide advanced option button */
-#advancedSelectOuter {
+/* hide certain div elements to start with*/
+#selDiv, #advancedSelectDiv, #advancedSelectOuter {
     display: none;
 }
 
-
+#listDiv {
+    display: none;
+    overflow: hidden;
+    margin-left: 150px;
+}
 
 img.vesperIcon {
     margin-right: 7px;
 }
-
 
 
 
@@ -416,13 +429,6 @@ div.selectBox table {
 }
 div.selectBox table.coreTable {
     background: #dfd;
-}
-
-div.fullWidthHolder {
-    /*margin: 0 auto;*/
-    /*width: 95%;*/
-    overflow: hidden;
-    margin-left: 150px;
 }
 
 tr.col {
