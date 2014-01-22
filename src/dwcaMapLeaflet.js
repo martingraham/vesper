@@ -341,7 +341,12 @@ VESPER.DWCAMapLeaflet = function (divid) {
         });
         markerGroup.clearLayers();
 
-        curSelMaskLayer.setData ([]);
+        maskGroup.eachLayer (function(layer) {
+            layer.removeEventListener();
+            layer.setData ([]);
+        });
+        maskGroup.clearLayers();
+       // curSelMaskLayer.setData ([]);
 
         var lys = [];
         map.eachLayer (function(layer) {

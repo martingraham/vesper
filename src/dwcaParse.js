@@ -224,7 +224,8 @@ VESPER.DWCAParser = new function () {
 
         var i = 0;
 
-        for (; i < entries.length; i++) {
+        //for (; i < entries.length; i++) {
+        function loadZipPart (streamFunc) {
             var key = entries[i].key;
             var value = entries[i].value;
             var fileData = mdata.fileData[key];
@@ -237,29 +238,36 @@ VESPER.DWCAParser = new function () {
 
             //VESPER.log ("readFields", readFields);
             VESPER.DWCAZipParse.set (fileData, readFields);
-            VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ = [];
-            VESPER.DWCAZipParse.zipStreamSVParser2.fileName = fileName;
-            var ii = i; // copy i otherwise it might(will) change before we run onLoad
+            streamFunc.callbackQ = [];
+            streamFunc.fileName = fileName;
+            //var ii = i; // copy i otherwise it might(will) change before we run onLoad; Not needed now i is incremented in the callback itself
 
             var onLoad = function (results) {
                 fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
                 VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
                 // final file dealt with
-                if (ii == entries.length - 1) {
+                if (i == entries.length - 1) {
                     afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
                     // make taxonomy (or list)
                     doneCallback (new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
                 }
 
-                VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ.length = 0;
-                VESPER.DWCAZipParse.zipStreamSVParser2.fileName = undefined;
+                streamFunc.callbackQ.length = 0;
+                streamFunc.fileName = undefined;
+
+                i++;
+                if (i < entries.length) {
+                    loadZipPart (streamFunc);
+                }
             };
-            VESPER.DWCAZipParse.zipStreamSVParser2.callbackQ.push (onLoad);
-            zip.zipEntries.readLocalFile (fileName, VESPER.DWCAZipParse.zipStreamSVParser2);
+            streamFunc.callbackQ.push (onLoad);
+            zip.zipEntries.readLocalFile (fileName, streamFunc);
 
             //fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
             //VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
         }
+
+        loadZipPart (VESPER.DWCAZipParse.zipStreamSVParser2);
 
         //afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
     };
