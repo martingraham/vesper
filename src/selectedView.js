@@ -65,11 +65,11 @@ VESPER.FilterView = function (divID) {
 
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divID));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divID));
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divID);
+        VESPER.DWCAHelper.twiceUpRemove(divID);
     }
 };
 
@@ -291,10 +291,10 @@ VESPER.SelectedView = function (divID) {
     }
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divID));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divID));
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divID);
+        VESPER.DWCAHelper.twiceUpRemove(divID);
     }
 };

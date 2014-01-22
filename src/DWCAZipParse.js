@@ -104,7 +104,7 @@ VESPER.DWCAZipParse = new function () {
             VESPER.log (lineNo, ": ", str);
         }
         if (lineNo % 100 === 0) {
-            var tt = NapVisLib.makeTime();
+            var tt = MGNapier.NapVisLib.makeTime();
             if (tt - pTime > 1000) {
                 pTime = tt;
                 VESPER.log (lineNo, ": ", str);
@@ -133,7 +133,7 @@ VESPER.DWCAZipParse = new function () {
         var ch, ch2, c;
         var utfwrap = 0;
 
-        var startt = NapVisLib.makeTime();
+        var startt = MGNapier.NapVisLib.makeTime();
         pTime = startt;
         var segmentLengthMs = 200;
 
@@ -162,8 +162,8 @@ VESPER.DWCAZipParse = new function () {
 
         function doWork () {
 
-            var mt = NapVisLib.makeTime();
-            while ((NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
+            var mt = MGNapier.NapVisLib.makeTime();
+            while ((MGNapier.NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
 
                 //if (lineNo > 10992 && lineNo < 10998) {
                 //    VESPER.log (lineNo, utfwrap, "\nout", out.join(), "\nbuff", buff.length, i, buff.join(), "\n", buff[1023]);
@@ -269,9 +269,9 @@ VESPER.DWCAZipParse = new function () {
                     bigOut.push (VESPER.DWCAZipParse.rowReader2 (out));
                 }
 
-                startt = NapVisLib.makeTime() - startt;
+                startt = MGNapier.NapVisLib.makeTime() - startt;
                 VESPER.log ("Time: ", startt/1000, " secs.");
-                VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
+                VESPER.log ("Shared Maps: "+sharedMaps.length+", "+MGNapier.NapVisLib.countObjProperties (sharedMaps[1]));
                 VESPER.log ("pulled out "+pb+" characters from zip");
                 sharedMaps.length = 0;  // used, discard, helps GC
                 //return bigOut;

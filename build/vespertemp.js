@@ -125,7 +125,7 @@ VESPER.DWCAZipParse = new function () {
             VESPER.log (lineNo, ": ", str);
         }
         if (lineNo % 100 === 0) {
-            var tt = NapVisLib.makeTime();
+            var tt = MGNapier.NapVisLib.makeTime();
             if (tt - pTime > 1000) {
                 pTime = tt;
                 VESPER.log (lineNo, ": ", str);
@@ -154,7 +154,7 @@ VESPER.DWCAZipParse = new function () {
         var ch, ch2, c;
         var utfwrap = 0;
 
-        var startt = NapVisLib.makeTime();
+        var startt = MGNapier.NapVisLib.makeTime();
         pTime = startt;
         var segmentLengthMs = 200;
 
@@ -183,8 +183,8 @@ VESPER.DWCAZipParse = new function () {
 
         function doWork () {
 
-            var mt = NapVisLib.makeTime();
-            while ((NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
+            var mt = MGNapier.NapVisLib.makeTime();
+            while ((MGNapier.NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
 
                 //if (lineNo > 10992 && lineNo < 10998) {
                 //    VESPER.log (lineNo, utfwrap, "\nout", out.join(), "\nbuff", buff.length, i, buff.join(), "\n", buff[1023]);
@@ -290,9 +290,9 @@ VESPER.DWCAZipParse = new function () {
                     bigOut.push (VESPER.DWCAZipParse.rowReader2 (out));
                 }
 
-                startt = NapVisLib.makeTime() - startt;
+                startt = MGNapier.NapVisLib.makeTime() - startt;
                 VESPER.log ("Time: ", startt/1000, " secs.");
-                VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
+                VESPER.log ("Shared Maps: "+sharedMaps.length+", "+MGNapier.NapVisLib.countObjProperties (sharedMaps[1]));
                 VESPER.log ("pulled out "+pb+" characters from zip");
                 sharedMaps.length = 0;  // used, discard, helps GC
                 //return bigOut;
@@ -408,7 +408,7 @@ VESPER.BarChart = function(divid) {
         ffields.keyField = mmodel.makeIndices ([fields.identifyingField])[0];
         ffields.dateField = mmodel.makeIndices ([fields.dateField])[0];
         ffields.realField = mmodel.makeIndices ([fields.realField])[0];
-        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
@@ -442,9 +442,9 @@ VESPER.BarChart = function(divid) {
                 .attr("id", noHashId+"Controls")
             ;
 
-            //NapVisLib.addHRGrooves (butdiv);
-            DWCAHelper.addDragArea (butdiv);
-            NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
+            //MGNapier.NapVisLib.addHRGrooves (butdiv);
+            VESPER.DWCAHelper.addDragArea (butdiv);
+            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
 
             var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
@@ -495,7 +495,7 @@ VESPER.BarChart = function(divid) {
         }
         rangeg = svg.select("g.rangeHolder");
 
-        var rangeSlider = NapVisLib.rangeSlider();
+        var rangeSlider = MGNapier.NapVisLib.rangeSlider();
         rangeSlider(rangeg);
         rangeSlider
             .scale(self.childScale)
@@ -783,7 +783,7 @@ VESPER.BarChart = function(divid) {
     };
 
     this.baseDestroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
         var visBins = timelineG.selectAll(self.barClass);
         visBins.remove();
@@ -792,7 +792,7 @@ VESPER.BarChart = function(divid) {
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     };
 
     this.destroy = function () {
@@ -877,8 +877,8 @@ var View = function() {
  * To change this template use File | Settings | File Templates.
  */
 
-function Model (metaData, data) {
-    Model.prototype = {
+VESPER.Model = function (metaData, data) {
+    VESPER.Model.prototype = {
         getNodeFromID: function (id) {},
 
         getTaxaData: function (node) {},
@@ -888,7 +888,7 @@ function Model (metaData, data) {
 }
 
 
-function DWCAModel (metaData, data) {
+VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
     // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
@@ -900,7 +900,7 @@ function DWCAModel (metaData, data) {
 
     var viewCount = 0;
     var sessionModelViewID = 0;
-    var selectionModel = new SharedSelection ();
+    var selectionModel = new MGNapier.SharedSelection ();
 
     this.getSelectionModel = function () { return selectionModel; };
 
@@ -1108,6 +1108,7 @@ VESPER.demo = function (files, exampleDivID) {
     VESPER.tooltip.init();
 
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
+    var DWCAHelper = VESPER.DWCAHelper;
 
     var visChoiceData = [
         {title:"Controls", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
@@ -1183,10 +1184,10 @@ VESPER.demo = function (files, exampleDivID) {
             .attr ("id", function(d) { return d.name;})
             .text (function(d) { return d.name; })
             .on ("click", function(d) {
-                NapVisLib.xhr2 (d.file, 'text/plain; charset=x-user-defined',
+                MGNapier.NapVisLib.xhr2 (d.file, 'text/plain; charset=x-user-defined',
                     function (xhr) {
-                        var bufferOrString = NapVisLib.getText (xhr);
-                        NapVisLib.showProps (xhr);
+                        var bufferOrString = MGNapier.NapVisLib.getText (xhr);
+                        MGNapier.NapVisLib.showProps (xhr);
                         asyncSetUpFromMeta (bufferOrString);
                     }
                 );
@@ -1200,7 +1201,7 @@ VESPER.demo = function (files, exampleDivID) {
         // make progress bar
         DWCAHelper.makeProgressBar (undefined, progressBarID, "loadProgressDiv");
 
-        NapVisLib.makeFileLoadButton (d3.select("#yourData"), "choice", "localLoader", "Load",
+        MGNapier.NapVisLib.makeFileLoadButton (d3.select("#yourData"), "choice", "localLoader", "Load",
             function (file, content) {
                 showPanelsOnLoad (file);
                 asyncSetUpFromMeta (content);
@@ -1415,7 +1416,9 @@ VESPER.demo = function (files, exampleDivID) {
     setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);
 };
 
-var DWCAHelper = new function () {
+VESPER.DWCAHelper = new function () {
+
+    var DWCAHelper = this; // self
 
   	this.getSelectedTickBoxValues = function (parentElement, checkboxClass) {
         var argStr = "input[type=checkbox]"+(checkboxClass ? "."+checkboxClass : "");
@@ -2049,7 +2052,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         keyField = ffields[0];
         longField = ffields[1];
         latField = ffields[2];
-        dims = NapVisLib.getDivDims (divid);
+        dims = MGNapier.NapVisLib.getDivDims (divid);
         model = mmodel;
         VESPER.log ("set model for map", model);
     };
@@ -2262,9 +2265,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
             layer.setData ([]);
         });
         maskGroup.clearLayers();
-
        // curSelMaskLayer.setData ([]);
-       // maskLayer.setData ([]);
 
         var lys = [];
         map.eachLayer (function(layer) {
@@ -2277,7 +2278,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         map.remove();
 
         dwcaid2Marker = {};
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     };
 
 
@@ -2519,7 +2520,7 @@ VESPER.DWCAParser = new function () {
             //    d = d.slice(2);
             //}
             VESPER.log ("XSD", d, typeof d);
-            VESPER.DWCAParser.xsd = (typeof d == "string" ? $(NapVisLib.parseXML(d)) : $(d));
+            VESPER.DWCAParser.xsd = (typeof d == "string" ? $(MGNapier.NapVisLib.parseXML(d)) : $(d));
             VESPER.DWCAParser.makeRowTypeDefaults (VESPER.DWCAParser.xsd);
             VESPER.DWCAParser.makeFieldAttrNames (VESPER.DWCAParser.xsd);
         });
@@ -2570,7 +2571,7 @@ VESPER.DWCAParser = new function () {
     // Read in csv files that are zip entries. Use selectedStuff and readField to pick out
     // which columns to snatch out the zip parsing routines.
     this.filterReadZipEntriesToMakeModel = function (zip, mdata, doneCallback) {
-        var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
+        var selectedStuff = VESPER.DWCAHelper.getAllSelectedFilesAndFields (mdata);
         var fileRows = {};
         //VESPER.log ("ZIP:", zip);
 
@@ -2585,7 +2586,7 @@ VESPER.DWCAParser = new function () {
             var value = entries[i].value;
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
-            var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
+            var readFields = MGNapier.NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
 
             $.each (value, function (key, value) {
                 readFields [fileData.fieldIndex[key]] = value;
@@ -2604,7 +2605,7 @@ VESPER.DWCAParser = new function () {
                 if (i == entries.length - 1) {
                     afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
                     // make taxonomy (or list)
-                    doneCallback (new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
+                    doneCallback (new VESPER.DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
                 }
 
                 streamFunc.callbackQ.length = 0;
@@ -2985,9 +2986,9 @@ VESPER.DWCAParser = new function () {
         var expTree = undefined;
 
         // TODO. monday. look for ways to generate both trees for data sets if present.
-		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
+		if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
 			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
-		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
+		} else if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
             expTree = this.jsonTaxaObj2ExplicitJSONTree (jsonObj, rawData, coreFileData, metaData,
                 VESPER.DWCAParser.addOriginalAsSpecimenEntry
             );
@@ -3422,8 +3423,8 @@ VESPER.modelComparisons = new function () {
     };
 
     function smaller (model1, model2) {
-        var c1 = NapVisLib.countObjProperties (model1.getData());
-        var c2 = NapVisLib.countObjProperties (model2.getData());
+        var c1 = MGNapier.NapVisLib.countObjProperties (model1.getData());
+        var c2 = MGNapier.NapVisLib.countObjProperties (model2.getData());
         return (c1 < c2 ? model1 : model2);
     }
 };
@@ -3459,7 +3460,7 @@ VESPER.Sanity = function(divid) {
         for (var list in lists) {
             if (lists.hasOwnProperty(list)) {
                 var present = model.makeIndices (lists[list]);
-                var nullCount = NapVisLib.countNulls (present);
+                var nullCount = MGNapier.NapVisLib.countNulls (present);
                 if (nullCount === 0) {
                     tests.push (present);
                     testOutputs.push ({"listName":list, "all":0, "some":0});
@@ -3720,11 +3721,11 @@ VESPER.Sanity = function(divid) {
     this.updateVals = this.update;
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     }
 };
 VESPER.FilterView = function (divID) {
@@ -3794,11 +3795,11 @@ VESPER.FilterView = function (divID) {
 
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divID));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divID));
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divID);
+        VESPER.DWCAHelper.twiceUpRemove(divID);
     }
 };
 
@@ -4020,11 +4021,11 @@ VESPER.SelectedView = function (divID) {
     }
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divID));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divID));
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divID);
+        VESPER.DWCAHelper.twiceUpRemove(divID);
     }
 };
 // Tree
@@ -4127,7 +4128,7 @@ VESPER.Tree = function(divid) {
 
 
     var spaceAllocationOptions = {
-        bottomUp: AdaptedD3.bottomUp()
+        bottomUp: MGNapier.AdaptedD3.bottomUp()
             .sort (null)
             //.value(function(d) { return 1; })// having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .value(function(d) { return model.getLeafValue (d); }) // having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
@@ -4135,14 +4136,14 @@ VESPER.Tree = function(divid) {
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
-        bottomUpLog: AdaptedD3.logPartition()
+        bottomUpLog: MGNapier.AdaptedD3.logPartition()
             .sort (null)
             .value (function(d) { return model.getLeafValue (d); })
             .children (function (d) { return model.getSubTaxa(d); })
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
-        topDown: AdaptedD3.topDown()
+        topDown: MGNapier.AdaptedD3.topDown()
             .sort (null)
             .value (null)
             .children (function (d) { return model.getSubTaxa(d); })
@@ -4224,7 +4225,7 @@ VESPER.Tree = function(divid) {
 
         removeOld: function (exitSel) {
             clearMouseController (exitSel);
-            NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
+            MGNapier.NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
         },
 
         makeNew: function (enterSel) {
@@ -4443,7 +4444,7 @@ VESPER.Tree = function(divid) {
         },
 
         prep: function (coordSet) {
-            treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] * .52 + ")");
+            treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] / 2 + ")");
            // partitionLayout.makeTextClips (coordSet);
         },
 
@@ -4459,7 +4460,7 @@ VESPER.Tree = function(divid) {
                     pstore[id] = undefined;
                 })
             ;
-            NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
+            MGNapier.NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
         },
 
         makeNew: function (enterSel) {
@@ -4528,7 +4529,7 @@ VESPER.Tree = function(divid) {
         keyField = ffields[0];
         rankField = ffields[1];
         //VESPER.log ("FFIELDS", ffields);
-        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
@@ -4618,10 +4619,10 @@ VESPER.Tree = function(divid) {
             .attr ("id", noHashID+"controls")
         ;
 
-        //NapVisLib.addHRGrooves (cpanel);
-        DWCAHelper.addDragArea (cpanel);
+        //MGNapier.NapVisLib.addHRGrooves (cpanel);
+        VESPER.DWCAHelper.addDragArea (cpanel);
 
-        NapVisLib.makeSectionedDiv (cpanel,
+        MGNapier.NapVisLib.makeSectionedDiv (cpanel,
             [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
                 {"header":"Sort", sectionID:"Sort"}],
         "section");
@@ -4782,7 +4783,7 @@ VESPER.Tree = function(divid) {
         // add new nodes
         var newNodes = layout.makeNew (nodeBind.enter());
         //VESPER.log (newNodes);
-        NapVisLib.d3fadeInNewGroups ([newNodes], enterDur, cumDelay);
+        MGNapier.NapVisLib.d3fadeInNewGroups ([newNodes], enterDur, cumDelay);
     }
 
 
@@ -4864,7 +4865,7 @@ VESPER.Tree = function(divid) {
         cstore = {};
         pstore = {};
 
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     };
 
 
@@ -5031,7 +5032,7 @@ VESPER.VisLauncher = function (divid) {
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
         choiceData = fields.visChoiceData;
-        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
@@ -5080,17 +5081,19 @@ VESPER.VisLauncher = function (divid) {
 
         var encloser = d3.select(divid).append("div").attr("class", "encloser");
         encloser.append ("p").attr("class", "controlHeading").text("Current Selections");
+        encloser.append("button")
+            .attr ("type", "button")
+            .text ("Save")
+        ;
 
         if (window.requestFileSystem) {
-            encloser.append("button")
-                .attr ("type", "button")
-                .text ("Save")
+            encloser.select("button")
                 .on ("click", function(d) {
-                    NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
+                    MGNapier.NapVisLib.prepareForWrite (MGNapier.NapVisLib.writeArray, model.getSelectionModel().values());
                 })
             ;
         } else {
-            NapVisLib.html5Lacks(encloser, "[Browser does not support FileWriter]");
+            MGNapier.NapVisLib.html5LacksOnButton(encloser.select("button"), "This Browser does not support the HTML5 FileWriter API");
         }
 
 
@@ -5159,7 +5162,7 @@ VESPER.VisLauncher = function (divid) {
         visChoices.style("display", function(d) {
             var fileData = model.getMetaData().fileData;
             var indices = model.makeIndices (d.attList);
-            var nullCount = NapVisLib.countNulls (indices);
+            var nullCount = MGNapier.NapVisLib.countNulls (indices);
             //VESPER.log (d.title, nullCount);
             return (indices.length == 0 || (d.matchAll && nullCount === 0) || (!d.matchAll && nullCount < indices.length))
                 ? "block" : "none"
@@ -5265,11 +5268,11 @@ VESPER.VisLauncher = function (divid) {
             VESPER.modelBag.length = 0;
         }
 
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
         model.getSelectionModel().clear();
         model = null;
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     }
 };

@@ -15,7 +15,7 @@ VESPER.VisLauncher = function (divid) {
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
         choiceData = fields.visChoiceData;
-        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
@@ -64,17 +64,19 @@ VESPER.VisLauncher = function (divid) {
 
         var encloser = d3.select(divid).append("div").attr("class", "encloser");
         encloser.append ("p").attr("class", "controlHeading").text("Current Selections");
+        encloser.append("button")
+            .attr ("type", "button")
+            .text ("Save")
+        ;
 
         if (window.requestFileSystem) {
-            encloser.append("button")
-                .attr ("type", "button")
-                .text ("Save")
+            encloser.select("button")
                 .on ("click", function(d) {
-                    NapVisLib.prepareForWrite (NapVisLib.writeArray, model.getSelectionModel().values());
+                    MGNapier.NapVisLib.prepareForWrite (MGNapier.NapVisLib.writeArray, model.getSelectionModel().values());
                 })
             ;
         } else {
-            NapVisLib.html5Lacks(encloser, "[Browser does not support FileWriter]");
+            MGNapier.NapVisLib.html5LacksOnButton(encloser.select("button"), "This Browser does not support the HTML5 FileWriter API");
         }
 
 
@@ -143,7 +145,7 @@ VESPER.VisLauncher = function (divid) {
         visChoices.style("display", function(d) {
             var fileData = model.getMetaData().fileData;
             var indices = model.makeIndices (d.attList);
-            var nullCount = NapVisLib.countNulls (indices);
+            var nullCount = MGNapier.NapVisLib.countNulls (indices);
             //VESPER.log (d.title, nullCount);
             return (indices.length == 0 || (d.matchAll && nullCount === 0) || (!d.matchAll && nullCount < indices.length))
                 ? "block" : "none"
@@ -249,11 +251,11 @@ VESPER.VisLauncher = function (divid) {
             VESPER.modelBag.length = 0;
         }
 
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
         model.getSelectionModel().clear();
         model = null;
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     }
 };

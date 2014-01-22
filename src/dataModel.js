@@ -6,8 +6,8 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function Model (metaData, data) {
-    Model.prototype = {
+VESPER.Model = function (metaData, data) {
+    VESPER.Model.prototype = {
         getNodeFromID: function (id) {},
 
         getTaxaData: function (node) {},
@@ -17,7 +17,7 @@ function Model (metaData, data) {
 }
 
 
-function DWCAModel (metaData, data) {
+VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
     // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
@@ -29,7 +29,7 @@ function DWCAModel (metaData, data) {
 
     var viewCount = 0;
     var sessionModelViewID = 0;
-    var selectionModel = new SharedSelection ();
+    var selectionModel = new MGNapier.SharedSelection ();
 
     this.getSelectionModel = function () { return selectionModel; };
 

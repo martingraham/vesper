@@ -1,4 +1,6 @@
-var DWCAHelper = new function () {
+VESPER.DWCAHelper = new function () {
+
+    var DWCAHelper = this; // self
 
   	this.getSelectedTickBoxValues = function (parentElement, checkboxClass) {
         var argStr = "input[type=checkbox]"+(checkboxClass ? "."+checkboxClass : "");

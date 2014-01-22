@@ -93,7 +93,7 @@ VESPER.DWCAZipParseDB = new function () {
             }
         }
         if (lineNo % 100 === 0) {
-            var tt = NapVisLib.makeTime();
+            var tt = MGNapier.NapVisLib.makeTime();
             if (tt - pTime > 1000) {
                 pTime = tt;
                 if (notifyFunc) {
@@ -125,7 +125,7 @@ VESPER.DWCAZipParseDB = new function () {
         var ch, c;
         var utfwrap = 0;
 
-        var mt = NapVisLib.makeTime();
+        var mt = MGNapier.NapVisLib.makeTime();
         pTime = mt;
 
         while((i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
@@ -215,10 +215,10 @@ VESPER.DWCAZipParseDB = new function () {
             bigOut.push (DWCAZipParse.rowReader2 (out));
         }
 
-        mt = NapVisLib.makeTime() - mt;
+        mt = MGNapier.NapVisLib.makeTime() - mt;
         VESPER.log ("Time: ", mt/1000, " secs.");
 
-        VESPER.log ("Shared Maps: "+sharedMaps.length+", "+NapVisLib.countObjProperties (sharedMaps[1]));
+        VESPER.log ("Shared Maps: "+sharedMaps.length+", "+MGNapier.NapVisLib.countObjProperties (sharedMaps[1]));
 
         VESPER.log ("pulled out "+pb+" characters from zip");
         return bigOut;

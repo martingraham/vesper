@@ -14,6 +14,7 @@ VESPER.demo = function (files, exampleDivID) {
     VESPER.tooltip.init();
 
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
+    var DWCAHelper = VESPER.DWCAHelper;
 
     var visChoiceData = [
         {title:"Controls", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
@@ -89,10 +90,10 @@ VESPER.demo = function (files, exampleDivID) {
             .attr ("id", function(d) { return d.name;})
             .text (function(d) { return d.name; })
             .on ("click", function(d) {
-                NapVisLib.xhr2 (d.file, 'text/plain; charset=x-user-defined',
+                MGNapier.NapVisLib.xhr2 (d.file, 'text/plain; charset=x-user-defined',
                     function (xhr) {
-                        var bufferOrString = NapVisLib.getText (xhr);
-                        NapVisLib.showProps (xhr);
+                        var bufferOrString = MGNapier.NapVisLib.getText (xhr);
+                        MGNapier.NapVisLib.showProps (xhr);
                         asyncSetUpFromMeta (bufferOrString);
                     }
                 );
@@ -106,7 +107,7 @@ VESPER.demo = function (files, exampleDivID) {
         // make progress bar
         DWCAHelper.makeProgressBar (undefined, progressBarID, "loadProgressDiv");
 
-        NapVisLib.makeFileLoadButton (d3.select("#yourData"), "choice", "localLoader", "Load",
+        MGNapier.NapVisLib.makeFileLoadButton (d3.select("#yourData"), "choice", "localLoader", "Load",
             function (file, content) {
                 showPanelsOnLoad (file);
                 asyncSetUpFromMeta (content);

@@ -53,8 +53,8 @@ VESPER.modelComparisons = new function () {
     };
 
     function smaller (model1, model2) {
-        var c1 = NapVisLib.countObjProperties (model1.getData());
-        var c2 = NapVisLib.countObjProperties (model2.getData());
+        var c1 = MGNapier.NapVisLib.countObjProperties (model1.getData());
+        var c2 = MGNapier.NapVisLib.countObjProperties (model2.getData());
         return (c1 < c2 ? model1 : model2);
     }
 };

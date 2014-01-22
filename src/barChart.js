@@ -54,7 +54,7 @@ VESPER.BarChart = function(divid) {
         ffields.keyField = mmodel.makeIndices ([fields.identifyingField])[0];
         ffields.dateField = mmodel.makeIndices ([fields.dateField])[0];
         ffields.realField = mmodel.makeIndices ([fields.realField])[0];
-        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
@@ -88,9 +88,9 @@ VESPER.BarChart = function(divid) {
                 .attr("id", noHashId+"Controls")
             ;
 
-            //NapVisLib.addHRGrooves (butdiv);
-            DWCAHelper.addDragArea (butdiv);
-            NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
+            //MGNapier.NapVisLib.addHRGrooves (butdiv);
+            VESPER.DWCAHelper.addDragArea (butdiv);
+            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
 
             var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
@@ -141,7 +141,7 @@ VESPER.BarChart = function(divid) {
         }
         rangeg = svg.select("g.rangeHolder");
 
-        var rangeSlider = NapVisLib.rangeSlider();
+        var rangeSlider = MGNapier.NapVisLib.rangeSlider();
         rangeSlider(rangeg);
         rangeSlider
             .scale(self.childScale)
@@ -429,7 +429,7 @@ VESPER.BarChart = function(divid) {
     };
 
     this.baseDestroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
         var visBins = timelineG.selectAll(self.barClass);
         visBins.remove();
@@ -438,7 +438,7 @@ VESPER.BarChart = function(divid) {
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     };
 
     this.destroy = function () {

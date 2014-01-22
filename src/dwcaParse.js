@@ -164,7 +164,7 @@ VESPER.DWCAParser = new function () {
             //    d = d.slice(2);
             //}
             VESPER.log ("XSD", d, typeof d);
-            VESPER.DWCAParser.xsd = (typeof d == "string" ? $(NapVisLib.parseXML(d)) : $(d));
+            VESPER.DWCAParser.xsd = (typeof d == "string" ? $(MGNapier.NapVisLib.parseXML(d)) : $(d));
             VESPER.DWCAParser.makeRowTypeDefaults (VESPER.DWCAParser.xsd);
             VESPER.DWCAParser.makeFieldAttrNames (VESPER.DWCAParser.xsd);
         });
@@ -215,7 +215,7 @@ VESPER.DWCAParser = new function () {
     // Read in csv files that are zip entries. Use selectedStuff and readField to pick out
     // which columns to snatch out the zip parsing routines.
     this.filterReadZipEntriesToMakeModel = function (zip, mdata, doneCallback) {
-        var selectedStuff = DWCAHelper.getAllSelectedFilesAndFields (mdata);
+        var selectedStuff = VESPER.DWCAHelper.getAllSelectedFilesAndFields (mdata);
         var fileRows = {};
         //VESPER.log ("ZIP:", zip);
 
@@ -230,7 +230,7 @@ VESPER.DWCAParser = new function () {
             var value = entries[i].value;
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
-            var readFields = NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
+            var readFields = MGNapier.NapVisLib.newFilledArray (fileData.invFieldIndex.length, false);
 
             $.each (value, function (key, value) {
                 readFields [fileData.fieldIndex[key]] = value;
@@ -249,7 +249,7 @@ VESPER.DWCAParser = new function () {
                 if (i == entries.length - 1) {
                     afterFilterReadZipEntries (zip, mdata, selectedStuff, doneCallback);
                     // make taxonomy (or list)
-                    doneCallback (new DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
+                    doneCallback (new VESPER.DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
                 }
 
                 streamFunc.callbackQ.length = 0;
@@ -630,9 +630,9 @@ VESPER.DWCAParser = new function () {
         var expTree = undefined;
 
         // TODO. monday. look for ways to generate both trees for data sets if present.
-		if (NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
+		if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
 			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
-		} else if (NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
+		} else if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
             expTree = this.jsonTaxaObj2ExplicitJSONTree (jsonObj, rawData, coreFileData, metaData,
                 VESPER.DWCAParser.addOriginalAsSpecimenEntry
             );

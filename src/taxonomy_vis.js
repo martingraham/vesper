@@ -98,7 +98,7 @@ VESPER.Tree = function(divid) {
 
 
     var spaceAllocationOptions = {
-        bottomUp: AdaptedD3.bottomUp()
+        bottomUp: MGNapier.AdaptedD3.bottomUp()
             .sort (null)
             //.value(function(d) { return 1; })// having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .value(function(d) { return model.getLeafValue (d); }) // having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
@@ -106,14 +106,14 @@ VESPER.Tree = function(divid) {
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
-        bottomUpLog: AdaptedD3.logPartition()
+        bottomUpLog: MGNapier.AdaptedD3.logPartition()
             .sort (null)
             .value (function(d) { return model.getLeafValue (d); })
             .children (function (d) { return model.getSubTaxa(d); })
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
         ,
 
-        topDown: AdaptedD3.topDown()
+        topDown: MGNapier.AdaptedD3.topDown()
             .sort (null)
             .value (null)
             .children (function (d) { return model.getSubTaxa(d); })
@@ -195,7 +195,7 @@ VESPER.Tree = function(divid) {
 
         removeOld: function (exitSel) {
             clearMouseController (exitSel);
-            NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
+            MGNapier.NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
         },
 
         makeNew: function (enterSel) {
@@ -414,7 +414,7 @@ VESPER.Tree = function(divid) {
         },
 
         prep: function (coordSet) {
-            treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] * .52 + ")");
+            treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] / 2 + ")");
            // partitionLayout.makeTextClips (coordSet);
         },
 
@@ -430,7 +430,7 @@ VESPER.Tree = function(divid) {
                     pstore[id] = undefined;
                 })
             ;
-            NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
+            MGNapier.NapVisLib.d3fadeAndRemoveGroups ([exitSel], exitDur, 0);
         },
 
         makeNew: function (enterSel) {
@@ -499,7 +499,7 @@ VESPER.Tree = function(divid) {
         keyField = ffields[0];
         rankField = ffields[1];
         //VESPER.log ("FFIELDS", ffields);
-        dims = NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
         model = mmodel;
     };
 
@@ -589,10 +589,10 @@ VESPER.Tree = function(divid) {
             .attr ("id", noHashID+"controls")
         ;
 
-        //NapVisLib.addHRGrooves (cpanel);
-        DWCAHelper.addDragArea (cpanel);
+        //MGNapier.NapVisLib.addHRGrooves (cpanel);
+        VESPER.DWCAHelper.addDragArea (cpanel);
 
-        NapVisLib.makeSectionedDiv (cpanel,
+        MGNapier.NapVisLib.makeSectionedDiv (cpanel,
             [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
                 {"header":"Sort", sectionID:"Sort"}],
         "section");
@@ -753,7 +753,7 @@ VESPER.Tree = function(divid) {
         // add new nodes
         var newNodes = layout.makeNew (nodeBind.enter());
         //VESPER.log (newNodes);
-        NapVisLib.d3fadeInNewGroups ([newNodes], enterDur, cumDelay);
+        MGNapier.NapVisLib.d3fadeInNewGroups ([newNodes], enterDur, cumDelay);
     }
 
 
@@ -835,7 +835,7 @@ VESPER.Tree = function(divid) {
         cstore = {};
         pstore = {};
 
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     };
 
 

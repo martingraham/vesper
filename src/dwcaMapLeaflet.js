@@ -133,7 +133,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         keyField = ffields[0];
         longField = ffields[1];
         latField = ffields[2];
-        dims = NapVisLib.getDivDims (divid);
+        dims = MGNapier.NapVisLib.getDivDims (divid);
         model = mmodel;
         VESPER.log ("set model for map", model);
     };
@@ -359,7 +359,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         map.remove();
 
         dwcaid2Marker = {};
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     };
 
 

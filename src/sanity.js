@@ -30,7 +30,7 @@ VESPER.Sanity = function(divid) {
         for (var list in lists) {
             if (lists.hasOwnProperty(list)) {
                 var present = model.makeIndices (lists[list]);
-                var nullCount = NapVisLib.countNulls (present);
+                var nullCount = MGNapier.NapVisLib.countNulls (present);
                 if (nullCount === 0) {
                     tests.push (present);
                     testOutputs.push ({"listName":list, "all":0, "some":0});
@@ -291,10 +291,10 @@ VESPER.Sanity = function(divid) {
     this.updateVals = this.update;
 
     this.destroy = function () {
-        DWCAHelper.recurseClearEvents (d3.select(divid));
+        VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
         model.removeView (self);
         model = null;
-        DWCAHelper.twiceUpRemove(divid);
+        VESPER.DWCAHelper.twiceUpRemove(divid);
     }
 };
