@@ -4,7 +4,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var self = this;
 	var dividsub = divid.substring(1);
 	
-	var exitDur = 400, updateDur = 1000, enterDur = 400;
+	//var exitDur = 400, updateDur = 1000, enterDur = 400;
 	
 	var keyField, longField, latField;
     var model;
@@ -170,7 +170,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
                     var unselHeight = height - selHeight;
                     // really small heights due to rounding errors emerge as numbers in scientific notation.
                     // this made them big in the style sheet as they took the mantissa (ooh) as the number so we squash them here.
-                    if (unselHeight < 0.5 && (cluster.getChildCount() == cluster.getSelectedChildCount ())) {
+                    if (unselHeight < 0.5 && (cluster.getChildCount() === cluster.getSelectedChildCount ())) {
                         unselHeight = 0;
                     }
 
@@ -315,8 +315,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
             markerGroup.setAllSelectedChildCounts (model.getSelectionModel());
 
-            if (lls.length == 1) {
-                markerGroup.zoomToShowLayer (lastLayer, function () { lastLayer.openPopup()});
+            if (lls.length === 1) {
+                markerGroup.zoomToShowLayer (lastLayer, function () { lastLayer.openPopup(); });
             }
             else if (lls.length > 1) {
                 var bb = new L.LatLngBounds (lls);

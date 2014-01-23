@@ -44,5 +44,5 @@ VESPER.Filters = new function () {
         //VESPER.log ("selected count", count, model.getSelectionModel().values());
         model.getSelectionModel().setUpdating (false);
         return count;
-    }
+    };
 }();

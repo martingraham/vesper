@@ -73,11 +73,11 @@ th {
 }
 
 
-tr.sanityText:nth-child(2n+1) {
+tr.sanityRow:nth-child(2n+1) {
     background: #d0d0d0;
 }
 
-tr.sanityText td {
+tr.sanityRow td {
     border: 1px solid darkgray;
     padding: 0px 2px;
     font-size: 9pt;
@@ -89,6 +89,23 @@ th.sanityTableHeading {
     border: 1px solid darkgray;
     padding: 0px 2px;
 }
+
+td.showSanityText span {
+    display: inline;
+}
+
+td.dontShowSanityText span {
+    display: none;
+}
+
+
+img.sanityBarFail, img.sanityBarOK {
+    border-style: solid none solid none;
+    border-color: #ccc;
+    border-width: 1px;
+    vertical-align: middle;
+}
+
 
 .visHeader {
     font-size: 16pt;

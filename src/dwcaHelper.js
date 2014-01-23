@@ -2,10 +2,10 @@ VESPER.DWCAHelper = new function () {
 
     var DWCAHelper = this; // self
 
-  	this.getSelectedTickBoxValues = function (parentElement, checkboxClass) {
+    this.getSelectedTickBoxValues = function (parentElement, checkboxClass) {
         var argStr = "input[type=checkbox]"+(checkboxClass ? "."+checkboxClass : "");
-  		var extCBSel = d3.select(parentElement).selectAll (argStr);
-  		var values = {};
+        var extCBSel = d3.select(parentElement).selectAll (argStr);
+        var values = {};
 
         extCBSel.each (localFunc);
 
@@ -15,18 +15,18 @@ VESPER.DWCAHelper = new function () {
             }
         }
 
-  		return values;
-  	};
+        return values;
+    };
 
 
-    function setBackground (d, i) {
+    function setBackground (d) {
         var check = this.checked;
         var elem = d3.select(this.parentNode);
         var back = VESPER.DWCAParser.controlledVocabSet[d] ? "#999977" : "#888888";
         elem.style ("background", check ? "" : back);
     }
 
-    function isCore (fd, metaData) { return fd.rowType == metaData.coreRowType; }
+    function isCore (fd, metaData) { return fd.rowType === metaData.coreRowType; }
     function isId (fd, d) { return fd.invFieldIndex[fd.idIndex] === d; }
     function getItemSelection (fd, d) { return fd.selectedItems[d] === true || isId(fd, d); }
     function setItemSelection (fd, d, val) { fd.selectedItems[d] = val; }
@@ -59,7 +59,7 @@ VESPER.DWCAHelper = new function () {
             })
 	  ;
 	  table.selectAll("th input")
-            .property ("checked", function(d) { return s; })
+            .property ("checked", function() { return s; })
         ;
     }
 
@@ -90,7 +90,7 @@ VESPER.DWCAHelper = new function () {
         divs
             .style ("width", width+"%")
             .select("table")
-                .attr ("class", function (d) { return d.key == metaData.coreRowType ? "coreTable" : null})
+                .attr ("class", function (d) { return d.key === metaData.coreRowType ? "coreTable" : null; })
                 .attr ("id", function (d) { return d.value.mappedRowType; })
         ;
 
@@ -105,7 +105,7 @@ VESPER.DWCAHelper = new function () {
             .property ("checked", function(d) { return getRowTypeSelection (d.value); })
             .attr ("value", function(d) { return d.value.rowType; })
             .attr ("name", function(d) { return d.value.mappedRowType;})
-            .attr ("disabled", function(d) { return d.key == metaData.coreRowType ? "disabled" : null})
+            .attr ("disabled", function(d) { return d.key === metaData.coreRowType ? "disabled" : null; })
             .on ("click", function (d, i) {
                 var check = this.checked;
                 VESPER.log ("check", check, this);
@@ -155,9 +155,9 @@ VESPER.DWCAHelper = new function () {
                 .attr ("id", function (d) { return tableId+d;})
                 .attr ("value", function(d, i) { return i;})
                 .attr ("name", function(d) { return d;})
-                .attr ("disabled", function(d, i) { return isId (fdEntry.value, d) ? "disabled" : null})
+                .attr ("disabled", function(d) { return isId (fdEntry.value, d) ? "disabled" : null; })
                 .on ("click", null)
-                .on ("click", function (d, i) {
+                .on ("click", function (d) {
                     var check = this.checked;
                     //setBackground.call (this, d, i);
                     VESPER.log ("File data object entry", fdEntry, check, this);
@@ -497,5 +497,5 @@ VESPER.DWCAHelper = new function () {
                 DWCAHelper.recurseClearEvents (childrenSel);
            }
         });
-    }
+    };
 };

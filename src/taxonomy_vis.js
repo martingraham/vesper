@@ -1,6 +1,6 @@
 // Tree
 
-VESPER.Tree = function(divid) {
+VESPER.Tree = function (divid) {
 
     var self = this;
 
@@ -27,16 +27,14 @@ VESPER.Tree = function(divid) {
     var exitDur = 400, updateDur = 1000, enterDur = 400;
     var keyField, rankField;
     var firstLayout = true;
-    var color = d3.scale.category20c();
-    var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
+    //var color = d3.scale.category20c();
+    //var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
     var cstore = {}, pstore = {};
-    var textHide = "collapse";
-    var patternName = "hatch";
-    var patternID = "hatch";
+    var patternName = "hatch", patternID = "hatch";
 
     var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
-		"Alpha": function (a,b) { var n1 = model.getLabel(a); var n2 = model.getLabel(b);
+		"Alpha": function (a,b) { var n1 = model.getLabel(a), n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
 		"Descendants": function (a,b) {
             var s1 = containsCount (a);
@@ -53,10 +51,9 @@ VESPER.Tree = function(divid) {
             return (sel1 === sel2) ? 0 :  (sel1 === true ? -1 : 1);
         },
         "Selected Desc": function (a,b) {
-            var sModel = model.getSelectionModel();
             //console.log (a,b);
             var sel1 = a.sdcount;
-            var sel2 = b.sdcount
+            var sel2 = b.sdcount;
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
@@ -120,6 +117,7 @@ VESPER.Tree = function(divid) {
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
            // .filter (function (d) { return allowedRanks[model.getTaxaData(d)[rankField]]; })
     };
+    var spaceAllocationLabels = {"bottomUp": "Bottom Up", "bottomUpLog": "Bottom Up Log", "topDown": "Top Down"};
 
     function patternFill (nodeId) {
         if (nodeId !== undefined && nodeId.charAt(0) == '*') {
@@ -184,7 +182,7 @@ VESPER.Tree = function(divid) {
                     //: "rotate (0 0,0)"
                     ;
                 })
-                .attr ("clip-path", function (d) { var node = getNode (d.id); return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
+                .attr ("clip-path", function (d) { /*var node = getNode (d.id);*/ return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
             ;
         },
 
@@ -413,7 +411,7 @@ VESPER.Tree = function(divid) {
             };
         },
 
-        prep: function (coordSet) {
+        prep: function () {
             treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] / 2 + ")");
            // partitionLayout.makeTextClips (coordSet);
         },
@@ -554,7 +552,7 @@ VESPER.Tree = function(divid) {
 		;
 
         var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : self.getRoot(model);
+        var root = (vals.length === 1) ? getNode(vals[0]) : self.getRoot(model);
         if (root === undefined) {
             VESPER.log ("no root defined for tree", self.getRoot());
             return;
@@ -562,12 +560,14 @@ VESPER.Tree = function(divid) {
 
         absRoot = root;
 
-        var spaceAllocs = d3.values(spaceAllocationOptions);
+        //var spaceAllocs = d3.values(spaceAllocationOptions);
+        /*
         for (var n = 0; n < spaceAllocs.length; n++) {
             var indAlloc = spaceAllocs[n];
             //indAlloc.size ([dims[1], dims[0]]);
             //indAlloc.size (partitionLayout.sizeBounds());
         }
+        */
         spaceAlloc = spaceAllocationOptions.bottomUpLog;
 		curSort = sortOptions.Alpha;
         layout = layoutOptions.Sunburst;
@@ -575,8 +575,6 @@ VESPER.Tree = function(divid) {
 		//depthCharge (root);
         setupControls ();
 
-        //$('[title!=""]').qtip();
-		
 		this.update ();
 	};
 
@@ -611,7 +609,7 @@ VESPER.Tree = function(divid) {
             .attr ("class", "allocChoice")
             .attr ("type", "radio")
             .attr ("id", function(d) { return noHashID+ d.key; })
-            .attr ("name", function(d) { return noHashID+"alloc"; })
+            .attr ("name", function() { return noHashID+"alloc"; })
             .property ("checked", function(d) { return spaceAlloc === d.value; })
             .on ("change", function(d) {
                // if (spaceAlloc !== d.value) {
@@ -624,7 +622,7 @@ VESPER.Tree = function(divid) {
         ;
         aHolders.append("label")
             .attr ("for", function(d) { return noHashID+ d.key; })
-            .html (function(d) { return d.key; })
+            .html (function(d) { return spaceAllocationLabels[d.key]; })
         ;
 
         /*
@@ -643,7 +641,7 @@ VESPER.Tree = function(divid) {
             .attr ("class", "layoutChoice")
             .attr ("type", "radio")
             .attr ("id", function(d) { return noHashID+ d.key; })
-            .attr ("name", function(d) { return noHashID+"layout"; })
+            .attr ("name", function() { return noHashID+"layout"; })
             .property ("checked", function(d) { return layout === d.value; })
             .on ("change", function(d) {
                // if (layout !== d.value) {
@@ -678,7 +676,7 @@ VESPER.Tree = function(divid) {
             .attr ("class", "sortChoice")
             .attr ("type", "radio")
             .attr ("id", function(d) { return noHashID+ d.key; })
-            .attr ("name", function(d) { return noHashID+"sort"; })
+            .attr ("name", function() { return noHashID+"sort"; })
             .property ("checked", function(d) { return curSort === d.value; })
             .on ("change", function(d) {
                // if (layout !== d.value) {
@@ -759,7 +757,7 @@ VESPER.Tree = function(divid) {
 
 	this.update = function () {
         var vals = model.getSelectionModel().values();
-        var root = (vals.length == 1) ? getNode(vals[0]) : self.getRoot(model);
+        var root = (vals.length === 1) ? getNode(vals[0]) : self.getRoot(model);
         VESPER.log ("Root", root, vals[0]);
 
         model.countSelectedDesc (self.getRoot(model), keyField);
@@ -852,7 +850,7 @@ VESPER.Tree = function(divid) {
         group
         .on("click", function (d) {
             var node = getNode (d.id) /*d*/;
-            reroot ((node == curRoot && node.parent != undefined) ? node.parent : node);
+            reroot ((node === curRoot && node.parent != undefined) ? node.parent : node);
         })
         .on("mouseover", function(d) {
             d3.select(this).selectAll("*").classed("highlight", true);
@@ -862,7 +860,7 @@ VESPER.Tree = function(divid) {
             VESPER.tooltip.updateText (model.getLabel(node), val);
             VESPER.tooltip.updatePosition (d3.event);
         })
-        .on ("mouseout", function(d) {
+        .on ("mouseout", function() {
             d3.select(this).selectAll("*").classed("highlight", false);
         })
         .on("contextmenu", function(d) {
@@ -900,13 +898,14 @@ VESPER.Tree = function(divid) {
         }
     }
 
-
+    /*
 	function reset() {
 		d3.event.scale = 1.0;
 		d3.event.translate = [0,0];
 		zoomObj.translate([0,0]).scale(1);
 		//redraw ();
 	}
+	*/
 };
 
 VESPER.ImplicitTaxonomy = function (div) {

@@ -35,7 +35,7 @@ VESPER.DWCAZipParse = new function () {
             var sstr = strArray[n];
             c = sstr ? sstr : 0;
 
-            if (quoteDelimiter && !esc && c == qDelimVal) {
+            if (quoteDelimiter && !esc && c === qDelimVal) {
                 quotes = !quotes;
             }
             if (!quotes && (c === fieldDelimiterVal || n === strLen - 1)) {
@@ -43,10 +43,10 @@ VESPER.DWCAZipParse = new function () {
                     toI = n + ((c === fieldDelimiterVal) ? 0 : 1);
                     // strip out quotes if there
                     if (quoteDelimiter) {
-                        if (strArray[fromI] == qDelimVal) {
+                        if (strArray[fromI] === qDelimVal) {
                             fromI++;
                         }
-                        if (strArray[toI - 1] == qDelimVal) {
+                        if (strArray[toI - 1] === qDelimVal) {
                             toI--;
                         }
                     }
@@ -86,7 +86,7 @@ VESPER.DWCAZipParse = new function () {
                     }
 
                     // If last char in string is field delimiter then there's actually an empty field after it
-                    if (c == fieldDelimiterVal && n === strLen - 1) {
+                    if (c === fieldDelimiterVal && n === strLen - 1) {
                         str.push (defaults[field]);
                         //console.log ("LAST EMPTY");
                     }
@@ -96,7 +96,7 @@ VESPER.DWCAZipParse = new function () {
                 fromI = n + 1;
             }
 
-            esc = (c == escapeCharVal);
+            esc = (c === escapeCharVal);
         }
         lineNo++;
 
@@ -130,7 +130,7 @@ VESPER.DWCAZipParse = new function () {
         var esc = false, quotes = false;
 
         var stt = true;
-        var ch, ch2, c;
+        var ch, ch2;
         var utfwrap = 0;
 
         var startt = MGNapier.NapVisLib.makeTime();
@@ -138,14 +138,14 @@ VESPER.DWCAZipParse = new function () {
         var segmentLengthMs = 200;
 
         function matchEol (c, buf, off) {
-            var fcmatch = (lineDelimVal == c);
+            var fcmatch = (lineDelimVal === c);
 
-            if (lineDelimLength == 1) { // if EOL is single char
+            if (lineDelimLength === 1) { // if EOL is single char
                 return fcmatch;
             } else if (fcmatch) {
                 if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
                     for (var l = lineDelimiter.length; --l >= 1;) { // 1 'cos first char matched remember (fcmatch)
-                        if (lineDelimiter.charCodeAt(l) != buf[off+l]) {
+                        if (lineDelimiter.charCodeAt(l) !== buf[off+l]) {
                             return false;
                         }
                     }
@@ -179,7 +179,7 @@ VESPER.DWCAZipParse = new function () {
                 if (stt) {
                     var possbom = String.fromCharCode(buff[0]) + String.fromCharCode(buff[1]) + String.fromCharCode(buff[2]);
                     VESPER.log ("possbom [", possbom, "]");
-                    if (possbom == "\xEF\xBB\xBF") {
+                    if (possbom === "\xEF\xBB\xBF") {
                         VESPER.log ("UTF8 bytemark detected");
                         n = 3;
                     }
@@ -224,7 +224,7 @@ VESPER.DWCAZipParse = new function () {
                     }
 
 
-                    if (quoteDelimiter && !esc && ch == qDelimVal) {
+                    if (quoteDelimiter && !esc && ch === qDelimVal) {
                         quotes = !quotes;
                         out.push (ch); //do this to add quotes to char data, otherwise we cant tell what delimiters need escaped
                     }
@@ -244,7 +244,7 @@ VESPER.DWCAZipParse = new function () {
                         }
                     }
 
-                    esc = (ch == escapeCharVal);
+                    esc = (ch === escapeCharVal);
                 }
                 // VESPER.log (out.length);
 

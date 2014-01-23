@@ -50,7 +50,7 @@ VESPER.FilterView = function (divID) {
             .on ("keyup", function() {
                 if (typeAhead || (d3.event.keyCode | d3.event.charCode) === 13) {
                     model.getSelectionModel().clear();
-                    var count = VESPER.Filters.filter2 (model, null, d3.select(this).property("value"));
+                    /*var count = */VESPER.Filters.filter2 (model, null, d3.select(this).property("value"));
                 }
             })
         ;
@@ -70,7 +70,7 @@ VESPER.FilterView = function (divID) {
         model.removeView (self);
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divID);
-    }
+    };
 };
 
 VESPER.modelBag = [];
@@ -207,7 +207,7 @@ VESPER.SelectedView = function (divID) {
         ;
 
         function addHrefIfNecc (d) {
-            if (d.data.substring(0,7) == "http://") {
+            if (d.data.substring(0,7) === "http://") {
                 d3.select(this).append ("a")
                     .attr ("href", function(d) { return d.data; })
                     .attr ("target", "_blank")
@@ -254,7 +254,7 @@ VESPER.SelectedView = function (divID) {
 
     function addExtData (ext, tableID, fileDataRowType, div) {
         var extProp = tableID;
-        var fileData = model.getMetaData().fileData;
+        //var fileData = model.getMetaData().fileData;
         //VESPER.log ("extData", ext, extProp);
         var extTable = d3.select(div).select("#"+tableID+"Table");
         var rowSel = extTable.selectAll ("tr.drow");
@@ -296,5 +296,5 @@ VESPER.SelectedView = function (divID) {
         model.removeView (self);
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divID);
-    }
+    };
 };

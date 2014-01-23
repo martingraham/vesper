@@ -56,4 +56,4 @@ VESPER.tooltip = new function () {
             .style ("left", (e.pageX+10)+"px")
         ;
      };
-};
+}();

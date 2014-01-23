@@ -2,7 +2,7 @@
 
 VESPER.BarChart = function(divid) {
 	
-	var svg;	// top level svg
+	//var svg;	// top level svg
 	var timelineG; // matrix rectangle (i.e. not the axes)
     var xaxis = d3.svg.axis();
 	
@@ -12,25 +12,24 @@ VESPER.BarChart = function(divid) {
     this.barClass = "countBin";
     this.childScale = d3.scale.linear();
     var logCountScale = d3.scale.log();
-    var linearCountScale = d3.scale.linear();
+    //var linearCountScale = d3.scale.linear();
     var currentCountScale = logCountScale;
 
     var domainLimits = [undefined, undefined];
     var binned, selBinned;
+    var rangeSlider = MGNapier.NapVisLib.rangeSlider();
+    rangeSlider.tooltipTemplates ({
+        "min": function (r,s) { return "Min: "+self.wrapDataType (self.makeToNearest (s.invert (r[0]))); },
+        "max": function (r,s) { return "Max: "+self.wrapDataType (self.makeToNearest (s.invert (r[1]))); },
+        "bar": function () { return null; }
+    });
 	
 	var self;
     var model;
 
-	var zoomObj = d3.behavior.zoom();	// zoom object, need to keep as we reference it later. calling d3.behavior.zoom() again gets us a different object/function
-	zoomObj.scaleExtent ([1.0, 4.0]); // constrain zooming
-
-
-	var exitDur = 400, updateDur = 1000, enterDur = 400;
-	var selected = {};
+	var exitDur = 400, updateDur = 500, enterDur = 500;
 	
 	var ffields = {};
-
-    var firstLayout = true;
 
     var margin = {left: 40, right: 20, top : 15, bottom: 40};
 
@@ -90,9 +89,9 @@ VESPER.BarChart = function(divid) {
 
             //MGNapier.NapVisLib.addHRGrooves (butdiv);
             VESPER.DWCAHelper.addDragArea (butdiv);
-            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":"Totals", "sectionID":"Totals"}],"section");
+            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":"Bar Type", "sectionID":"Totals"}],"section");
 
-            var choices = {regular: self.uncalcCumulative, cumulative: self.calcCumulative};
+            var choices = {Interval: self.uncalcCumulative, Cumulative: self.calcCumulative};
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
                 .data (d3.entries(choices), function(d) { return d.key;})
             ;
@@ -107,7 +106,7 @@ VESPER.BarChart = function(divid) {
                 .attr("type", "radio")
                 .attr("id", function(d) { return noHashId+ d.key; })
                 .attr("name", "chartYType")
-                .property ("checked", function(d) { return d.key == "regular"; })
+                .property ("checked", function(d) { return d.key === "Interval"; })
                 .on ("change", function(d) {
                     var barDataSets = [binned.bins, selBinned.bins];
                     var barDataTypes = ["unselected", "selected"];
@@ -141,22 +140,17 @@ VESPER.BarChart = function(divid) {
         }
         rangeg = svg.select("g.rangeHolder");
 
-        var rangeSlider = MGNapier.NapVisLib.rangeSlider();
+        //rangeSlider = MGNapier.NapVisLib.rangeSlider();
         rangeSlider(rangeg);
         rangeSlider
             .scale(self.childScale)
             .dragEndFunc (function (r, rscale) {
                 domainLimits = [
-                    self.wrapDataType (makeToNearest (rscale.invert (r[0]))),
-                    self.wrapDataType (makeToNearest (rscale.invert (r[1])))
+                    self.wrapDataType (self.makeToNearest (rscale.invert (r[0]))),
+                    self.wrapDataType (self.makeToNearest (rscale.invert (r[1])))
                 ];
                 makeBins();
                 self.update();
-            })
-            .tooltipTemplates ({
-                "min": function (r,s) { return "min: "+self.wrapDataType (makeToNearest (s.invert (r[0]))) },
-                "max": function (r,s) { return "min: "+self.wrapDataType (makeToNearest (s.invert (r[1]))) },
-                "bar": function (r,s) { return null; }
             })
             .update()
         ;
@@ -171,24 +165,14 @@ VESPER.BarChart = function(divid) {
         VESPER.log ("bin data", binned.extremes, binned);
     }
 
-	function getNode (id) {
-        return model.getNodeFromId (id);
-    }
-
-
-    function makeToNearest (val) {
+    this.makeToNearest = function (val) {
         return Math.round (val / self.toNearest) * self.toNearest;
-    }
-
-    function makeToNearestInterval (val) {
-        return Math.round (val / self.toNearest) * self.toNearest;
-    }
-
+    };
 
 	this.update = function () {
 
         selBinned = self.chunkInfo (model, model.getData(), ffields, /*undefined, binned.bins.length - 1, true,*/
-            function (key, data) { return model.getSelectionModel().contains (key)});
+            function (key) { return model.getSelectionModel().contains (key); });
 
         var bins = binned.bins;
         VESPER.log ("Selection bins", selBinned);
@@ -218,7 +202,6 @@ VESPER.BarChart = function(divid) {
             var visBins = timelineG.selectAll("."+barClass+"."+barDataTypes[k]).data(barDataSets[k], function(d) { return Math.floor (d.start); });
 
             visBins.exit()
-                .on ("click", null)
                 .on ("mouseout", null)
                 .on ("mouseover", null)
                 .on ("contextmenu", null)
@@ -228,14 +211,12 @@ VESPER.BarChart = function(divid) {
             visBins.exit().remove();
 
             self.redraw (visBins, barDataSets[k]); // redraw current selection (i.e. ones that aren't exiting/ yet to enter)
-            var delay = visBins.empty() ? 0 : 500;
+            var delay = visBins.empty() ? 0 : updateDur;
 
             visBins.enter()
                 .append("svg:rect")
                 .attr("class", barClass+" "+barDataTypes[k])
                 .style ("opacity", 0)
-                .on ("click", function(d) {
-                })
                 .on("contextmenu", function(d) {
                     //handle right click
                     model.getSelectionModel().clear();
@@ -250,13 +231,13 @@ VESPER.BarChart = function(divid) {
                     VESPER.tooltip.updateText(selected ? "Selected" : "All", self.makeTitle (d));
                     VESPER.tooltip.updatePosition (d3.event);
                 })
-                .on ("mouseout", function(d) {
+                .on ("mouseout", function() {
                     d3.select(this).classed("highlight", false);
                     VESPER.tooltip.setToFade();
                 })
                 .transition()
                 .delay (delay)
-                .duration(500)
+                .duration(enterDur)
                 .call(sharedAttrs)
                 //.append ("svg:title")
             ;
@@ -264,8 +245,8 @@ VESPER.BarChart = function(divid) {
 	};
 
 
-    this.redraw = function (currentDataSelection, barData) {
-        var maxh = d3.max(barData, function(d) { return d.count + 1; });
+    this.redraw = function (currentDataSelection) {
+        //var maxh = d3.max(barData, function(d) { return d.count + 1; });
         var wh = dims[1] - margin.bottom;
         currentCountScale/*.domain([1, maxh])*/.range ([wh, margin.top]).nice();
         var exists2 = timelineG.select("g.countAxis");
@@ -283,12 +264,12 @@ VESPER.BarChart = function(divid) {
 
         currentDataSelection
             .transition()
-            .duration(500)
+            .duration(updateDur)
             .call(sharedAttrs)
         ;
     };
 
-    this.makeTitle = function (d) {};
+    this.makeTitle = function () {};
 
     this.updateVals = this.update;
 
@@ -347,7 +328,7 @@ VESPER.BarChart = function(divid) {
             }
 
             function assignDataToBin () {
-                var t = 0;
+                //var t = 0;
                 for (var key in data) {
                     if (data.hasOwnProperty (key)) {
                         if (!includeFunc || includeFunc (key, data)) {   // only add the data if it's to be included according to includeFunc (if includeFunc exists)
@@ -428,6 +409,10 @@ VESPER.BarChart = function(divid) {
         }
     };
 
+    this.getRangeSlider = function () {
+        return rangeSlider;
+    };
+
     this.baseDestroy = function () {
         VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
@@ -443,14 +428,14 @@ VESPER.BarChart = function(divid) {
 
     this.destroy = function () {
         this.baseDestroy ();
-    }
+    };
 };
 
 
 VESPER.TaxaDistribution = function (div) {
     var chart = new VESPER.BarChart (div);
     chart.makeTitle = function (d) {
-        var singleVal = ((d.end - d.start) == 1);
+        var singleVal = ((d.end - d.start) === 1);
         return "Subtaxa: "+d.start+(singleVal ? "" : " to "+(d.end - 1))+"<br>Count: "+d.count;
     };
     chart.wrapDataType = function (d) { return d; };
@@ -458,7 +443,7 @@ VESPER.TaxaDistribution = function (div) {
     chart.getVal = function (model, data, key, fields) {
         var keyID = model.getIndexedDataPoint (data[key], fields.keyField);
         var realID = model.getIndexedDataPoint (data[key], fields.realField);
-        if (realID == keyID || realID == undefined) { // don't count synonyms
+        if (realID === keyID || realID == undefined) { // don't count synonyms
             var node = model.getNodeFromID(key);
             var subTaxa = model.getSubTaxa(node);
             //var pid = model.getDataPoint (node, {fieldType:"parentNameUsageID", rowType:model.getMetaData().coreRowType});
@@ -496,6 +481,11 @@ VESPER.TimeLine = function (div) {
         chart.baseDestroy ();
         timeCache = {};     // clear time cache
     };
+    chart.getRangeSlider().tooltipTemplates ({
+        "min": function (r,s) { return "From "+chart.wrapDataType (chart.makeToNearest (s.invert (r[0]))); },
+        "max": function (r,s) { return "To "+chart.wrapDataType (chart.makeToNearest (s.invert (r[1]))); },
+        "bar": function () { return null; }
+    });
     var oneDayInMs = 24 * 60 * 60 * 1000;
     chart.toNearest = oneDayInMs * 7; // to nearest week
     // approx divisions for one day, week, season, year, decade. Not exactly aligned fanks to leap years.

@@ -9,7 +9,7 @@ var VESPER = (function() {
     var vesper = {};
     vesper.alerts = false;
     vesper.logRun = false;
-    vesper.log = function (obj) {
+    vesper.log = function () {
         if (vesper.logRun) {
             //console.log.apply (console, arguments);
             Function.prototype.apply.call(console.log, console, arguments);

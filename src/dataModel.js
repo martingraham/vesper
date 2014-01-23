@@ -6,6 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
+/*
 VESPER.Model = function (metaData, data) {
     VESPER.Model.prototype = {
         getNodeFromID: function (id) {},
@@ -15,7 +16,7 @@ VESPER.Model = function (metaData, data) {
     };
 
 }
-
+*/
 
 VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
@@ -38,7 +39,7 @@ VESPER.DWCAModel = function (metaData, data) {
         var d = this.getData();
         var s = this.getSelectionModel();
         var arr = [];
-        var tempField = {fieldType:"acceptedNameUsageID", rowType:this.getMetaData().coreRowType};
+        //var tempField = {fieldType:"acceptedNameUsageID", rowType:this.getMetaData().coreRowType};
         for (var iid in d) {
             if (!s.contains(iid)) {
                 //var n = this.getNodeFromID(iid);

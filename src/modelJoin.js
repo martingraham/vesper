@@ -9,9 +9,9 @@ VESPER.modelComparisons = new function () {
 
     this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
         var small = smaller (model1, model2);
-        var large = (small == model1 ? model2 : model1);
-        var smallLinkField = (small == model1 ? linkField1 : linkField2);
-        var largeLinkField = (small == model1 ? linkField2 : linkField1);
+        var large = (small === model1 ? model2 : model1);
+        var smallLinkField = (small === model1 ? linkField1 : linkField2);
+        var largeLinkField = (small === model1 ? linkField2 : linkField1);
         var smallData = small.getExplicitTaxonomy() || small.getImplicitTaxonomy();
         var largeData = large.getExplicitTaxonomy() || large.getImplicitTaxonomy();
         var smallSelection = small.getSelectionModel();
@@ -32,7 +32,7 @@ VESPER.modelComparisons = new function () {
             }
         }
        // VESPER.log ("invMap", invMap);
-        var c = 0;
+       // var c = 0;
         for (var prop in largeData) {
             if (largeData.hasOwnProperty (prop)) {
                 var val = large.getDataPoint (largeData[prop], largeLinkField);

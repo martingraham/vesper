@@ -18,25 +18,25 @@ VESPER.demo = function (files, exampleDivID) {
 
     var visChoiceData = [
         {title:"Controls", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
-            newVisFunc: function (div) { return new VESPER.VisLauncher (div);},
-            setupFunc: function () {return {"visChoiceData":visChoiceData}}
+            newVisFunc: function (div) { return new VESPER.VisLauncher (div, {"autoLaunch":"on"});},
+            setupFunc: function () {return {"visChoiceData":visChoiceData}; }
         },
         {title:"Implicit Taxonomy", multiple: true,  attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.ImplicitTaxonomy (div);},
-            setupFunc: function () {return {"rankField":"taxonRank"}}
+            setupFunc: function () {return {"rankField":"taxonRank"}; }
         },
         {title:"Explicit Taxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.ExplicitTaxonomy (div);},
-            setupFunc: function () {return {"rankField":"taxonRank"}}
+            setupFunc: function () {return {"rankField":"taxonRank"}; }
         },
         {title:"Map", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
-            setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}}
+            setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}; }
         },
         {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
             //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
-            setupFunc: function () { return {"dateField":"eventDate"}}
+            setupFunc: function () { return {"dateField":"eventDate"}; }
         },
         {title:"Sanity Check", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.Sanity (div);},
@@ -44,7 +44,7 @@ VESPER.demo = function (files, exampleDivID) {
         },
         {title:"Taxa Distribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"dist.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TaxaDistribution (div);},
-            setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}}
+            setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}; }
         },
         {title:"Search Box", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "150px", width: "200px",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
@@ -154,11 +154,11 @@ VESPER.demo = function (files, exampleDivID) {
 
         var setVisOptionBoxes = function (bool) {
             var cboxes = d3.select("#dynamicSelectDiv").selectAll(".fieldGroup input");
-            cboxes = cboxes.filter (function() {return d3.select(this).style("display") != "none"; });
+            cboxes = cboxes.filter (function() {return d3.select(this).style("display") !== "none"; });
             cboxes.property ("checked", bool);
             if (!bool) {
                 var rbuts = d3.select("#labelSelectDiv").selectAll(".fieldGroup input");
-                rbuts = rbuts.filter (function() {return d3.select(this).style("display") != "none"; });
+                rbuts = rbuts.filter (function() {return d3.select(this).style("display") !== "none"; });
                 rbuts.property ("checked", bool);
                 getMeta().vesperAdds.nameLabelField = null;
             }
@@ -166,7 +166,7 @@ VESPER.demo = function (files, exampleDivID) {
 
         DWCAHelper.addHelperButton (d3.select("#advancedSelectDiv"), checkListParent, "Remove Verbose Fields", VESPER.DWCAParser.flabbyLists.wordyList,
             false, null, "selButtonStyle listCon", function() { return getMeta(); }, selectionOptions);
-        var excepFunc = function exceptionFunc (d, i) { return i == 0; };
+        var excepFunc = function exceptionFunc (d, i) { return i === 0; };
         d3.select("#allButton").on("click", function() {
             DWCAHelper.setAllFields (checkListParent, true, undefined, excepFunc, getMeta(), selectionOptions);
             setVisOptionBoxes (true);
@@ -189,9 +189,9 @@ VESPER.demo = function (files, exampleDivID) {
         selectFirstOnlyBox.select("input")
             .property ("checked", selectionOptions.selectFirstOnly)
             .on("click", function() {
-                selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly
+                selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly;
             });
-        var advSelFunc = function (d) {
+        var advSelFunc = function () {
             var val = d3.select(this).property("checked") ? "block" : "none";
             DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
             return false;
@@ -225,16 +225,24 @@ VESPER.demo = function (files, exampleDivID) {
         VESPER.log ("MODEL", model);
         if (VESPER.alerts) { alert ("mem monitor point X"); }
 
-        DWCAHelper.divDisplay(["#selDiv", "#"+progressBarID], "none");
+        DWCAHelper.divDisplay(["#selDiv"], "none");
         DWCAHelper.divDisplay(["#allVisDiv"], "block");
+        d3.select("#"+progressBarID).select("p").html("Initialising Chosen Views... Please wait...");
 
-        // the replace regex rips out nonalphanueric strings as dots and hashes cause trouble when passing the name as an id to d3selectors
-        model.name = d3.select("#filenamePlaceholder").text().replace(/\W/g, '');
-        (new VESPER.VisLauncher()).makeVis (visChoiceData[0], model);
+        // Do a set timeout so the progressbar is updated with the above message before the views start initialising
+        setTimeout (
+            function() {
+                // the replace regex rips out nonalphanueric strings as dots and hashes cause trouble when passing the name as an id to d3selectors
+                model.name = d3.select("#filenamePlaceholder").text().replace(/\W/g, '');
+                (new VESPER.VisLauncher()).makeVis (visChoiceData[0], model);
+                DWCAHelper.divDisplay(["#"+progressBarID], "none");
 
-        // Aid G.C.
-        model = null;
-        meta = null;
+                // Aid G.C.
+                model = null;
+                meta = null;
+            },
+            1   // timeout in ms
+        );
     }
 
 
@@ -246,7 +254,7 @@ VESPER.demo = function (files, exampleDivID) {
             .attr("src", VESPER.imgbase+"zipIcon.gif")
         ;
         pHolder.append("span")
-            .text ((bufferOrStringData.length | bufferOrStringData.byteLength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") +" bytes")
+            .text ((bufferOrStringData.length || bufferOrStringData.byteLength).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") +" bytes")
         ;
 
         if (VESPER.alerts) { alert ("check memory use in task manager"); }
@@ -264,9 +272,9 @@ VESPER.demo = function (files, exampleDivID) {
 
             var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("span.fieldGroup");
             var first = true;
-            nameChoiceGroup.each (function(d) {
+            nameChoiceGroup.each (function() {
                 var disp = d3.select(this).style ("display");
-                if (disp != "none" && first) {
+                if (disp !== "none" && first) {
                     first = false;
                     var button = d3.select(this).select("input");
                     // this is cross-browser

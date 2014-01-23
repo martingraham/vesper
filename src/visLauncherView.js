@@ -6,7 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
-VESPER.VisLauncher = function (divid) {
+VESPER.VisLauncher = function (divid, options) {
 
     var model;
     var self = this;
@@ -22,10 +22,19 @@ VESPER.VisLauncher = function (divid) {
 
     this.go = function () {
         var buttonVisBlockSel = d3.select(divid);
-        setVisChoices (choiceData, buttonVisBlockSel);
+        setVisChoices (choiceData);
         showButtons (buttonVisBlockSel);
         setSelectionOps ();
         setModelCompareOps ();
+
+        if (options && options.autoLaunch === "on") {
+            for (var n = 0; n < choiceData.length; n++) {
+                var visData = choiceData[n];
+                if (isVisDoable(visData) && isVisDataDependent(visData)) {
+                    self.makeVis (visData, model);
+                }
+            }
+        }
     };
 
     this.update = function () {};
@@ -33,17 +42,25 @@ VESPER.VisLauncher = function (divid) {
     this.updateVals = this.update;
 
 
-    function setVisChoices (data, parentDivSel) {
-        var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        encloser.append ("p").attr("class", "controlHeading").text("Launch Visualisation");
+    function isVisDoable (visData) {
+        var indices = model.makeIndices (visData.attList);
+        var nullCount = MGNapier.NapVisLib.countNulls (indices);
+        return (indices.length === 0 || (visData.matchAll && nullCount === 0) || (!visData.matchAll && nullCount < indices.length));
+    }
 
-        var visChoices = encloser.selectAll("button").data (data);
+    function isVisDataDependent (visData) {
+        var indices = model.makeIndices (visData.attList);
+        return (indices.length > 0);
+    }
+
+    function setVisChoices (data) {
+        MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Launch Visualisation", "sectionID":"Vis", "init":"none"}], "encloser");
+        var visChoices = d3.select(divid).select(divid+"Vis").selectAll("button").data (data);
+
         var buttons = visChoices.enter()
             .append ("button")
             .attr ("class", "visChoice")
             .attr ("type", "button")
-            //.attr ("id", function(d) { return d.title;})
-            //.text (function(d) { return d.title; })
             .on ("click", function(d) {
                 self.makeVis (d, model);
                 return false;
@@ -61,9 +78,9 @@ VESPER.VisLauncher = function (divid) {
     }
 
     function setSelectionOps () {
+        MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
+        var encloser = d3.select(divid).select(divid+"Sel");
 
-        var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        encloser.append ("p").attr("class", "controlHeading").text("Current Selections");
         encloser.append("button")
             .attr ("type", "button")
             .text ("Save")
@@ -71,7 +88,7 @@ VESPER.VisLauncher = function (divid) {
 
         if (window.requestFileSystem) {
             encloser.select("button")
-                .on ("click", function(d) {
+                .on ("click", function() {
                     MGNapier.NapVisLib.prepareForWrite (MGNapier.NapVisLib.writeArray, model.getSelectionModel().values());
                 })
             ;
@@ -92,7 +109,7 @@ VESPER.VisLauncher = function (divid) {
             .attr ("type", "button")
             //.attr ("id", "clearSel")
             .text ("Clear")
-            .on ("click", function(d) {
+            .on ("click", function() {
                 model.getSelectionModel().clear();
                 model.getSelectionModel().update();
             })
@@ -143,14 +160,9 @@ VESPER.VisLauncher = function (divid) {
     function showButtons (divSel) {
         var visChoices = divSel.selectAll("button.visChoice");
         visChoices.style("display", function(d) {
-            var fileData = model.getMetaData().fileData;
-            var indices = model.makeIndices (d.attList);
-            var nullCount = MGNapier.NapVisLib.countNulls (indices);
-            //VESPER.log (d.title, nullCount);
-            return (indices.length == 0 || (d.matchAll && nullCount === 0) || (!d.matchAll && nullCount < indices.length))
-                ? "block" : "none"
-            ;
-        })
+            var allowed = isVisDoable (d);
+            return allowed ? "block" : "none";
+        });
     }
 
     this.makeVis = function (details, aModel) {
@@ -170,7 +182,7 @@ VESPER.VisLauncher = function (divid) {
             var buttonSpan = topBar.append("div").attr("class", "buttonBank");
             topBar.append("div").attr("class", "visTitle").text(vid);
 
-            var indVisDiv = newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
+            /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
 
             var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
@@ -213,10 +225,10 @@ VESPER.VisLauncher = function (divid) {
             .on ("click", function() {
                 var vdiv = d3.select(toggleThisID);
                 var dstate = vdiv.style("display");
-                vdiv.style("display", dstate == "none" ? null : "none");
-                var svg = d3.select(this).select("svg polygon");
+                vdiv.style("display", dstate === "none" ? null : "none");
+                //var svg = d3.select(this).select("svg polygon");
                 d3.select(this).select("svg polygon")
-                    .attr("points", dstate == "none" ?
+                    .attr("points", dstate === "none" ?
                         "0,12 12,12 6,0" :  "0,0 12,0 6,12"
                 );
             } )
@@ -257,5 +269,5 @@ VESPER.VisLauncher = function (divid) {
         model.getSelectionModel().clear();
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divid);
-    }
+    };
 };
