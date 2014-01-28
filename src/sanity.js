@@ -5,6 +5,9 @@ VESPER.Sanity = function(divid) {
     var model;
     var self = this;
 	var thisView;
+    var dataChanged = true;
+
+    var allVisComplete, allFieldsComplete, vocabCounts;
 
 	//var exitDur = 400, updateDur = 1000, enterDur = 400;
     var maxBarWidth = 100;
@@ -21,7 +24,7 @@ VESPER.Sanity = function(divid) {
 	};
 
 
-    var calcVisBasedSanity = function () {
+    var calcVisBasedSanity = function (filter) {
         var tests = [], testOutputs = [];
         var dataModel = model.getData();
 
@@ -40,23 +43,25 @@ VESPER.Sanity = function(divid) {
         var oc = 0;
         for (var obj in dataModel) {
             if (dataModel.hasOwnProperty(obj)) {
-                oc++;
-                for (var i = 0; i < tests.length; i++) {
-                    var test = tests[i];
-                    var some = false, all = true;
+                if (!filter || filter (model, obj)) {
+                    oc++;
+                    for (var i = 0; i < tests.length; i++) {
+                        var test = tests[i];
+                        var some = false, all = true;
 
-                    for (var j = 0; j < test.length; j++) {
-                        var val = model.getIndexedDataPoint (dataModel[obj], test[j]);
-                        if (val === undefined || val === null) {
-                            some = true;
+                        for (var j = 0; j < test.length; j++) {
+                            var val = model.getIndexedDataPoint (dataModel[obj], test[j]);
+                            if (val == undefined) {
+                                some = true;
+                            }
+                            else {
+                                all = false;
+                            }
                         }
-                        else {
-                            all = false;
-                        }
+
+                        if (some) { testOutputs[i].some++; }
+                        if (all) { testOutputs[i].all++; }
                     }
-
-                    if (some) { testOutputs[i].some++; }
-                    if (all) { testOutputs[i].all++; }
                 }
             }
         }
@@ -65,7 +70,7 @@ VESPER.Sanity = function(divid) {
     };
 
 
-    var calcFieldBasedSanity = function () {
+    var calcFieldBasedSanity = function (filter) {
         var fdEntries = d3.entries (model.getMetaData().fileData);
         var dataModel = model.getData();
 
@@ -83,28 +88,22 @@ VESPER.Sanity = function(divid) {
         //var c = 0;
         for (var obj in dataModel) {
             if (dataModel.hasOwnProperty(obj)) {
-                for (var n = 0; n < activefdEntries.length; n++) {
-                    var fdata = activefdEntries[n].value;
-                    var fIndex = fdata.filteredInvFieldIndex;
-
-                    //if (fIndex.length > 0) {
-                    //if (tdat) {
+                if (!filter || filter (model, obj)) {
+                    for (var n = 0; n < activefdEntries.length; n++) {
+                        var fdata = activefdEntries[n].value;
+                        var fIndex = fdata.filteredInvFieldIndex;
                         var tdat = model.getRowData (dataModel[obj], fdata.extIndex);
                         if (tdat && fdata.extIndex) {
                             tdat = tdat[0];
                         }
                         var shortName = fdata.mappedRowType;
-                        //c++;
-                        //if (c < 100) {
-                        //    console.log ("t", tdat, fIndex.length);
-                        //}
                         for (var f = 0; f < fIndex.length; f++) {
                             var fName = fIndex[f];
-                            if (tdat == undefined || tdat[f] == undefined || tdat[f] == null) {
+                            if (tdat == undefined || tdat[f] == undefined) {
                                 results[shortName][fName].count++;
                             }
                         }
-                    //}
+                    }
                 }
             }
         }
@@ -143,28 +142,63 @@ VESPER.Sanity = function(divid) {
         return results;
     };
 
+    function calcData () {
+        allVisComplete = calcVisBasedSanity ();
+        allFieldsComplete = calcFieldBasedSanity ();
+        vocabCounts = calcControlledVocabFieldRanges ();
+        dataChanged = false;
+    }
+
+
+    var selectedFilter = function (model, id) {
+        return model.getSelectionModel().contains (id);
+    };
+
 
 	this.update = function () {
         var divSel = d3.select(divid);
-        var result = calcVisBasedSanity ();
-        var result2 = calcFieldBasedSanity ();
-        var result3 = calcControlledVocabFieldRanges ();
-        var testOutputs = result.outputs;
-        var oc = result.dataCount;
+
+        if (dataChanged) {
+            calcData();
+        }
+
+        var selectedSize = model.getSelectionModel().values().length;
+        var selVisComplete = calcVisBasedSanity (selectedFilter);
+        var selFieldsComplete = calcFieldBasedSanity (selectedFilter);
+
+        console.log ("RES4", selVisComplete, selFieldsComplete);
+        var testOutputs = allVisComplete.outputs;
+        var oc = allVisComplete.dataCount;
         var cellOrder, cellClasses;
 
-        var intro = divSel.select("div.visHeader");
+        // merge static and selected counts
+        for (var n = 0; n < testOutputs.length; n++) {
+            var testOutput = testOutputs[n];
+            var selOutput = selVisComplete.outputs[n];
+            testOutput.selSome = selOutput.some;
+            testOutput.selAll = selOutput.all;
+        }
+        for (var obj in allFieldsComplete) {
+            if (allFieldsComplete.hasOwnProperty (obj)) {
+                var allObj = allFieldsComplete[obj];
+                var selObj = selFieldsComplete[obj];
+                allObj.selCount = selObj.count;
+            }
+        }
+
+
+        var intro = divSel.select("div.sanityHeader");
         if (intro.empty) {
-            d3.select(divid)
+            divSel
                 .append ("div")
-                .attr ("class", "visHeader")
+                .attr ("class", "sanityHeader")
                 .append ("p")
             ;
         }
 
-        divSel.select("div.visHeader")
+        divSel.select("div.sanityHeader")
             .select("p")
-            .text (oc+" Records")
+            .text (oc+" Records"+(selectedSize > 0 ? ", "+selectedSize+" Selected" : ""))
         ;
 
         function createTable (klass, headings) {
@@ -183,6 +217,7 @@ VESPER.Sanity = function(divid) {
                     .text (function(d) { return d;})
                 ;
             }
+            return divSel.select("table."+klass);
         }
 
         function eraseTable (klass) {
@@ -190,7 +225,7 @@ VESPER.Sanity = function(divid) {
             table.remove();
         }
 
-        function popTable (rows, calcData, newCellOrder, cellFiller, newCellClasses)  {
+        function popTable (rows, cellFiller, processors)  {
             rows.exit().remove();
 
             rows.enter()
@@ -198,39 +233,29 @@ VESPER.Sanity = function(divid) {
                 .attr ("class", "sanityRow")
             ;
 
-            //VESPER.log ("rows", rows, rows.enter());
-
-            cellOrder = newCellOrder;
-            cellClasses = newCellClasses;
-            rows.each(calcData).each(cellFiller);
+            rows.each(cellFiller);
         }
 
         var pcFormat = d3.format (".2%");
-        var formats = [];
 
         function fillCells (d) {
             var arr = [];
             // google chrome doesn't do returning object properties in the order they were added.
-            if (cellOrder) {
-                for (var n = 0; n < cellOrder.length; n++) {
-                    var item = cellOrder[n];
-                    if (d[item] !== undefined) {
-                        arr.push ({"key":item, "value":d[item]});
-                    }
+            for (var n = 0; n < processors.length; n++) {
+                var item = processors[n].name;
+                if (d[item] !== undefined) {
+                    arr.push ({"key":item, "value":d[item]});
                 }
-            } else {
-                arr = d3.entries(d);
             }
 
             var cells = d3.select(this).selectAll("td").data(arr);
             cells.enter().append ("td")
-                .attr ("class", function(d,i) { return cellClasses && cellClasses[i] ? cellClasses[i] : null; })
+                .attr ("class", function(d,i) { return processors[i] && processors[i].klass ? processors[i].klass : null; })
             ;
 
             function dstring (d,i) {
-                return (formats[i] ? formats[i](d.value) : d.value.toString())
-                    + (isNaN(d.value) ? "" : " ("+ pcFormat (d.value / oc)+ ")")
-                ;
+                var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
+                return d.value.toString() + (isNaN(d.value) || pcVal === undefined ? "" : " ("+ pcFormat (pcVal)+ ")") ;
             }
 
             if (cells.select("img").empty()) {
@@ -241,10 +266,16 @@ VESPER.Sanity = function(divid) {
                 ;
             }
             cells.select("img.sanityBarFail")
-                .attr ("width", function(d) { return isNaN(d.value) ? 0 : Math.min (maxBarWidth, (d.value / oc) * maxBarWidth); })
+                .attr ("width", function(d,i) {
+                    var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
+                    return isNaN(d.value) ? 0 : Math.min (maxBarWidth, pcVal * maxBarWidth);
+                })
             ;
             cells.select("img.sanityBarOK")
-                .attr ("width", function(d) { return isNaN(d.value) ? 0 : Math.min (maxBarWidth, maxBarWidth - ((d.value / oc) * maxBarWidth)); })
+                .attr ("width", function(d,i) {
+                    var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
+                    return isNaN(d.value) ? 0 : Math.min (maxBarWidth, maxBarWidth - (pcVal * maxBarWidth));
+                })
             ;
 
             if (cells.select("span").empty()) {
@@ -255,33 +286,32 @@ VESPER.Sanity = function(divid) {
         }
 
 
+        function getOrig () { return undefined; }
+        function getAllPC (val) { return val / oc; }
+        function getSelPC (val) { return selectedSize > 0 ? val / selectedSize : 0; }
+
         // Check missing data by vis type
-        createTable ("visSanityTests", ["Vis Type", "Some fields missing", "All fields missing"]);
-        var rows = divSel.select("table.visSanityTests").selectAll("tr.sanityRow")
-            .data(testOutputs)
-        ;
-        function getPC () {}
-        formats.length = 0; formats[3] = pcFormat; formats[4] = pcFormat;
-        popTable (rows, getPC, ["listName", "some", "all"], fillCells, ["showSanityText", "dontShowSanityText", "dontShowSanityText"]);
+        var sTable = createTable ("visSanityTests", ["Vis Type", "Some fields missing", "All fields missing", "Some fields missing (sel)", "All fields missing (sel)"]);
+        var processors = [{name:"listName", func:getOrig, klass:"showSanityText"}, {name:"some", func:getAllPC, klass:"dontShowSanityText"}, {name:"all", func:getAllPC, klass:"dontShowSanityText"},
+                {name:"selSome", func:getSelPC, klass:"dontShowSanityText"}, {name:"selAll", func:getSelPC, klass:"dontShowSanityText"}
+        ];
+        popTable (sTable.selectAll("tr.sanityRow").data(testOutputs), fillCells, processors);
+
 
         // Check missing data by field type
-        if (!$.isEmptyObject(result2)) {
-            createTable ("fieldSanityTests", ["Record Type", "Field Type", "Fields missing"]);
-            rows = divSel.select("table.fieldSanityTests").selectAll("tr.sanityRow")
-                .data(d3.values(result2))
-            ;
-            formats.length = 0; formats[3] = pcFormat;
-            popTable (rows, getPC, ["recordType", "name", "count"], fillCells, ["showSanityText", "showSanityText", "dontShowSanityText"]);
+        if (!$.isEmptyObject(allFieldsComplete)) {
+            sTable = createTable ("fieldSanityTests", ["Record Type", "Field Type", "Fields missing", "Fields missing (sel)"]);
+            processors = [{name:"recordType", func:getOrig, klass:"showSanityText"}, {name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getAllPC, klass:"dontShowSanityText"},
+                {name:"selCount", func:getSelPC, klass:"dontShowSanityText"}
+            ];
+            popTable (sTable.selectAll("tr.sanityRow").data(d3.values(allFieldsComplete)), fillCells, processors);
         }
 
         // Check fields with controlled vocabularies
-        if (!$.isEmptyObject(result3)) {
-            createTable ("vocabSanityTests", ["Field Type", "Vocabulary Size"]);
-            rows = divSel.select("table.vocabSanityTests").selectAll("tr.sanityRow")
-                .data(d3.values(result3))
-            ;
-            formats.length = 0;
-            popTable (rows, getPC, ["name", "count"], fillCells, ["showSanityText", "showSanityText"]);
+        if (!$.isEmptyObject(vocabCounts)) {
+            sTable = createTable ("vocabSanityTests", ["Field Type", "Vocabulary Size"]);
+            processors = [{name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getOrig, klass:"showSanityText"}];
+            popTable (sTable.selectAll("tr.sanityRow").data(d3.values(vocabCounts)), fillCells, processors);
         } else {
             eraseTable ("vocabSanityTests");
         }

@@ -1,55 +1,3 @@
-td.value {
-	font-weight:bold;
-}
-
-
-table {
-	border-collapse:collapse;
-	margin-top: 20px;
-	margin-left: 5px;
-	cellspacing: 0px;
-}
-
-th {
-	border: 1px solid gray;
-	margin-left: 3px;
-}
-
-
-.extDetailTable td {
-	border: 1px solid gray;
-}
-
-.extDetailTable th {
-	background: #d0d0d0;
-}
-
-
-.detailTable td {
-	border: 1px solid gray;
-}
-
-.detailTable tr:nth-child(2n+1) {
-	background: #d0d0d0;
-}
-
-
-.dwcalist {
-	background: #d0d0d0;
-}
-
-.dwcalist td {
-	border: 1px solid gray;
-}
-
-
-
-
-.label {
-	font-size: 12pt;
-	color: #a040d0;
-}
-
 .treeNode {
     fill-rule: evenodd;
     stroke: #fff;
@@ -65,52 +13,6 @@ th {
 	font-size: 14px;
 	pointer-events: none;
     text-anchor: start;
-}
-
-.timeLineAxis {
-    font-size: 10px;
-    fill: #666;
-}
-
-
-tr.sanityRow:nth-child(2n+1) {
-    background: #d0d0d0;
-}
-
-tr.sanityRow td {
-    border: 1px solid darkgray;
-    padding: 0px 2px;
-    font-size: 9pt;
-}
-
-th.sanityTableHeading {
-    background: #aaddaa;
-    font-size: 9pt;
-    border: 1px solid darkgray;
-    padding: 0px 2px;
-}
-
-td.showSanityText span {
-    display: inline;
-}
-
-td.dontShowSanityText span {
-    display: none;
-}
-
-
-img.sanityBarFail, img.sanityBarOK {
-    border-style: solid none solid none;
-    border-color: #ccc;
-    border-width: 1px;
-    vertical-align: middle;
-}
-
-
-.visHeader {
-    font-size: 16pt;
-    padding: 0px 2px;
-    background: #cfc;
 }
 
 .taxaControlsSpaceAlloc {

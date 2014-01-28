@@ -15,9 +15,3 @@
     shape-rendering: crispEdges;
 }
 
-.barChartControl {
-    border: 1px solid gray;
-    position:absolute;
-    left:10px;
-    top:30px;
-}

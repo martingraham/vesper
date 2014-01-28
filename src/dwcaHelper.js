@@ -266,18 +266,19 @@ VESPER.DWCAHelper = new function () {
 
     // check metamodel against list of fieldnames
     // needAll decides whether we need to match all the list or just part of it
-    this.fieldListExistence = function (meta, list, needAll, orMatchAtLeast, checkExtRows) {
+    this.fieldListExistence = function (meta, list, needAll, orMatchAtLeast, checkExtRows, onFiltered) {
 
         var listSet = d3.set (list);
         var matchSet = d3.set ();
+        var fieldCheck = onFiltered ? "filteredInvFieldIndex" : "invFieldIndex";
 
         var all = [];
         for (var prop in meta.fileData) {
             if (meta.fileData.hasOwnProperty (prop)) {
                 var row = meta.fileData[prop];
                 if (checkExtRows || isCore (row, meta)) {
-                    for (var m = 0; m < row.invFieldIndex.length; m++) {
-                        var fieldName = row.invFieldIndex[m];
+                    for (var m = 0; m < row[fieldCheck].length; m++) {
+                        var fieldName = row[fieldCheck][m];
                         if (listSet.has (fieldName)) {
                             matchSet.add (fieldName);
                             all.push ({fieldName: fieldName, rowName: prop});

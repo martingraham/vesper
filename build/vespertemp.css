@@ -1,3 +1,21 @@
+.timeBin {
+    stroke: #888;
+    /*fill: #0f0;*/
+}
+
+.countBin {
+    stroke: #448;
+    /*fill: #66a;*/
+}
+
+.vesperAxis path,
+.vesperAxis line {
+    fill: none;
+    stroke: #888;
+    shape-rendering: crispEdges;
+}
+
+
 @CHARSET "ISO-8859-1";
 
 BODY {
@@ -21,29 +39,6 @@ DIV .vis {
 }
 
 
-/* class for column in a two-column div */
-DIV .column {
-	width: 49%;
-	padding: 0;
-	margin: 0;
-	border: 0px solid blue;
-}
-
-
-/* class for column in a three-column div */
-DIV .column3 {
-	width: 30%;
-	padding: 0;
-	margin: 8px;
-	border: 1px solid black;
-}
-
-/* hack class to keep divs in the same column vertically ordered */
-DIV .hack {
-	margin-right: 1px;
-	padding: 0;
-}
-
 /* top svg element for each visualisation, makes it fill available space
 	and 'hidden' stops ie9 drawing child elements that lie outside the svg bounds */
 .visContainer {
@@ -54,31 +49,6 @@ DIV .hack {
 
 .visWrapper {
     overflow: hidden;
-}
-
-.tagCloudFont {
-	font-family: Gill Sans MT;
-}
-
-
-.controlText {
-	/*pointer-events:none;*/
-	font:14px sans-serif;
-	font-family: "Gill Sans MT",Georgia,Arial;
-	fill: #202050;
-}
-
-.buttonbase {
-	fill: #9090f0;
-	stroke: #7070c0;
-	stroke-width: 2px;
-}
-
-.overlayButton {
-    position:absolute;
-    left:2px;
-    top:2px;
-    z-index:1;
 }
 
 .visControl {
@@ -151,52 +121,6 @@ DIV .hack {
     background: #ff0;
 }
 
-.vesperMapIcon {
-    text-align: right;
-    border: #888 solid 1px;
-    overflow: hidden;
-    border-radius: 8px;
-}
-
-.vesperMapIcon div {
-   height: 20px;
-   font-weight: bold;
-   padding: 0px 2px 0px 2px;
-   overflow: hidden;
-}
-
-.vesperTooltip {
-    position: absolute;
-    border: 2px solid #444;
-    border-radius: 10px;
-    background: #aadddd;
-    opacity: 0.9;
-    z-index: 1001;
-}
-
-.vesperTooltip h2 {
-    padding: 2px 4px 4px 4px;
-    font-size: 12pt;
-    margin: 0px;
-    border-radius: 8px 8px 0px 0px;
-    color: #000;
-    background: #1c94c4;
-}
-
-.vesperTooltip p {
-    padding: 6px 4px 4px 4px;
-    margin: 0px;
-    font-size: 10pt;
-    color: #222;
-}
-
-.vesperTooltip hr {
-    border-style: solid;
-    border-top-width: 1px;
-    border-bottom-width: 0px;
-    margin: 2px 0px;
-}
-
 .sliderThumb {
     height: 16px;
     width: 16px;
@@ -212,7 +136,6 @@ DIV .hack {
     stroke-width: 1px;
 }
 
-
 DIV.encloser {
     padding: 6px;
     margin-top: 6px;
@@ -226,30 +149,19 @@ DIV.encloser {
     background: yellow;
 }
 
-.timeBin {
-    stroke: #888;
-    /*fill: #0f0;*/
+.vesperMapIcon {
+    text-align: right;
+    border: #888 solid 1px;
+    overflow: hidden;
+    border-radius: 8px;
 }
 
-.countBin {
-    stroke: #448;
-    /*fill: #66a;*/
+.vesperMapIcon div {
+    height: 20px;
+    font-weight: bold;
+    padding: 0px 2px 0px 2px;
+    overflow: hidden;
 }
-
-.vesperAxis path,
-.vesperAxis line {
-    fill: none;
-    stroke: #888;
-    shape-rendering: crispEdges;
-}
-
-.barChartControl {
-    border: 1px solid gray;
-    position:absolute;
-    left:10px;
-    top:30px;
-}
-
 BODY {
     position: relative;
 }
@@ -525,80 +437,11 @@ div.buttonBank {
     margin: 2px 8px;
     font-weight: bold;
 }
-td.value {
-	font-weight:bold;
+.sanityHeader {
+    font-size: 16pt;
+    padding: 0px 2px;
+    background: #cfc;
 }
-
-
-table {
-	border-collapse:collapse;
-	margin-top: 20px;
-	margin-left: 5px;
-	cellspacing: 0px;
-}
-
-th {
-	border: 1px solid gray;
-	margin-left: 3px;
-}
-
-
-.extDetailTable td {
-	border: 1px solid gray;
-}
-
-.extDetailTable th {
-	background: #d0d0d0;
-}
-
-
-.detailTable td {
-	border: 1px solid gray;
-}
-
-.detailTable tr:nth-child(2n+1) {
-	background: #d0d0d0;
-}
-
-
-.dwcalist {
-	background: #d0d0d0;
-}
-
-.dwcalist td {
-	border: 1px solid gray;
-}
-
-
-
-
-.label {
-	font-size: 12pt;
-	color: #a040d0;
-}
-
-.treeNode {
-    fill-rule: evenodd;
-    stroke: #fff;
-}
-
-.treeNode .holdsSelected {
-    stroke: none;
-}
-
-.treeNode text {
-	fill: #000;
-    stroke: none;
-	font-size: 14px;
-	pointer-events: none;
-    text-anchor: start;
-}
-
-.timeLineAxis {
-    font-size: 10px;
-    fill: #666;
-}
-
 
 tr.sanityRow:nth-child(2n+1) {
     background: #d0d0d0;
@@ -633,11 +476,91 @@ img.sanityBarFail, img.sanityBarOK {
     vertical-align: middle;
 }
 
+td.showSanityText img{
+    display: none;
+}
 
-.visHeader {
-    font-size: 16pt;
-    padding: 0px 2px;
-    background: #cfc;
+td.value {
+    font-weight:bold;
+}
+
+table {
+    border-collapse:collapse;
+    margin-top: 20px;
+    margin-left: 5px;
+    cellspacing: 0px;
+}
+
+th {
+    border: 1px solid gray;
+    margin-left: 3px;
+}
+
+
+.extDetailTable td {
+    border: 1px solid gray;
+}
+
+.extDetailTable th {
+    background: #d0d0d0;
+}
+
+.detailTable td {
+    border: 1px solid gray;
+}
+
+.detailTable tr:nth-child(2n+1) {
+    background: #d0d0d0;
+}
+
+.vesperTooltip {
+    position: absolute;
+    border: 2px solid #444;
+    border-radius: 10px;
+    background: #aadddd;
+    opacity: 0.9;
+    z-index: 1001;
+}
+
+.vesperTooltip h2 {
+    padding: 2px 4px 4px 4px;
+    font-size: 12pt;
+    margin: 0px;
+    border-radius: 8px 8px 0px 0px;
+    color: #000;
+    background: #1c94c4;
+}
+
+.vesperTooltip p {
+    padding: 6px 4px 4px 4px;
+    margin: 0px;
+    font-size: 10pt;
+    color: #222;
+}
+
+.vesperTooltip hr {
+    border-style: solid;
+    border-top-width: 1px;
+    border-bottom-width: 0px;
+    margin: 2px 0px;
+}
+
+
+.treeNode {
+    fill-rule: evenodd;
+    stroke: #fff;
+}
+
+.treeNode .holdsSelected {
+    stroke: none;
+}
+
+.treeNode text {
+	fill: #000;
+    stroke: none;
+	font-size: 14px;
+	pointer-events: none;
+    text-anchor: start;
 }
 
 .taxaControlsSpaceAlloc {

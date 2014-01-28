@@ -199,17 +199,17 @@ VESPER.DWCAModel = function (metaData, data) {
         var taxa = this.getSubTaxa (taxon);
         var spec = this.getSpecimens (taxon);
 
-        if (taxa != undefined || spec != undefined) {
+        if (taxa || spec) {
             taxon.sdcount = 0;
 
-            if (taxa != undefined) {
-                for (var n = 0, len = taxa.length; n < len; n++) {
+            if (taxa) {
+                for (var n = taxa.length; --n >= 0;) {
                     taxon.sdcount += this.countSelectedDesc (taxa[n], idField);
                 }
             }
 
-            if (spec != undefined) {
-                for (var n = 0, len = spec.length; n < len; n++) {
+            if (spec) {
+                for (var n = spec.length; --n >= 0;) {
                     taxon.sdcount += this.getSelectionModel().contains (this.getIndexedDataPoint (spec[n], idField)) ? 1 : 0;
                 }
             }

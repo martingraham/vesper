@@ -79,7 +79,7 @@ VESPER.BarChart = function(divid) {
 			.attr("class", "treeSVG")
 		;
 
-        var controls = d3.select(divid).select(".barChartControl");
+        var controls = d3.select(divid).select(".visControl");
         var noHashId = divid.substring (1);
         if (controls.empty()) {
             var butdiv = d3.select(divid).append("div")

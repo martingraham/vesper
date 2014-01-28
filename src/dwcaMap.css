@@ -1,0 +1,13 @@
+.vesperMapIcon {
+    text-align: right;
+    border: #888 solid 1px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.vesperMapIcon div {
+    height: 20px;
+    font-weight: bold;
+    padding: 0px 2px 0px 2px;
+    overflow: hidden;
+}

@@ -467,7 +467,13 @@ VESPER.DWCAParser = new function () {
             var rec = tsvData[n];
 
             if (rec !== undefined) {
+                var trace = false;
+                if (rec[0] === "22792") {
+                    console.log ("REC", rec);
+                    trace = true;
+                }
                 var lastData = undefined;
+                var lastId = undefined;
                 var path = [];
 
                 for (var r = 0; r < rLen; r++) {
@@ -501,6 +507,7 @@ VESPER.DWCAParser = new function () {
                                 }
                             }
 
+
                             if (!treeObj[id]) {
                                 var rdata = [];
                                 rdata[idx] = id;
@@ -521,13 +528,20 @@ VESPER.DWCAParser = new function () {
                             if (!lastData) {
                                 rootObjs[id] = true;
                             }
+                            if (trace) {
+                                console.log ("trace", id, val, rankField, treeObj[id]);
+                            }
                             lastData = treeObj[id];
+                            lastId = id;
                         }
                     }
                 }
 
                 if (lastData) {
-                    addOriginalTo (lastData, jsonObj[rec[idx]], treeObj, rec[nameField], idx, fieldIndexer, nameField);
+                    if (trace) {
+                        console.log ("adding original", jsonObj[rec[idx]], rec[nameField]);
+                    }
+                    addOriginalTo (lastData, jsonObj[rec[idx]], treeObj, lastId /*rec[nameField]*/, idx, fieldIndexer, nameField);
                 }
             }
         }
@@ -629,10 +643,16 @@ VESPER.DWCAParser = new function () {
         var impTree;
         var expTree;
 
-        // TODO. monday. look for ways to generate both trees for data sets if present.
-		if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
+        var impTreePoss = VESPER.DWCAHelper.fieldListExistence (metaData, VESPER.DWCAParser.neccLists.impTaxonomy, true, undefined, true, true);
+        var expTreePoss = VESPER.DWCAHelper.fieldListExistence (metaData, VESPER.DWCAParser.neccLists.expTaxonomy, false, 2, true, true);
+        console.log ("TREE POS", impTreePoss, expTreePoss);
+
+        console.log ("MDR", metaData.coreRowType);
+		//if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
+        if (impTreePoss.match) {
 			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
-		} else if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Occurrence")) {
+		}
+        if (expTreePoss.match) {
             expTree = this.jsonTaxaObj2ExplicitJSONTree (jsonObj, rawData, coreFileData, metaData,
                 VESPER.DWCAParser.addOriginalAsSpecimenEntry
             );
@@ -656,6 +676,7 @@ VESPER.DWCAParser = new function () {
 
 	
 	this.setupStrucFromRows = function (theFileRows, metaData) {
+        console.log ("METADATA", metaData);
 		var struc = this.makeTreeFromAllFileRows (theFileRows, metaData);
         if (VESPER.alerts) { alert ("mem monitor point 2"); }
 
@@ -677,7 +698,7 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("STRUC", struc);
 
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        VESPER.log ("root", struc.impRoot, struc.expRoot);
+        console.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
         return struc;
 	};
 	

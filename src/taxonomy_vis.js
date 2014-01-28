@@ -37,10 +37,8 @@ VESPER.Tree = function (divid) {
 		"Alpha": function (a,b) { var n1 = model.getLabel(a), n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
 		"Descendants": function (a,b) {
-            var s1 = containsCount (a);
-            var s2 = containsCount (b);
-            s1 = s1 || 0;
-            s2 = s2 || 0;
+            var s1 = containsCount (a) || 0;
+            var s2 = containsCount (b) || 0;
             return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
 		},
         "Selected": function (a,b) {
@@ -50,48 +48,19 @@ VESPER.Tree = function (divid) {
             var sel2 = sModel.contains(model.getIndexedDataPoint (b,keyField));
             return (sel1 === sel2) ? 0 :  (sel1 === true ? -1 : 1);
         },
-        "Selected Desc": function (a,b) {
+        "SelectedDesc": function (a,b) {
             //console.log (a,b);
             var sel1 = a.sdcount;
             var sel2 = b.sdcount;
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
+    var sortOptionLabels = {"Alpha": "Label", "Descendants": "Size", "Selected": "Direct Selection", "SelectedDesc":"Selection Size"};
 
-    function tooltipString (node, model) {
-        var specs = model.getSpecimens(node);
-        var desc = model.getDescendantCount(node);
-        var sdesc = model.getSelectedDescendantCount(node);
-        var subt = model.getSubTaxa(node);
-
-        var tooltipStr = "";
-
-        for (var n = 0; n < ffields.length; n++) {
-            if (ffields[n]) {
-                tooltipStr += ((n > 0) ? "<br>" : "")+ffields[n].fieldType+": "+model.getIndexedDataPoint (node, ffields[n]);
-            }
-        }
-
-        tooltipStr += (subt === undefined ?
-                (specs ? "<hr>"+specs.length+" specimens" : "")
-                : "<hr>"+desc+" descendants")
-            + (sdesc > 0 ?
-                (subt === undefined ?
-                (specs ? "<br>"+sdesc+" selected specimens" : "")
-                : "<br>"+sdesc+" selected descendants")
-            : "")
-        ;
-
-        var syn = model.getSynonyms(node);
-        if (syn) {
-            tooltipStr += "<hr><i>Synonymy</i>";
-            for (var n = 0; n < syn.length; n++) {
-               tooltipStr += "<br>" + model.getIndexedDataPoint(syn[n], keyField)+": "+model.getLabel (syn[n]);
-            }
-        }
-
+    this.tooltipString = function () {
+        var tooltipStr = "Placeholder";
         return tooltipStr;
-    }
+    };
 
 
     var spaceAllocationOptions = {
@@ -120,7 +89,7 @@ VESPER.Tree = function (divid) {
     var spaceAllocationLabels = {"bottomUp": "Bottom Up", "bottomUpLog": "Bottom Up Log", "topDown": "Top Down"};
 
     function patternFill (nodeId) {
-        if (nodeId !== undefined && nodeId.charAt(0) == '*') {
+        if (nodeId !== undefined && nodeId.charAt(0) === '*') {
             //return "#000";
             return ("url(#"+patternID+")");
         }
@@ -358,6 +327,7 @@ VESPER.Tree = function (divid) {
                 var prop = 0;
                 var containCount = containsCount (node);
                 if (containCount > 0 && node.sdcount > 0) {
+                    //console.log (node, node.dcount, node.sdcount);
                     prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
                     prop *= prop; // square cos area of ring is square of radius
                 }
@@ -491,6 +461,7 @@ VESPER.Tree = function (divid) {
     };
 
     var layoutOptions = {Icicle: partitionLayout, Sunburst: sunburstLayout};
+    var layoutOptionLabels = {Icicle:"Left to right", Sunburst: "Centre out"};
 
     this.set = function (fields, mmodel) {
         ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
@@ -554,7 +525,7 @@ VESPER.Tree = function (divid) {
         var vals = model.getSelectionModel().values();
         var root = (vals.length === 1) ? getNode(vals[0]) : self.getRoot(model);
         if (root === undefined) {
-            VESPER.log ("no root defined for tree", self.getRoot());
+            console.log ("no root defined for tree", self.getRoot(model), root, vals);
             return;
         }
 
@@ -591,8 +562,8 @@ VESPER.Tree = function (divid) {
         VESPER.DWCAHelper.addDragArea (cpanel);
 
         MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Layout Style", "sectionID":"Layout"},
-                {"header":"Sort", sectionID:"Sort"}],
+            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Orientation", "sectionID":"Layout"},
+                {"header":"Sort By", sectionID:"Sort"}],
         "section");
 
         //var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
@@ -657,7 +628,7 @@ VESPER.Tree = function (divid) {
         ;
         lHolders.append ("label")
             .attr("for", function(d) { return noHashID+ d.key; })
-            .html (function(d) { return d.key; })
+            .html (function(d) { return layoutOptionLabels[d.key]; })
         ;
 
         /*
@@ -689,7 +660,7 @@ VESPER.Tree = function (divid) {
         ;
         sHolders.append ("label")
             .attr("for", function(d) { return noHashID+ d.key; })
-            .html (function(d) { return d.key; })
+            .html (function(d) { return sortOptionLabels[d.key]; })
         ;
 
         $("#"+noHashID+"controls").draggable();
@@ -777,7 +748,8 @@ VESPER.Tree = function (divid) {
     // suitable root is first node who has more than one child either holding selected descendants or is selected
     function firstBranch (node) {
         var nid = model.getIndexedDataPoint (node, keyField);
-        if (node.sdcount == undefined || node.sdcount == 0 || model.getSelectionModel().contains (nid)) {
+        //if (node.sdcount == undefined || node.sdcount == 0 || model.getSelectionModel().contains (nid)) {
+        if (!node.sdcount || model.getSelectionModel().contains (nid)) {
             return node;
         }
         var children = model.getSubTaxa (node);
@@ -856,7 +828,7 @@ VESPER.Tree = function (divid) {
             d3.select(this).selectAll("*").classed("highlight", true);
             //handle mouse over
             var node = getNode (d.id) /*d*/;
-            var val = tooltipString (node, model);
+            var val = self.tooltipString (node, model, ffields);
             VESPER.tooltip.updateText (model.getLabel(node), val);
             VESPER.tooltip.updatePosition (d3.event);
         })
@@ -914,14 +886,83 @@ VESPER.ImplicitTaxonomy = function (div) {
     tree.getRoot = function (mod) {
         return mod.getImplicitRoot();
     };
+    tree.tooltipString = function (node, model, ffields) {
+        var desc = model.getDescendantCount(node);
+        var sdesc = model.getSelectedDescendantCount(node);
+        var subt = model.getSubTaxa(node);
+
+        var tooltipStr = "";
+
+        for (var n = 0; n < ffields.length; n++) {
+            if (ffields[n]) {
+                tooltipStr += ((n > 0) ? "<br>" : "")+ffields[n].fieldType+": "+model.getIndexedDataPoint (node, ffields[n]);
+            }
+        }
+
+        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" total subtaxa")
+            + (sdesc > 0 ?
+                (subt === undefined ? "" : "<br>"+sdesc+" selected total subtaxa")
+            : "")
+        ;
+
+        var syn = model.getSynonyms(node);
+        if (syn) {
+            tooltipStr += "<hr><i>Synonymy</i>";
+            for (n = 0; n < syn.length; n++) {
+                tooltipStr += "<br>" + model.getIndexedDataPoint(syn[n], ffields[0])+": "+model.getLabel (syn[n]);
+            }
+        }
+
+        return tooltipStr;
+    };
     return tree;
 };
 
 VESPER.ExplicitTaxonomy = function (div) {
     var tree = new VESPER.Tree (div);
     tree.type = "expTree";
+    tree.sepArray = ["<hr>", "<br>"];
     tree.getRoot = function (mod) {
+        console.log ("MODEL", mod, mod.getExplicitRoot());
         return mod.getExplicitRoot();
+    };
+    tree.tooltipString = function (node, model, ffields) {
+        var specs = model.getSpecimens(node);
+        var desc = model.getDescendantCount(node);
+        var sdesc = model.getSelectedDescendantCount(node);
+        var subt = model.getSubTaxa(node);
+
+        var tooltipStr = "";
+
+        for (var n = 0; n < ffields.length; n++) {
+            if (ffields[n]) {
+                tooltipStr += ((n > 0) ? "<br>" : "")+ffields[n].fieldType+": "+model.getIndexedDataPoint (node, ffields[n]);
+            }
+        }
+
+        if (node.value) {
+            tooltipStr += "<hr>Contains "+node.value+" specimen"+(node.value !== 1 ? "s" : "");
+        }
+
+        var si = 0;
+        if (/*subt === undefined &&*/ specs) {
+            if (sdesc < specs.length) {
+                tooltipStr += tree.sepArray[si++]+specs.length+" immediate specimen"+(specs.length !== 1 ? "s" : "");
+            }
+            if (sdesc > 0) {
+                tooltipStr += tree.sepArray[si]+sdesc+" immediate selected specimen"+(sdesc !== 1 ? "s" : "");
+            }
+        }
+
+        var specsYes = (/*subt === undefined &&*/ specs);
+        if (specsYes) {
+            for (n = 0; n < Math.min(specs.length, 5); n++) {
+                var spec = specs[n];
+                tooltipStr += "<br>" + model.getIndexedDataPoint(spec, ffields[0])+", "+model.getLabel(spec);
+            }
+        }
+
+        return tooltipStr;
     };
     return tree;
 };
