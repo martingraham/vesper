@@ -12,6 +12,8 @@ VESPER.VisLauncher = function (divid, options) {
     var self = this;
     var keyField, dims, choiceData;
 
+    this.title = "Controls";
+
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
         choiceData = fields.visChoiceData;
@@ -26,6 +28,13 @@ VESPER.VisLauncher = function (divid, options) {
         showButtons (buttonVisBlockSel);
         setSelectionOps ();
         setModelCompareOps ();
+
+        $(function() {
+            $(divid).accordion({
+                heightStyle: "content",
+                collapsible: true
+            });
+        });
 
         if (options && options.autoLaunch === "on") {
             for (var n = 0; n < choiceData.length; n++) {
@@ -54,8 +63,10 @@ VESPER.VisLauncher = function (divid, options) {
     }
 
     function setVisChoices (data) {
-        MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Launch Visualisation", "sectionID":"Vis", "init":"none"}], "encloser");
-        var visChoices = d3.select(divid).select(divid+"Vis").selectAll("button").data (data);
+       // MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Launch Visualisation", "sectionID":"Vis", "init":"none"}], "encloser");
+        d3.select(divid).append("H3").text("Launch Visualisation");
+       // var visChoices = d3.select(divid).select(divid+"Vis").selectAll("button").data (data);
+        var visChoices = d3.select(divid).append("div").attr("id", divid+"Vis").selectAll("button").data (data);
 
         var buttons = visChoices.enter()
             .append ("button")
@@ -78,8 +89,11 @@ VESPER.VisLauncher = function (divid, options) {
     }
 
     function setSelectionOps () {
-        MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
-        var encloser = d3.select(divid).select(divid+"Sel");
+        //MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
+        //var encloser = d3.select(divid).select(divid+"Sel");
+
+        d3.select(divid).append("H3").text("Current Selections");
+        var encloser = d3.select(divid).append("div").attr("id", divid+"Sel");
 
         encloser.append("button")
             .attr ("type", "button")
@@ -121,8 +135,10 @@ VESPER.VisLauncher = function (divid, options) {
 
 
     function setModelCompareOps () {
-        var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
+        d3.select(divid).append("H3").text("Taxonomy Comparison");
+        var encloser = d3.select(divid).append("div").attr("id", divid+"TComp");
+        //var encloser = d3.select(divid).append("div").attr("class", "encloser");
+        //encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
         var basicText = "Compare This";
 
         encloser.append("button")
@@ -270,4 +286,6 @@ VESPER.VisLauncher = function (divid, options) {
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divid);
     };
+
+
 };

@@ -1,0 +1,11 @@
+.extDetailTable th {
+    background: #d0d0d0;
+}
+
+.detailTable td, .synTable td, .extDetailTable td {
+    border: 1px solid white;
+}
+
+.detailTable tr:nth-child(2n+1), .synTable tr:nth-child(2n+1) {
+    background: #d0d0d0;
+}

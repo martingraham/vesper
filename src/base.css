@@ -21,6 +21,22 @@ DIV .vis {
 }
 
 
+.ui-accordion-header {
+    font-family: "Gill Sans MT",Georgia,Arial;
+}
+
+.ui-accordion DIV.ui-accordion-content {
+    font-family: "Gill Sans MT",Georgia,Arial;
+    padding: 10px 5px;
+    text-align: center;
+}
+
+.ui-accordion DIV.ui-accordion-content button {
+    font-family: "Gill Sans MT",Georgia,Arial;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* top svg element for each visualisation, makes it fill available space
 	and 'hidden' stops ie9 drawing child elements that lie outside the svg bounds */
 .visContainer {
@@ -79,6 +95,7 @@ DIV .vis {
     width: 16px;
     margin-right: 2px;
     text-align: center;
+    padding: 0;
     display: inline-block;
 }
 
@@ -129,4 +146,9 @@ DIV.encloser {
 
 .taxonomyCompareActive {
     background: yellow;
+}
+
+.vesperWarning {
+    font-weight: bold;
+    color: #ff8800;
 }

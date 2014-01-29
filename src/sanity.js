@@ -166,10 +166,8 @@ VESPER.Sanity = function(divid) {
         var selVisComplete = calcVisBasedSanity (selectedFilter);
         var selFieldsComplete = calcFieldBasedSanity (selectedFilter);
 
-        console.log ("RES4", selVisComplete, selFieldsComplete);
         var testOutputs = allVisComplete.outputs;
         var oc = allVisComplete.dataCount;
-        var cellOrder, cellClasses;
 
         // merge static and selected counts
         for (var n = 0; n < testOutputs.length; n++) {
@@ -225,7 +223,7 @@ VESPER.Sanity = function(divid) {
             table.remove();
         }
 
-        function popTable (rows, cellFiller, processors)  {
+        function popTable (rows, cellFiller)  {
             rows.exit().remove();
 
             rows.enter()
@@ -258,30 +256,28 @@ VESPER.Sanity = function(divid) {
                 return d.value.toString() + (isNaN(d.value) || pcVal === undefined ? "" : " ("+ pcFormat (pcVal)+ ")") ;
             }
 
-            if (cells.select("img").empty()) {
-                cells.append("img").attr("class", "sanityBarFail").attr("src", VESPER.imgbase+"blackpixel.gif");
-                cells.append("img").attr("class", "sanityBarOK").attr ("src", VESPER.imgbase+"whitepixel.gif");
-                cells.selectAll("img")
-                    .attr("height", 10)
+
+            if (cells.select("div").empty()) {
+                cells.append("div").attr("class", function(d,i) {
+                    var barClass = (processors[i].func === getSelPC) ? "selected" : "unselected";
+                    return barClass;
+                });
+                cells.selectAll("div")
+                    .style("height", "10px")
                 ;
             }
-            cells.select("img.sanityBarFail")
-                .attr ("width", function(d,i) {
+
+            cells.select("div")
+                .style ("width", function(d,i) {
                     var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
-                    return isNaN(d.value) ? 0 : Math.min (maxBarWidth, pcVal * maxBarWidth);
-                })
-            ;
-            cells.select("img.sanityBarOK")
-                .attr ("width", function(d,i) {
-                    var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
-                    return isNaN(d.value) ? 0 : Math.min (maxBarWidth, maxBarWidth - (pcVal * maxBarWidth));
+                    return isNaN(d.value) ? 0 : Math.min (maxBarWidth, pcVal * maxBarWidth) + "px";
                 })
             ;
 
-            if (cells.select("span").empty()) {
-                cells.append("span");
+            if (cells.select("span.sanityBarText").empty()) {
+                cells.append("span").attr("class", "sanityBarText");
             }
-            cells.select("span").text (dstring);
+            cells.select("span.sanityBarText").text (dstring);
             cells.attr ("title", dstring);
         }
 
@@ -291,27 +287,27 @@ VESPER.Sanity = function(divid) {
         function getSelPC (val) { return selectedSize > 0 ? val / selectedSize : 0; }
 
         // Check missing data by vis type
-        var sTable = createTable ("visSanityTests", ["Vis Type", "Some fields missing", "All fields missing", "Some fields missing (sel)", "All fields missing (sel)"]);
+        var sTable = createTable ("visSanityTests", ["Vis Type", "Partial records", "No records", "Partial records (sel)", "No records (sel)"]);
         var processors = [{name:"listName", func:getOrig, klass:"showSanityText"}, {name:"some", func:getAllPC, klass:"dontShowSanityText"}, {name:"all", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selSome", func:getSelPC, klass:"dontShowSanityText"}, {name:"selAll", func:getSelPC, klass:"dontShowSanityText"}
         ];
-        popTable (sTable.selectAll("tr.sanityRow").data(testOutputs), fillCells, processors);
+        popTable (sTable.selectAll("tr.sanityRow").data(testOutputs), fillCells);
 
 
         // Check missing data by field type
         if (!$.isEmptyObject(allFieldsComplete)) {
-            sTable = createTable ("fieldSanityTests", ["Record Type", "Field Type", "Fields missing", "Fields missing (sel)"]);
+            sTable = createTable ("fieldSanityTests", ["Record Type", "Field Type", "No value", "No value (sel)"]);
             processors = [{name:"recordType", func:getOrig, klass:"showSanityText"}, {name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selCount", func:getSelPC, klass:"dontShowSanityText"}
             ];
-            popTable (sTable.selectAll("tr.sanityRow").data(d3.values(allFieldsComplete)), fillCells, processors);
+            popTable (sTable.selectAll("tr.sanityRow").data(d3.values(allFieldsComplete)), fillCells);
         }
 
         // Check fields with controlled vocabularies
         if (!$.isEmptyObject(vocabCounts)) {
             sTable = createTable ("vocabSanityTests", ["Field Type", "Vocabulary Size"]);
             processors = [{name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getOrig, klass:"showSanityText"}];
-            popTable (sTable.selectAll("tr.sanityRow").data(d3.values(vocabCounts)), fillCells, processors);
+            popTable (sTable.selectAll("tr.sanityRow").data(d3.values(vocabCounts)), fillCells);
         } else {
             eraseTable ("vocabSanityTests");
         }

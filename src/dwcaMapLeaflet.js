@@ -34,11 +34,14 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     var oldIcon = new L.Icon.Default();
 
+    var dFormat = d3.format(".6r");
+
     // what a markercluster does when the mouse is over it
     var clusterMouseOverListener = function (a) {
-        VESPER.tooltip.updateText (a.latlng,
-            a.layer.getChildCount()+" Records"
-                +(a.layer.getSelectedChildCount() > 0 ? "<br>" + a.layer.getSelectedChildCount()+' Selected' : ""));
+        VESPER.tooltip.updateText (a.layer.getChildCount()+" Records",
+            (a.layer.getSelectedChildCount() > 0 ? a.layer.getSelectedChildCount()+' Selected<br>' : "")
+            + dFormat(a.latlng.lat)+" Lat<br>"+dFormat(a.latlng.lng)+" Long"
+        );
         VESPER.tooltip.updatePosition (a.originalEvent);
     };
 
@@ -174,7 +177,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
                         unselHeight = 0;
                     }
 
-                    return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px">' + cluster.getChildCount() + '</div>'
+                    return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px;">' + cluster.getChildCount() + '</div>'
                             +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
                         className: 'vesperMapIcon',
                         iconSize: new L.Point(40, height)
@@ -283,7 +286,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         //VESPER.log ("MGROUP COUNT: ", markerGroup._topClusterLevel.getChildCount());
 
 		//if (map.hasLayer (markerGroup)) {
-        if (markerGroup !== undefined) {
+        if (markerGroup) {
             recalcHeightMultiplier ();
 
             markerGroup.eachLayer (function(layer) {

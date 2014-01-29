@@ -111,13 +111,13 @@ div.leftColumn {
 }
 
 button[type="button"] {
-    width: 110px;
+    width: 130px;
     white-space: normal;
     font-family: "Gill Sans MT", Georgia, Arial;
 }
 
 button[type="button"].load {
-    width: 110px;
+    width: 130px;
     white-space: normal;
     font-weight: bold;
 }

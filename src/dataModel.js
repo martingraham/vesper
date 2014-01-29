@@ -88,6 +88,11 @@ VESPER.DWCAModel = function (metaData, data) {
         return node.sdcount;
     };
 
+    // All synonyms in the node and node subtaxa
+    this.getSynonymCount = function (node) {
+        return node.syncount;
+    };
+
     this.getLeafValue = function (node) {
         var s = this.getSpecimens(node);
         return s ? s.length : 1;

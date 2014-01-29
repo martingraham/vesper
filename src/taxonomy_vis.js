@@ -847,25 +847,31 @@ VESPER.Tree = function (divid) {
     function selectSubTree (node) {
         model.getSelectionModel().clear();
         var ids = [];
-        selectSubTreeR (node, ids);
+        selectSubTreeR (node, ids, true);
         model.getSelectionModel().addAllToMap(ids);
     }
 
-    function selectSubTreeR (node, ids) {
+    function selectSubTreeR (node, ids, recurse) {
         //var id = model.getTaxaData(node)[keyField];
         var id = model.getIndexedDataPoint (node, keyField);
         ids.push(id);
 
         var taxa = model.getSubTaxa (node);
-        if (taxa != undefined) {
+        if (taxa) {
             for (var n = 0; n < taxa.length; n++) {
-                selectSubTreeR (taxa[n], ids);
+                selectSubTreeR (taxa[n], ids, recurse);
             }
         }
         var specs = model.getSpecimens (node);
-        if (specs != undefined) {
+        if (specs) {
             for (var n = 0; n < specs.length; n++) {
-                selectSubTreeR (specs[n], ids);
+                selectSubTreeR (specs[n], ids, recurse);
+            }
+        }
+        var syns = model.getSynonyms (node);
+        if (syns) {
+            for (var n = 0; n < syns.length; n++) {
+                selectSubTreeR (syns[n], ids, false);
             }
         }
     }
@@ -887,6 +893,7 @@ VESPER.ImplicitTaxonomy = function (div) {
         return mod.getImplicitRoot();
     };
     tree.tooltipString = function (node, model, ffields) {
+        console.log ("tooltip node", node);
         var desc = model.getDescendantCount(node);
         var sdesc = model.getSelectedDescendantCount(node);
         var subt = model.getSubTaxa(node);
@@ -905,9 +912,14 @@ VESPER.ImplicitTaxonomy = function (div) {
             : "")
         ;
 
+        var synCount = model.getSynonymCount (node);
+        if (synCount) {
+            tooltipStr+="<br>Contains "+synCount+" Synonyms";
+        }
+
         var syn = model.getSynonyms(node);
         if (syn) {
-            tooltipStr += "<hr><i>Synonymy</i>";
+            tooltipStr += "<hr><i>Taxon Synonymy</i>";
             for (n = 0; n < syn.length; n++) {
                 tooltipStr += "<br>" + model.getIndexedDataPoint(syn[n], ffields[0])+": "+model.getLabel (syn[n]);
             }
@@ -923,10 +935,10 @@ VESPER.ExplicitTaxonomy = function (div) {
     tree.type = "expTree";
     tree.sepArray = ["<hr>", "<br>"];
     tree.getRoot = function (mod) {
-        console.log ("MODEL", mod, mod.getExplicitRoot());
         return mod.getExplicitRoot();
     };
     tree.tooltipString = function (node, model, ffields) {
+        console.log ("tooltip node", node);
         var specs = model.getSpecimens(node);
         var desc = model.getDescendantCount(node);
         var sdesc = model.getSelectedDescendantCount(node);

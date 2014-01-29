@@ -3,8 +3,10 @@ VESPER.FilterView = function (divID) {
     var model;
     var self = this;
     var typeAhead = true;
+    var keyField;
 
     this.set = function (fields, mmodel) {
+        keyField = fields.identifyingField;
         model = mmodel;
     };
 
@@ -56,10 +58,8 @@ VESPER.FilterView = function (divID) {
         ;
     }
 	
-	
-	this.update = function () {
 
-	};
+	this.update = function () {};
 
     this.updateVals = this.update;
 
@@ -76,91 +76,93 @@ VESPER.FilterView = function (divID) {
 VESPER.modelBag = [];
 
 
-VESPER.SelectedView = function (divID) {
+VESPER.RecordDetails = function (divID) {
 
     var idField = "mappedRowType";
     var extDetailTable = "extDetailTable";
     var detailTable = "detailTable";
+
     var model;
     var self = this;
+    var curID;
+    var keyField;
 
 
     this.set = function (fields, mmodel) {
+        var ffields = mmodel.makeIndices ([fields.identifyingField]);
+        keyField = ffields[0];
         model = mmodel;
     };
 
 
     this.go = function () {
-        this.update ();
+        var divSel = d3.select(divID);
+        var recordInput = divSel.append("div");
+        var iid = divSel.attr("id")+"textinput";
+        recordInput.append("label")
+            .attr("for", iid)
+            .text ("Find Details for Record ID")
+        ;
+        recordInput.append("input")
+            .attr("type", "text")
+            .attr("id", iid)
+        ;
+        recordInput.append("span")
+            .attr ("class", "vesperWarning")
+            .text("No such record")
+            .style("display", "none")
+        ;
+
+
+        var rfield = divSel.select("input");
+        rfield
+            .on ("keyup", function() {
+                recordInput.select("span.vesperWarning").style("display","none");
+                if ((d3.event.keyCode | d3.event.charCode) === 13) {
+                    var val = d3.select(this).property("value");
+                    newID (val);
+                }
+            })
+        ;
     };
 
 
     this.update = function () {
-        var vals = model.getSelectionModel().values();
-        var taxon = (vals[0]);
+        var divSel = d3.select(divID);
 
-        var selectionStats = d3.select(divID).selectAll("p.summary").data([vals.length]);
-        selectionStats.enter()
-            .append("p")
-            .attr("class", "summary")
-        ;
-        selectionStats
-            .text (function(d) { return "Selected "+d+" item"+(d===1?"":"s")+"."; })
-        ;
-
-        if (taxon !== undefined) {
+        if (curID !== undefined) {
             //VESPER.log ("METADATA", metaData);
             var metaData = model.getMetaData();
             var fileData = metaData.fileData;
-            var node = model.getNodeFromID (taxon);
+            var node = model.getNodeFromID (curID);
 
-            var tableSel = d3.select(divID).select("."+detailTable);
-            if (tableSel.empty()) {
-                d3.select(divID).append("table")
-                    .attr("class", detailTable)
-                ;
-                tableSel = d3.select(divID).select("."+detailTable);
-            }
-
-            var table = tableSel.node();
-            table.innerHTML = '';
-
-            var trow = document.createElement ("tr");
-            var lcell = document.createElement ("th");
-            var vcell = document.createElement ("th");
-            lcell.innerHTML = "Field";
-            vcell.innerHTML = "Value";
-            trow.appendChild (lcell);
-            trow.appendChild (vcell);
-            table.appendChild (trow);
-
+            // Set up taxon data table
+            var tableSel = makeTableAndHeader (divSel, detailTable, ["Field", "Value"]);
             var tableData = [];
             var tInvFields = fileData[metaData.coreRowType].filteredInvFieldIndex;
-            VESPER.log ("TAXON", taxon, node);
             var tdata = model.getTaxaData(node);
             for (var n = 0; n < tdata.length; n++) {
                 if (tdata[n]) {
-                    tableData.push ({"field":tInvFields[n], "data":tdata[n]});
+                    tableData.push ([tInvFields[n], tdata[n]]);
                 }
             }
 
-
             var fieldBind = tableSel
-                    .selectAll("tr.nonHeader")
-                    .data(tableData)
-                ;
+                .selectAll("tr.nonHeader")
+                .data(tableData)
+            ;
+            fieldBind.exit().remove();
             addFieldData (fieldBind);
-
             var newFields =
-                    fieldBind.enter()
-                        .append ("tr")
-                        .attr ("class", "nonHeader")
-                ;
+                fieldBind.enter()
+                    .append ("tr")
+                    .attr ("class", "nonHeader")
+            ;
             addFieldData (newFields);
 
 
             var extKeys = d3.keys (model.getExtraData(node));
-            var extTablesSel = d3.select(divID).selectAll("table."+extDetailTable);
+            var extTablesSel = divSel.selectAll("table."+extDetailTable);
             var extTablesBind = extTablesSel.data (extKeys);
 
             extTablesBind
@@ -185,40 +187,88 @@ VESPER.SelectedView = function (divID) {
                 addExtHeader (model.getExtraData(node), extKeys[n], rowTypeMap[extKeys[n]], divID);
                 addExtData (model.getExtraData(node), extKeys[n], rowTypeMap[extKeys[n]], divID);
             }
+
+            // Synonymy table
+            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID", "Data"]);
+            var syns = model.getSynonyms(node);
+            tableData = [];
+            if (syns) {
+                for (var n = 0; n < syns.length; n++) {
+                    var syn = syns[n];
+                    tableData.push ([model.getIndexedDataPoint(syn, keyField), syn]);
+                }
+            }
+            synTablesSel.style("display", syns ? null : "none");
+
+            fieldBind = synTablesSel
+                .selectAll("tr.nonHeader")
+                .data(tableData)
+            ;
+            fieldBind.exit().remove();
+            addFieldData (fieldBind);
+            newFields =
+                fieldBind.enter()
+                    .append ("tr")
+                    .attr ("class", "nonHeader")
+            ;
+            addFieldData (newFields);
+            //addFieldData (fieldBind);
         }
 
-        d3.select(divID).selectAll("table").style("visibility", taxon === undefined ? "collapse" : "visible");
+        divSel.selectAll("table").style("visibility", curID === undefined ? "collapse" : "visible");
     };
 
     this.updateVals = this.update;
 
+    function makeTableAndHeader (under, tableClass, headerArray) {
+        var tableSel = under.select("."+tableClass);
+        if (tableSel.empty()) {
+            d3.select(divID).append("table")
+                .attr("class", tableClass)
+            ;
+            tableSel = d3.select(divID).select("."+tableClass);
+            var headers = tableSel.append("tr").selectAll("th").data(headerArray);
+            headers.enter().append("th").text(function(d) { return d; });
+        }
+        return tableSel;
+    }
+
+    function newID (val) {
+        if (model.getNodeFromID(val)) {
+            curID = val;
+            self.update();
+        } else {
+            d3.select(divID).select("div").select("span.vesperWarning").style("display", null);
+        }
+    }
+
+    function jumpToClick (d) {
+        if (d) {
+            d3.select(divID).select("input").property("value", d);
+            newID (d);
+        }
+    }
 
     function addFieldData (existOrNew) {
-        existOrNew
-            .append ("td")
-            .attr ("class", "field")
-            .text(function(d) { return d.field; })
-        ;
 
-        existOrNew
-            .append ("td")
-            .attr ("class", "value")
-            .each (addHrefIfNecc)
-        ;
+        var cells = existOrNew.selectAll("td").data(function(d) { return d; });
+        cells.enter().append("td");
+        cells.each(addHrefIfNecc).on("click", jumpToClick);
 
         function addHrefIfNecc (d) {
-            if (d.data.substring(0,7) === "http://") {
+            if (d.substring && d.substring(0,7) === "http://") {
                 d3.select(this).append ("a")
-                    .attr ("href", function(d) { return d.data; })
+                    .attr ("href", function(d) { return d; })
                     .attr ("target", "_blank")
-                    .text (function(d) { return d.data; })
+                    .text (function(d) { return d; })
                 ;
             } else {
                 d3.select(this).text(function(d) {
-                    return d.data;
+                    return d;
                 });
             }
         }
+
     }
 
 
@@ -292,7 +342,7 @@ VESPER.SelectedView = function (divID) {
 
     this.destroy = function () {
         VESPER.DWCAHelper.recurseClearEvents (d3.select(divID));
-
+        curID = undefined;
         model.removeView (self);
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divID);

@@ -29,15 +29,7 @@ td.dontShowSanityText span {
     display: none;
 }
 
-
-img.sanityBarFail, img.sanityBarOK {
-    border-style: solid none solid none;
-    border-color: #ccc;
-    border-width: 1px;
-    vertical-align: middle;
-}
-
-td.showSanityText img{
+td.showSanityText div {
     display: none;
 }
 
@@ -57,19 +49,3 @@ th {
     margin-left: 3px;
 }
 
-
-.extDetailTable td {
-    border: 1px solid gray;
-}
-
-.extDetailTable th {
-    background: #d0d0d0;
-}
-
-.detailTable td {
-    border: 1px solid gray;
-}
-
-.detailTable tr:nth-child(2n+1) {
-    background: #d0d0d0;
-}

@@ -329,7 +329,7 @@ VESPER.DWCAParser = new function () {
 
 		for (var n = 0, len = tsvData.length; n < len; n++) {
 			var rec = tsvData[n];
-            if (rec !== undefined) {
+            if (rec) {
                 var id = rec[idx];
                 jsonObj[id] = {};
                 jsonObj[id][this.TDATA] = rec;
@@ -360,12 +360,12 @@ VESPER.DWCAParser = new function () {
         // First pass. Add nodes with child ids to nodes with parent ids
 		for (var n = 0, len = tsvData.length; n < len; n++) {
 			var rec = tsvData[n];
-            if (rec !== undefined) {
+            if (rec) {
                 var id = rec[idx];
                 var pid = rec[hidx];
                 var pRec = jsonObj[pid];
 
-                if (pid !== id && pRec != undefined) {	// no self-ref loops and parent must exist
+                if (pid !== id && pRec) {	// no self-ref loops and parent must exist
                     // Make child taxa lists
                     addToArrayProp (pRec, VESPER.DWCAParser.TAXA, jsonObj[id]);
                 }
@@ -375,7 +375,7 @@ VESPER.DWCAParser = new function () {
         // Second pass. Get synonyms and attach them and any existing children to the proper name node.
         for (var n = 0, len = tsvData.length; n < len; n++) {
             var rec = tsvData[n];
-            if (rec !== undefined) {
+            if (rec) {
                 var id = rec[idx];
                 var pid = rec[hidx];
                 var pRec = jsonObj[pid];
@@ -383,9 +383,9 @@ VESPER.DWCAParser = new function () {
                 if (pRec == undefined) {
                     // Make synonym lists
                     var aid = rec[aidx];
-                    if (id !== aid && aid !== undefined) {
+                    if (aid && id !== aid) {
                         var aRec = jsonObj[aid];
-                        if (aRec != undefined) {
+                        if (aRec) {
                             var sRec = jsonObj[id];
                             addToArrayProp (aRec, VESPER.DWCAParser.SYN, sRec);
                             var sChildren = sRec[VESPER.DWCAParser.TAXA];
@@ -407,6 +407,9 @@ VESPER.DWCAParser = new function () {
                             }
 
                             //delete jsonObj[id];
+                        }
+                        else {
+                            console.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
                         }
                     }
                 }
@@ -466,7 +469,7 @@ VESPER.DWCAParser = new function () {
         for (var n = 0, len = tsvData.length; n < len; n++) {
             var rec = tsvData[n];
 
-            if (rec !== undefined) {
+            if (rec) {
                 var trace = false;
                 if (rec[0] === "22792") {
                     console.log ("REC", rec);
@@ -608,13 +611,13 @@ VESPER.DWCAParser = new function () {
 			for (var i = 0, len = extRowData.length; i < len; i++) {
 				var dataRow = extRowData [i];
 
-                if (dataRow !== undefined) {
+                if (dataRow) {
                     var coreid = dataRow[coreIDIndex];
 
                     if (coreid != undefined) {
                         var jsonins = jsonData[coreid];
 
-                        if (jsonins != undefined) {
+                        if (jsonins) {
                             if (! jsonins[this.EXT]) {
                                 jsonins[this.EXT] = [];
                             }
@@ -684,14 +687,16 @@ VESPER.DWCAParser = new function () {
             struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             VESPER.log ("root", struc.impRoot);
             if (struc.impRoot) {
-                this.countDescendants (struc.impRoot);
+                this.recursiveCount (struc.impRoot, "dcount", VESPER.DWCAParser.SPECS, 1);
+                this.recursiveCount (struc.impRoot, "syncount", VESPER.DWCAParser.SYN, 0);
             }
         }
 
         if (struc.expTree) {
             struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             if (struc.expRoot) {
-                this.countDescendants (struc.expRoot);
+                this.recursiveCount (struc.expRoot, "dcount", VESPER.DWCAParser.SPECS, 1);
+                this.recursiveCount (struc.expRoot, "spcount", VESPER.DWCAParser.SPECS, 0);
             }
         }
 
@@ -714,7 +719,7 @@ VESPER.DWCAParser = new function () {
 					var taxon = jsonObj[taxonProp];
 					var rec = taxon[this.TDATA];
 
-                    if (rec !== undefined) {
+                    if (rec) {
                         var id = rec[idx];
                         var aid = rec[aidx];
                         var pid = rec[hidx];
@@ -777,18 +782,23 @@ VESPER.DWCAParser = new function () {
         jsonObj[superrootID] = srObj;  // add it to the json obj so it gets treated like a node everywhere else
 		return srObj;	
 	};
-	
-	
-	/* Recursively counts descendants, starting from a given taxon (usually root) */
-	this.countDescendants = function (taxon) {
-		if (taxon[this.TAXA] != undefined) {
-            taxon.dcount = 0;
-			for (var n = 0; n < taxon[this.TAXA].length; n++) {
-				taxon.dcount += this.countDescendants (taxon[this.TAXA][n]);
-			}
-		}
-		return (taxon.dcount || (taxon[VESPER.DWCAParser.SPECS] ? taxon[VESPER.DWCAParser.SPECS].length : 0)) + 1;
-	};
+
+
+    /*
+    recursively count a field size in the taxonomy
+    countField is the array that's being counted
+    storeField is where the count is stored
+    inc is usually 1 or 0, 1 means each recursion adds to the count, 0 means it doesn't
+     */
+    this.recursiveCount = function (taxon, storeField, countField, inc) {
+        if (taxon[this.TAXA]) {
+            taxon[storeField] = 0;
+            for (var n = 0; n < taxon[this.TAXA].length; n++) {
+                taxon[storeField] += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
+            }
+        }
+        return ((taxon[storeField] ? taxon[storeField] : 0) /*||*/ + (taxon[countField] ? taxon[countField].length : 0)) + inc;
+    };
 
 
 	
