@@ -9,8 +9,9 @@
     "d3":"~3.0",
     "leaflet":"~0.7.0",
     "leaflet-draw": "~0.2.2",
-    "leaflet.markercluster": "~1.0",
-    "jszip":"git://github.com/martingraham/jszip.git#master"
+    "leaflet.markercluster": "~0.4",
+    "jszip":"git://github.com/martingraham/jszip.git#master",
+    "naplib":"git://github.com/martingraham/naplib.git#master"
   },
   "devDependencies": {
       "grunt": "~0.4.1",

@@ -39,6 +39,22 @@ DIV .vis {
 }
 
 
+.ui-accordion-header {
+    font-family: "Gill Sans MT",Georgia,Arial;
+}
+
+.ui-accordion DIV.ui-accordion-content {
+    font-family: "Gill Sans MT",Georgia,Arial;
+    padding: 10px 5px;
+    text-align: center;
+}
+
+.ui-accordion DIV.ui-accordion-content button {
+    font-family: "Gill Sans MT",Georgia,Arial;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* top svg element for each visualisation, makes it fill available space
 	and 'hidden' stops ie9 drawing child elements that lie outside the svg bounds */
 .visContainer {
@@ -97,6 +113,7 @@ DIV .vis {
     width: 16px;
     margin-right: 2px;
     text-align: center;
+    padding: 0;
     display: inline-block;
 }
 
@@ -147,6 +164,11 @@ DIV.encloser {
 
 .taxonomyCompareActive {
     background: yellow;
+}
+
+.vesperWarning {
+    font-weight: bold;
+    color: #ff8800;
 }
 
 .vesperMapIcon {
@@ -275,13 +297,13 @@ div.leftColumn {
 }
 
 button[type="button"] {
-    width: 110px;
+    width: 130px;
     white-space: normal;
     font-family: "Gill Sans MT", Georgia, Arial;
 }
 
 button[type="button"].load {
-    width: 110px;
+    width: 130px;
     white-space: normal;
     font-weight: bold;
 }
@@ -437,6 +459,17 @@ div.buttonBank {
     margin: 2px 8px;
     font-weight: bold;
 }
+.extDetailTable th {
+    background: #d0d0d0;
+}
+
+.detailTable td, .synTable td, .extDetailTable td {
+    border: 1px solid white;
+}
+
+.detailTable tr:nth-child(2n+1), .synTable tr:nth-child(2n+1) {
+    background: #d0d0d0;
+}
 .sanityHeader {
     font-size: 16pt;
     padding: 0px 2px;
@@ -468,15 +501,7 @@ td.dontShowSanityText span {
     display: none;
 }
 
-
-img.sanityBarFail, img.sanityBarOK {
-    border-style: solid none solid none;
-    border-color: #ccc;
-    border-width: 1px;
-    vertical-align: middle;
-}
-
-td.showSanityText img{
+td.showSanityText div {
     display: none;
 }
 
@@ -496,22 +521,6 @@ th {
     margin-left: 3px;
 }
 
-
-.extDetailTable td {
-    border: 1px solid gray;
-}
-
-.extDetailTable th {
-    background: #d0d0d0;
-}
-
-.detailTable td {
-    border: 1px solid gray;
-}
-
-.detailTable tr:nth-child(2n+1) {
-    background: #d0d0d0;
-}
 
 .vesperTooltip {
     position: absolute;
