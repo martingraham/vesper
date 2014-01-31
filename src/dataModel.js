@@ -80,17 +80,41 @@ VESPER.DWCAModel = function (metaData, data) {
         return node[VESPER.DWCAParser.SPECS];
     };
 
+
+    // Recursive count getters
     this.getDescendantCount = function (node) {
         return node.dcount;
     };
 
-    this.getSelectedDescendantCount = function (node) {
-        return node.sdcount;
-    };
-
     // All synonyms in the node and node subtaxa
     this.getSynonymCount = function (node) {
-        return node.syncount;
+        return node.syncount || (this.getSynonyms(node) ? this.getSynonyms(node).length : 0);
+    };
+
+    // All specimens in the node and node subtaxa
+    this.getSpecimenCount = function (node) {
+        //console.log ("this", this);
+        return node.spcount || (this.getSpecimens(node) ? this.getSpecimens(node).length : 0);
+    };
+
+    this.getObjectCount = function (node) {
+        return (node.dcount || 0) + this.getSynonymCount(node) + this.getSpecimenCount(node);
+    };
+
+    this.getSelectedDescendantCount = function (node) {
+        return node.Sdcount;
+    };
+
+    this.getSelectedSynonymCount = function (node) {
+        return node.Ssyncount;
+    };
+
+    this.getSelectedSpecimenCount = function (node) {
+        return node.Sspcount;
+    };
+
+    this.getSelectedObjectCount = function (node) {
+        return (node.Sdcount || 0) + (node.Ssyncount || 0) + (node.Sspcount || 0);
     };
 
     this.getLeafValue = function (node) {
@@ -201,26 +225,44 @@ VESPER.DWCAModel = function (metaData, data) {
     };
 
     this.countSelectedDesc = function (taxon, idField) {
+        //var stopwatch = {base: 0};
+        //MGNapier.NapVisLib.resetStopwatch (stopwatch);
+        this.countSelectedDescNew (taxon, idField);
+        //console.log ("new", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+    };
+
+
+    this.countSelectedDescNew = function (taxon, idField) {
+        this.doSelectCount (taxon, idField, "Sdcount", this.getSubTaxa, this.getDescendantCount);
+        this.doSelectCount (taxon, idField, "Ssyncount", this.getSynonyms, this.getSynonymCount);
+        this.doSelectCount (taxon, idField, "Sspcount", this.getSpecimens, this.getSpecimenCount);
+    };
+
+    // need to figure this out...
+    this.doSelectCount = function (taxon, idField, countField, func, totFunc) {
         var taxa = this.getSubTaxa (taxon);
-        var spec = this.getSpecimens (taxon);
+        var countables = func ? func (taxon) : undefined;
+        var maxPossible = totFunc ? totFunc.call (this, taxon) : 0;
+        var len = (countables ? countables.length : 0);
+        var c = 0;
 
-        if (taxa || spec) {
-            taxon.sdcount = 0;
+        if (maxPossible || len) { // no point testing for selections if no selectable objects beneath this point
 
-            if (taxa) {
+            if (len) {
+                for (var n = len; --n >= 0;) {
+                    c += this.getSelectionModel().contains (this.getIndexedDataPoint (countables[n], idField)) ? 1 : 0;
+                }
+            }
+            if (maxPossible > len) {  // no point burrowing further down the tree if maxpossible is zero
                 for (var n = taxa.length; --n >= 0;) {
-                    taxon.sdcount += this.countSelectedDesc (taxa[n], idField);
+                    c += this.doSelectCount (taxa[n], idField, countField, func, totFunc);
                 }
             }
 
-            if (spec) {
-                for (var n = spec.length; --n >= 0;) {
-                    taxon.sdcount += this.getSelectionModel().contains (this.getIndexedDataPoint (spec[n], idField)) ? 1 : 0;
-                }
-            }
+            taxon[countField] = c;
         }
 
-        return (taxon.sdcount || 0) + ((this.getSelectionModel().contains (this.getIndexedDataPoint (taxon, idField)) ? 1 : 0));
+        return c || 0;
     };
 
     this.data = data;

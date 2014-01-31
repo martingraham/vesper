@@ -6,9 +6,9 @@
  * To change this template use File | Settings | File Templates.
  */
 
-VESPER.Filters = new function () {
+VESPER.Filters = (function () {
 
-    this.filter2 = function (model, searchTerms, regex) {
+    this.nameLabelFilter = function (model, regex) {
         VESPER.log ("regex", regex);
         var metaData = model.getMetaData();
         var nameLabel = metaData.vesperAdds.nameLabelField;
@@ -28,7 +28,7 @@ VESPER.Filters = new function () {
             }
 
             if (rowRecords) {
-                for (var n = 0; n < rowRecords.length; n++) {
+                for (var n = rowRecords.length; --n >= 0;) {
                     var name = rowRecords[n][nameIndex];
                     if (name && name.match (regex) != null) {
                         return true;
@@ -45,4 +45,6 @@ VESPER.Filters = new function () {
         model.getSelectionModel().setUpdating (false);
         return count;
     };
-}();
+
+    return this;
+}());

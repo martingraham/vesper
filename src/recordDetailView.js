@@ -52,7 +52,7 @@ VESPER.FilterView = function (divID) {
             .on ("keyup", function() {
                 if (typeAhead || (d3.event.keyCode | d3.event.charCode) === 13) {
                     model.getSelectionModel().clear();
-                    /*var count = */VESPER.Filters.filter2 (model, null, d3.select(this).property("value"));
+                    /*var count = */VESPER.Filters.nameLabelFilter (model, d3.select(this).property("value"));
                 }
             })
         ;
@@ -189,13 +189,13 @@ VESPER.RecordDetails = function (divID) {
             }
 
             // Synonymy table
-            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID", "Data"]);
+            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID"]);
             var syns = model.getSynonyms(node);
             tableData = [];
             if (syns) {
                 for (var n = 0; n < syns.length; n++) {
                     var syn = syns[n];
-                    tableData.push ([model.getIndexedDataPoint(syn, keyField), syn]);
+                    tableData.push ([model.getIndexedDataPoint(syn, keyField)]);
                 }
             }
             synTablesSel.style("display", syns ? null : "none");
@@ -213,6 +213,32 @@ VESPER.RecordDetails = function (divID) {
             ;
             addFieldData (newFields);
             //addFieldData (fieldBind);
+
+
+            // Specimens table
+            var specTablesSel = makeTableAndHeader (divSel, "specTable", ["Specimen ID"]);
+            var specs = model.getSpecimens(node);
+            tableData = [];
+            if (specs) {
+                for (var n = 0; n < specs.length; n++) {
+                    var spec = specs[n];
+                    tableData.push ([model.getIndexedDataPoint(spec, keyField)]);
+                }
+            }
+            specTablesSel.style("display", specs ? null : "none");
+
+            fieldBind = specTablesSel
+                .selectAll("tr.nonHeader")
+                .data(tableData)
+            ;
+            fieldBind.exit().remove();
+            addFieldData (fieldBind);
+            newFields =
+                fieldBind.enter()
+                    .append ("tr")
+                    .attr ("class", "nonHeader")
+            ;
+            addFieldData (newFields);
         }
 
         divSel.selectAll("table").style("visibility", curID === undefined ? "collapse" : "visible");
@@ -253,7 +279,7 @@ VESPER.RecordDetails = function (divID) {
 
         var cells = existOrNew.selectAll("td").data(function(d) { return d; });
         cells.enter().append("td");
-        cells.each(addHrefIfNecc).on("click", jumpToClick);
+        cells.each(addHrefIfNecc).on("click", jumpToClick).style("cursor", "pointer");
 
         function addHrefIfNecc (d) {
             if (d.substring && d.substring(0,7) === "http://") {

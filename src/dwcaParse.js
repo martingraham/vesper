@@ -1,11 +1,17 @@
-VESPER.DWCAParser = new function () {
+VESPER.DWCAParser = (function () {
 
     this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
     this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
     this.EXT = 2;       // extra data, i.e. non-core data attachments
     this.SYN = 3;       // synonyms
     this.PID = 4;       // used when building explicit taxonomies, i.e. ones from name paths, quick ref to parent id;
+    this.COUNTS = 5;
     this.SPECS = "s";
+
+    this.TCOUNT = 0;
+    this.SPECCOUNT = 1;
+    this.SYNCOUNT = 2;
+    this.SELOFFSET = 3;
 
     this.SUPERROOT = "superroot";
     var superrootID = "-1000";
@@ -409,7 +415,7 @@ VESPER.DWCAParser = new function () {
                             //delete jsonObj[id];
                         }
                         else {
-                            console.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
+                            VESPER.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
                         }
                     }
                 }
@@ -471,10 +477,12 @@ VESPER.DWCAParser = new function () {
 
             if (rec) {
                 var trace = false;
+                /*
                 if (rec[0] === "22792") {
-                    console.log ("REC", rec);
+                    VESPER.log ("REC", rec);
                     trace = true;
                 }
+                */
                 var lastData = undefined;
                 var lastId = undefined;
                 var path = [];
@@ -532,7 +540,7 @@ VESPER.DWCAParser = new function () {
                                 rootObjs[id] = true;
                             }
                             if (trace) {
-                                console.log ("trace", id, val, rankField, treeObj[id]);
+                                VESPER.log ("trace", id, val, rankField, treeObj[id]);
                             }
                             lastData = treeObj[id];
                             lastId = id;
@@ -648,9 +656,8 @@ VESPER.DWCAParser = new function () {
 
         var impTreePoss = VESPER.DWCAHelper.fieldListExistence (metaData, VESPER.DWCAParser.neccLists.impTaxonomy, true, undefined, true, true);
         var expTreePoss = VESPER.DWCAHelper.fieldListExistence (metaData, VESPER.DWCAParser.neccLists.expTaxonomy, false, 2, true, true);
-        console.log ("TREE POS", impTreePoss, expTreePoss);
-
-        console.log ("MDR", metaData.coreRowType);
+        VESPER.log ("TREE POS", impTreePoss, expTreePoss);
+        VESPER.log ("MDR", metaData.coreRowType);
 		//if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
         if (impTreePoss.match) {
 			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
@@ -687,7 +694,7 @@ VESPER.DWCAParser = new function () {
             struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             VESPER.log ("root", struc.impRoot);
             if (struc.impRoot) {
-                this.recursiveCount (struc.impRoot, "dcount", VESPER.DWCAParser.SPECS, 1);
+                this.recursiveCount (struc.impRoot, "dcount", undefined, 1);
                 this.recursiveCount (struc.impRoot, "syncount", VESPER.DWCAParser.SYN, 0);
             }
         }
@@ -695,7 +702,7 @@ VESPER.DWCAParser = new function () {
         if (struc.expTree) {
             struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             if (struc.expRoot) {
-                this.recursiveCount (struc.expRoot, "dcount", VESPER.DWCAParser.SPECS, 1);
+                this.recursiveCount (struc.expRoot, "dcount", undefined, 1);
                 this.recursiveCount (struc.expRoot, "spcount", VESPER.DWCAParser.SPECS, 0);
             }
         }
@@ -703,7 +710,7 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("STRUC", struc);
 
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        console.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
+        VESPER.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
         return struc;
 	};
 	
@@ -788,16 +795,25 @@ VESPER.DWCAParser = new function () {
     recursively count a field size in the taxonomy
     countField is the array that's being counted
     storeField is where the count is stored
-    inc is usually 1 or 0, 1 means each recursion adds to the count, 0 means it doesn't
+    inc is usually 1 or 0, 1 means each recursion adds to the count, 0 means it doesn't.
+    it also doesn't store field counts unless it has to, which saves mem
      */
     this.recursiveCount = function (taxon, storeField, countField, inc) {
+        var c = 0;
+
         if (taxon[this.TAXA]) {
-            taxon[storeField] = 0;
             for (var n = 0; n < taxon[this.TAXA].length; n++) {
-                taxon[storeField] += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
+                c += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
             }
+            taxon[storeField] = c;
         }
-        return ((taxon[storeField] ? taxon[storeField] : 0) /*||*/ + (taxon[countField] ? taxon[countField].length : 0)) + inc;
+        c += (countField && taxon[countField] ? taxon[countField].length : 0);
+
+        if (taxon[storeField]) {
+            taxon[storeField] = c;
+        }
+
+        return c + inc;
     };
 
 
@@ -993,4 +1009,6 @@ VESPER.DWCAParser = new function () {
 
     // load in xsd and populate arrays/maps from it.
     this.loadxsd ('dwca.xsd');
-};
+
+    return this;
+}());

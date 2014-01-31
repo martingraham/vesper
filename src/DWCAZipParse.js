@@ -5,8 +5,8 @@
  * Time: 11:37
  * To change this template use File | Settings | File Templates.
  */
-
-VESPER.DWCAZipParse = new function () {
+// this is invoked with ()
+VESPER.DWCAZipParse = (function () {
 
     var fileData;
     var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, lineDelimLength, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
@@ -329,4 +329,6 @@ VESPER.DWCAZipParse = new function () {
         VESPER.log ("readFields", readFields);
         VESPER.log ("Q#", quoteDelimiter, "#");
     };
-};
+
+    return this;
+}());

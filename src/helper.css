@@ -114,6 +114,7 @@ button[type="button"] {
     width: 130px;
     white-space: normal;
     font-family: "Gill Sans MT", Georgia, Arial;
+    cursor: pointer;
 }
 
 button[type="button"].load {
@@ -220,6 +221,7 @@ tr.col {
     border-radius: 5px;
     padding: 0px 8px 0px 8px;
     height: auto;
+    cursor: move;
 }
 
 div.visTitle {

@@ -77,6 +77,7 @@ DIV .vis {
 .visControl DIV.dragHandle {
     background: #aaa url('../img/bumpPat.png') 100% 100% repeat;
     height: 14px;
+    cursor: move;
 }
 
 .controlHeading {
@@ -151,4 +152,20 @@ DIV.encloser {
 .vesperWarning {
     font-weight: bold;
     color: #ff8800;
+}
+
+label {
+    cursor: pointer;
+}
+
+button {
+    cursor: pointer;
+}
+
+input[type="radio"] {
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
 }

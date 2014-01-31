@@ -5,7 +5,7 @@
  * Time: 15:17
  * To change this template use File | Settings | File Templates.
  */
-VESPER.modelComparisons = new function () {
+VESPER.modelComparisons = (function () {
 
     this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
         var small = smaller (model1, model2);
@@ -57,4 +57,7 @@ VESPER.modelComparisons = new function () {
         var c2 = MGNapier.NapVisLib.countObjProperties (model2.getData());
         return (c1 < c2 ? model1 : model2);
     }
-};
+
+
+    return this;
+}());

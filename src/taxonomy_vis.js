@@ -43,15 +43,14 @@ VESPER.Tree = function (divid) {
 		},
         "Selected": function (a,b) {
             var sModel = model.getSelectionModel();
-            //console.log (a,b);
             var sel1 = sModel.contains(model.getIndexedDataPoint (a,keyField));
             var sel2 = sModel.contains(model.getIndexedDataPoint (b,keyField));
             return (sel1 === sel2) ? 0 :  (sel1 === true ? -1 : 1);
         },
         "SelectedDesc": function (a,b) {
             //console.log (a,b);
-            var sel1 = a.sdcount;
-            var sel2 = b.sdcount;
+            var sel1 = model.getSelectedDescendantCount(a);
+            var sel2 = model.getSelectedDescendantCount(b);
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
@@ -61,6 +60,7 @@ VESPER.Tree = function (divid) {
         var tooltipStr = "Placeholder";
         return tooltipStr;
     };
+
 
 
     var spaceAllocationOptions = {
@@ -96,6 +96,15 @@ VESPER.Tree = function (divid) {
         return null;
     }
 
+    function logSelProp (node) {
+        //var containCount = containsCount (node);
+        //var sdcount = model.getSelectedDescendantCount(node);
+        var containCount = model.getObjectCount (node);
+        var sdcount = model.getSelectedObjectCount(node);
+        var prop = sdcount > 0 && containCount > 0 ? Math.log (sdcount + 1) / Math.log (containCount + 1) : 0;
+        return prop;
+    }
+
 
     var partitionLayout = {
 
@@ -117,15 +126,12 @@ VESPER.Tree = function (divid) {
 
         widthLogFunc: function (d) {
             var node = getNode (d.id);
-            var containCount = containsCount (node);
-            var prop = node.sdcount > 0 && containCount > 0 ? Math.log (node.sdcount + 1) / Math.log (containCount + 1) : 0;
-            return prop * d.dy;
+            return logSelProp (node) * d.dy;
         },
 
         xFunc: function (d) {
             var node = getNode (d.id);
-            var containCount = containsCount (node);
-            var prop = node.sdcount > 0 && containCount > 0 ? Math.log (node.sdcount + 1) / Math.log (containCount + 1) : 0;
+            var prop = logSelProp (node);
             return d.y + ((1.0 - prop) * d.dy);
         },
 
@@ -324,13 +330,8 @@ VESPER.Tree = function (divid) {
                 var oRad = Math.sqrt(d.y + d.dy);
                 var diff = oRad - Math.sqrt (d.y);
                 var node = getNode (d.id);
-                var prop = 0;
-                var containCount = containsCount (node);
-                if (containCount > 0 && node.sdcount > 0) {
-                    //console.log (node, node.dcount, node.sdcount);
-                    prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
-                    prop *= prop; // square cos area of ring is square of radius
-                }
+                var prop = logSelProp (node);
+                prop *= prop; // square cos area of ring is square of radius
                 return oRad - (prop * diff);
             })
             .outerRadius(function(d) {
@@ -525,7 +526,7 @@ VESPER.Tree = function (divid) {
         var vals = model.getSelectionModel().values();
         var root = (vals.length === 1) ? getNode(vals[0]) : self.getRoot(model);
         if (root === undefined) {
-            console.log ("no root defined for tree", self.getRoot(model), root, vals);
+            VESPER.log ("no root defined for tree", self.getRoot(model), root, vals);
             return;
         }
 
@@ -562,7 +563,7 @@ VESPER.Tree = function (divid) {
         VESPER.DWCAHelper.addDragArea (cpanel);
 
         MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Orientation", "sectionID":"Layout"},
+            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"View Style", "sectionID":"Layout"},
                 {"header":"Sort By", sectionID:"Sort"}],
         "section");
 
@@ -676,7 +677,7 @@ VESPER.Tree = function (divid) {
     }
 
     function containsCount (node) {
-        var cc = node.dcount;
+        var cc = (model.getDescendantCount(node) || 0);// + (model.getSynonymCount(node) || 0);
         if (!cc) {
             var specs = model.getSpecimens(node);
             if (specs) {
@@ -748,8 +749,7 @@ VESPER.Tree = function (divid) {
     // suitable root is first node who has more than one child either holding selected descendants or is selected
     function firstBranch (node) {
         var nid = model.getIndexedDataPoint (node, keyField);
-        //if (node.sdcount == undefined || node.sdcount == 0 || model.getSelectionModel().contains (nid)) {
-        if (!node.sdcount || model.getSelectionModel().contains (nid)) {
+        if (!model.getSelectedDescendantCount(node) || model.getSelectionModel().contains (nid)) {
             return node;
         }
         var children = model.getSubTaxa (node);
@@ -762,7 +762,7 @@ VESPER.Tree = function (divid) {
                 if (model.getSelectionModel().contains (cid)) {
                     splitCount++;
                 }
-                else if (child.sdcount > 0) {
+                else if (model.getSelectedDescendantCount(child) > 0) {
                     splitCount++;
                     singleNode = child;
                 }
@@ -858,19 +858,19 @@ VESPER.Tree = function (divid) {
 
         var taxa = model.getSubTaxa (node);
         if (taxa) {
-            for (var n = 0; n < taxa.length; n++) {
+            for (var n = taxa.length; --n >= 0;) {
                 selectSubTreeR (taxa[n], ids, recurse);
             }
         }
         var specs = model.getSpecimens (node);
         if (specs) {
-            for (var n = 0; n < specs.length; n++) {
+            for (var n = specs.length; --n >= 0;) {
                 selectSubTreeR (specs[n], ids, recurse);
             }
         }
         var syns = model.getSynonyms (node);
         if (syns) {
-            for (var n = 0; n < syns.length; n++) {
+            for (var n = syns.length; --n >= 0;) {
                 selectSubTreeR (syns[n], ids, false);
             }
         }
@@ -894,7 +894,7 @@ VESPER.ImplicitTaxonomy = function (div) {
     };
     tree.tooltipString = function (node, model, ffields) {
         console.log ("tooltip node", node);
-        var desc = model.getDescendantCount(node);
+        var desc = model.getDescendantCount (node);
         var sdesc = model.getSelectedDescendantCount(node);
         var subt = model.getSubTaxa(node);
 
@@ -914,14 +914,16 @@ VESPER.ImplicitTaxonomy = function (div) {
 
         var synCount = model.getSynonymCount (node);
         if (synCount) {
-            tooltipStr+="<br>Contains "+synCount+" Synonyms";
+            tooltipStr+="<br>Also contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
         }
 
         var syn = model.getSynonyms(node);
         if (syn) {
             tooltipStr += "<hr><i>Taxon Synonymy</i>";
             for (n = 0; n < syn.length; n++) {
-                tooltipStr += "<br>" + model.getIndexedDataPoint(syn[n], ffields[0])+": "+model.getLabel (syn[n]);
+                var id = model.getIndexedDataPoint(syn[n], ffields[0]);
+                var klass = model.getSelectionModel().contains (id) ? "selected" : "";
+                tooltipStr += "<br><span class=\""+klass+"\">" + id+"</span>: "+model.getLabel (syn[n]);
             }
         }
 
@@ -940,11 +942,8 @@ VESPER.ExplicitTaxonomy = function (div) {
     tree.tooltipString = function (node, model, ffields) {
         console.log ("tooltip node", node);
         var specs = model.getSpecimens(node);
-        var desc = model.getDescendantCount(node);
-        var sdesc = model.getSelectedDescendantCount(node);
-        var subt = model.getSubTaxa(node);
-
         var tooltipStr = "";
+        var limit = 10;
 
         for (var n = 0; n < ffields.length; n++) {
             if (ffields[n]) {
@@ -952,25 +951,26 @@ VESPER.ExplicitTaxonomy = function (div) {
             }
         }
 
-        if (node.value) {
-            tooltipStr += "<hr>Contains "+node.value+" specimen"+(node.value !== 1 ? "s" : "");
-        }
-
-        var si = 0;
-        if (/*subt === undefined &&*/ specs) {
-            if (sdesc < specs.length) {
-                tooltipStr += tree.sepArray[si++]+specs.length+" immediate specimen"+(specs.length !== 1 ? "s" : "");
-            }
-            if (sdesc > 0) {
-                tooltipStr += tree.sepArray[si]+sdesc+" immediate selected specimen"+(sdesc !== 1 ? "s" : "");
+        var specCount = model.getSpecimenCount(node);
+        if (specCount) {
+            tooltipStr += "<hr>Contains<br>"+specCount+" specimen"+(specCount !== 1 ? "s" : "");
+            var SspecCount = model.getSelectedSpecimenCount (node);
+            if (SspecCount) {
+                tooltipStr += "<br>"+SspecCount+(SspecCount !== 1 ? " are " : " is ")+" selected";
             }
         }
 
-        var specsYes = (/*subt === undefined &&*/ specs);
-        if (specsYes) {
-            for (n = 0; n < Math.min(specs.length, 5); n++) {
+        // specimens directly attached to node
+        if (specs) {
+            tooltipStr += "<hr><i>Specimens</i>";
+            for (n = 0; n < Math.min(specs.length, limit); n++) {
                 var spec = specs[n];
-                tooltipStr += "<br>" + model.getIndexedDataPoint(spec, ffields[0])+", "+model.getLabel(spec);
+                var id = model.getIndexedDataPoint(spec, ffields[0]);
+                var klass = model.getSelectionModel().contains (id) ? "selected" : "";
+                tooltipStr += "<br><span class=\""+klass+"\">" + id+"</span>, "+model.getLabel(spec);
+            }
+            if (specs.length - limit > 0) {
+                tooltipStr += "<br>... and "+(specs.length - limit)+" more";
             }
         }
 

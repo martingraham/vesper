@@ -1,4 +1,4 @@
-VESPER.DWCAHelper = new function () {
+VESPER.DWCAHelper = (function () {
 
     var DWCAHelper = this; // self
 
@@ -499,4 +499,6 @@ VESPER.DWCAHelper = new function () {
            }
         });
     };
-};
+
+    return DWCAHelper;
+}());
