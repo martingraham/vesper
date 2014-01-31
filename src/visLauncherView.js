@@ -129,7 +129,7 @@ VESPER.VisLauncher = function (divid, options) {
             })
         ;
 
-        encloser.selectAll("button").style("display", "block");
+        encloser.selectAll("button").style("display", "block").attr("class", "safetyGap");
     }
 
 

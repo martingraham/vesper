@@ -169,3 +169,8 @@ input[type="radio"] {
 input[type="checkbox"] {
     cursor: pointer;
 }
+
+
+button.safetyGap {
+    margin-bottom: 15px;
+}

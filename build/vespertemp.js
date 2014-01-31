@@ -26,8 +26,8 @@ var VESPER = (function() {
  * Time: 11:37
  * To change this template use File | Settings | File Templates.
  */
-
-VESPER.DWCAZipParse = new function () {
+// this is invoked with ()
+VESPER.DWCAZipParse = (function () {
 
     var fileData;
     var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, lineDelimLength, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
@@ -350,7 +350,9 @@ VESPER.DWCAZipParse = new function () {
         VESPER.log ("readFields", readFields);
         VESPER.log ("Q#", quoteDelimiter, "#");
     };
-};
+
+    return this;
+}());
 
 // TimeLine
 
@@ -930,17 +932,41 @@ VESPER.DWCAModel = function (metaData, data) {
         return node[VESPER.DWCAParser.SPECS];
     };
 
+
+    // Recursive count getters
     this.getDescendantCount = function (node) {
         return node.dcount;
     };
 
-    this.getSelectedDescendantCount = function (node) {
-        return node.sdcount;
-    };
-
     // All synonyms in the node and node subtaxa
     this.getSynonymCount = function (node) {
-        return node.syncount;
+        return node.syncount || (this.getSynonyms(node) ? this.getSynonyms(node).length : 0);
+    };
+
+    // All specimens in the node and node subtaxa
+    this.getSpecimenCount = function (node) {
+        //console.log ("this", this);
+        return node.spcount || (this.getSpecimens(node) ? this.getSpecimens(node).length : 0);
+    };
+
+    this.getObjectCount = function (node) {
+        return (node.dcount || 0) + this.getSynonymCount(node) + this.getSpecimenCount(node);
+    };
+
+    this.getSelectedDescendantCount = function (node) {
+        return node.Sdcount;
+    };
+
+    this.getSelectedSynonymCount = function (node) {
+        return node.Ssyncount;
+    };
+
+    this.getSelectedSpecimenCount = function (node) {
+        return node.Sspcount;
+    };
+
+    this.getSelectedObjectCount = function (node) {
+        return (node.Sdcount || 0) + (node.Ssyncount || 0) + (node.Sspcount || 0);
     };
 
     this.getLeafValue = function (node) {
@@ -1051,26 +1077,44 @@ VESPER.DWCAModel = function (metaData, data) {
     };
 
     this.countSelectedDesc = function (taxon, idField) {
+        //var stopwatch = {base: 0};
+        //MGNapier.NapVisLib.resetStopwatch (stopwatch);
+        this.countSelectedDescNew (taxon, idField);
+        //console.log ("new", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+    };
+
+
+    this.countSelectedDescNew = function (taxon, idField) {
+        this.doSelectCount (taxon, idField, "Sdcount", this.getSubTaxa, this.getDescendantCount);
+        this.doSelectCount (taxon, idField, "Ssyncount", this.getSynonyms, this.getSynonymCount);
+        this.doSelectCount (taxon, idField, "Sspcount", this.getSpecimens, this.getSpecimenCount);
+    };
+
+    // need to figure this out...
+    this.doSelectCount = function (taxon, idField, countField, func, totFunc) {
         var taxa = this.getSubTaxa (taxon);
-        var spec = this.getSpecimens (taxon);
+        var countables = func ? func (taxon) : undefined;
+        var maxPossible = totFunc ? totFunc.call (this, taxon) : 0;
+        var len = (countables ? countables.length : 0);
+        var c = 0;
 
-        if (taxa || spec) {
-            taxon.sdcount = 0;
+        if (maxPossible || len) { // no point testing for selections if no selectable objects beneath this point
 
-            if (taxa) {
+            if (len) {
+                for (var n = len; --n >= 0;) {
+                    c += this.getSelectionModel().contains (this.getIndexedDataPoint (countables[n], idField)) ? 1 : 0;
+                }
+            }
+            if (maxPossible > len) {  // no point burrowing further down the tree if maxpossible is zero
                 for (var n = taxa.length; --n >= 0;) {
-                    taxon.sdcount += this.countSelectedDesc (taxa[n], idField);
+                    c += this.doSelectCount (taxa[n], idField, countField, func, totFunc);
                 }
             }
 
-            if (spec) {
-                for (var n = spec.length; --n >= 0;) {
-                    taxon.sdcount += this.getSelectionModel().contains (this.getIndexedDataPoint (spec[n], idField)) ? 1 : 0;
-                }
-            }
+            taxon[countField] = c;
         }
 
-        return (taxon.sdcount || 0) + ((this.getSelectionModel().contains (this.getIndexedDataPoint (taxon, idField)) ? 1 : 0));
+        return c || 0;
     };
 
     this.data = data;
@@ -1413,7 +1457,7 @@ VESPER.demo = function (files, exampleDivID) {
     setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);
 };
 
-VESPER.DWCAHelper = new function () {
+VESPER.DWCAHelper = (function () {
 
     var DWCAHelper = this; // self
 
@@ -1914,7 +1958,9 @@ VESPER.DWCAHelper = new function () {
            }
         });
     };
-};
+
+    return DWCAHelper;
+}());
 VESPER.DWCAMapLeaflet = function (divid) {
 
 	var dims;
@@ -2355,14 +2401,20 @@ VESPER.DWCAMapLeaflet = function (divid) {
     );
 };
 		
-VESPER.DWCAParser = new function () {
+VESPER.DWCAParser = (function () {
 
     this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
     this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
     this.EXT = 2;       // extra data, i.e. non-core data attachments
     this.SYN = 3;       // synonyms
     this.PID = 4;       // used when building explicit taxonomies, i.e. ones from name paths, quick ref to parent id;
+    this.COUNTS = 5;
     this.SPECS = "s";
+
+    this.TCOUNT = 0;
+    this.SPECCOUNT = 1;
+    this.SYNCOUNT = 2;
+    this.SELOFFSET = 3;
 
     this.SUPERROOT = "superroot";
     var superrootID = "-1000";
@@ -2766,7 +2818,7 @@ VESPER.DWCAParser = new function () {
                             //delete jsonObj[id];
                         }
                         else {
-                            console.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
+                            VESPER.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
                         }
                     }
                 }
@@ -2828,10 +2880,12 @@ VESPER.DWCAParser = new function () {
 
             if (rec) {
                 var trace = false;
+                /*
                 if (rec[0] === "22792") {
-                    console.log ("REC", rec);
+                    VESPER.log ("REC", rec);
                     trace = true;
                 }
+                */
                 var lastData = undefined;
                 var lastId = undefined;
                 var path = [];
@@ -2889,7 +2943,7 @@ VESPER.DWCAParser = new function () {
                                 rootObjs[id] = true;
                             }
                             if (trace) {
-                                console.log ("trace", id, val, rankField, treeObj[id]);
+                                VESPER.log ("trace", id, val, rankField, treeObj[id]);
                             }
                             lastData = treeObj[id];
                             lastId = id;
@@ -3005,9 +3059,8 @@ VESPER.DWCAParser = new function () {
 
         var impTreePoss = VESPER.DWCAHelper.fieldListExistence (metaData, VESPER.DWCAParser.neccLists.impTaxonomy, true, undefined, true, true);
         var expTreePoss = VESPER.DWCAHelper.fieldListExistence (metaData, VESPER.DWCAParser.neccLists.expTaxonomy, false, 2, true, true);
-        console.log ("TREE POS", impTreePoss, expTreePoss);
-
-        console.log ("MDR", metaData.coreRowType);
+        VESPER.log ("TREE POS", impTreePoss, expTreePoss);
+        VESPER.log ("MDR", metaData.coreRowType);
 		//if (MGNapier.NapVisLib.endsWith (metaData.coreRowType, "Taxon")) {
         if (impTreePoss.match) {
 			impTree = this.jsonTaxaObj2JSONTree (jsonObj, rawData, coreFileData, metaData);
@@ -3044,7 +3097,7 @@ VESPER.DWCAParser = new function () {
             struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             VESPER.log ("root", struc.impRoot);
             if (struc.impRoot) {
-                this.recursiveCount (struc.impRoot, "dcount", VESPER.DWCAParser.SPECS, 1);
+                this.recursiveCount (struc.impRoot, "dcount", undefined, 1);
                 this.recursiveCount (struc.impRoot, "syncount", VESPER.DWCAParser.SYN, 0);
             }
         }
@@ -3052,7 +3105,7 @@ VESPER.DWCAParser = new function () {
         if (struc.expTree) {
             struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             if (struc.expRoot) {
-                this.recursiveCount (struc.expRoot, "dcount", VESPER.DWCAParser.SPECS, 1);
+                this.recursiveCount (struc.expRoot, "dcount", undefined, 1);
                 this.recursiveCount (struc.expRoot, "spcount", VESPER.DWCAParser.SPECS, 0);
             }
         }
@@ -3060,7 +3113,7 @@ VESPER.DWCAParser = new function () {
         VESPER.log ("STRUC", struc);
 
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        console.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
+        VESPER.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
         return struc;
 	};
 	
@@ -3145,16 +3198,25 @@ VESPER.DWCAParser = new function () {
     recursively count a field size in the taxonomy
     countField is the array that's being counted
     storeField is where the count is stored
-    inc is usually 1 or 0, 1 means each recursion adds to the count, 0 means it doesn't
+    inc is usually 1 or 0, 1 means each recursion adds to the count, 0 means it doesn't.
+    it also doesn't store field counts unless it has to, which saves mem
      */
     this.recursiveCount = function (taxon, storeField, countField, inc) {
+        var c = 0;
+
         if (taxon[this.TAXA]) {
-            taxon[storeField] = 0;
             for (var n = 0; n < taxon[this.TAXA].length; n++) {
-                taxon[storeField] += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
+                c += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
             }
+            taxon[storeField] = c;
         }
-        return ((taxon[storeField] ? taxon[storeField] : 0) /*||*/ + (taxon[countField] ? taxon[countField].length : 0)) + inc;
+        c += (countField && taxon[countField] ? taxon[countField].length : 0);
+
+        if (taxon[storeField]) {
+            taxon[storeField] = c;
+        }
+
+        return c + inc;
     };
 
 
@@ -3350,7 +3412,9 @@ VESPER.DWCAParser = new function () {
 
     // load in xsd and populate arrays/maps from it.
     this.loadxsd ('dwca.xsd');
-};
+
+    return this;
+}());
 /**
  * Created with JetBrains WebStorm.
  * User: cs22
@@ -3359,9 +3423,9 @@ VESPER.DWCAParser = new function () {
  * To change this template use File | Settings | File Templates.
  */
 
-VESPER.Filters = new function () {
+VESPER.Filters = (function () {
 
-    this.filter2 = function (model, searchTerms, regex) {
+    this.nameLabelFilter = function (model, regex) {
         VESPER.log ("regex", regex);
         var metaData = model.getMetaData();
         var nameLabel = metaData.vesperAdds.nameLabelField;
@@ -3381,7 +3445,7 @@ VESPER.Filters = new function () {
             }
 
             if (rowRecords) {
-                for (var n = 0; n < rowRecords.length; n++) {
+                for (var n = rowRecords.length; --n >= 0;) {
                     var name = rowRecords[n][nameIndex];
                     if (name && name.match (regex) != null) {
                         return true;
@@ -3398,7 +3462,9 @@ VESPER.Filters = new function () {
         model.getSelectionModel().setUpdating (false);
         return count;
     };
-}();
+
+    return this;
+}());
 
 /**
  * Created with JetBrains WebStorm.
@@ -3407,7 +3473,7 @@ VESPER.Filters = new function () {
  * Time: 15:17
  * To change this template use File | Settings | File Templates.
  */
-VESPER.modelComparisons = new function () {
+VESPER.modelComparisons = (function () {
 
     this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
         var small = smaller (model1, model2);
@@ -3459,7 +3525,10 @@ VESPER.modelComparisons = new function () {
         var c2 = MGNapier.NapVisLib.countObjProperties (model2.getData());
         return (c1 < c2 ? model1 : model2);
     }
-};
+
+
+    return this;
+}());
 VESPER.FilterView = function (divID) {
 
     var model;
@@ -3514,7 +3583,7 @@ VESPER.FilterView = function (divID) {
             .on ("keyup", function() {
                 if (typeAhead || (d3.event.keyCode | d3.event.charCode) === 13) {
                     model.getSelectionModel().clear();
-                    /*var count = */VESPER.Filters.filter2 (model, null, d3.select(this).property("value"));
+                    /*var count = */VESPER.Filters.nameLabelFilter (model, d3.select(this).property("value"));
                 }
             })
         ;
@@ -3651,13 +3720,13 @@ VESPER.RecordDetails = function (divID) {
             }
 
             // Synonymy table
-            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID", "Data"]);
+            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID"]);
             var syns = model.getSynonyms(node);
             tableData = [];
             if (syns) {
                 for (var n = 0; n < syns.length; n++) {
                     var syn = syns[n];
-                    tableData.push ([model.getIndexedDataPoint(syn, keyField), syn]);
+                    tableData.push ([model.getIndexedDataPoint(syn, keyField)]);
                 }
             }
             synTablesSel.style("display", syns ? null : "none");
@@ -3675,6 +3744,32 @@ VESPER.RecordDetails = function (divID) {
             ;
             addFieldData (newFields);
             //addFieldData (fieldBind);
+
+
+            // Specimens table
+            var specTablesSel = makeTableAndHeader (divSel, "specTable", ["Specimen ID"]);
+            var specs = model.getSpecimens(node);
+            tableData = [];
+            if (specs) {
+                for (var n = 0; n < specs.length; n++) {
+                    var spec = specs[n];
+                    tableData.push ([model.getIndexedDataPoint(spec, keyField)]);
+                }
+            }
+            specTablesSel.style("display", specs ? null : "none");
+
+            fieldBind = specTablesSel
+                .selectAll("tr.nonHeader")
+                .data(tableData)
+            ;
+            fieldBind.exit().remove();
+            addFieldData (fieldBind);
+            newFields =
+                fieldBind.enter()
+                    .append ("tr")
+                    .attr ("class", "nonHeader")
+            ;
+            addFieldData (newFields);
         }
 
         divSel.selectAll("table").style("visibility", curID === undefined ? "collapse" : "visible");
@@ -3715,7 +3810,7 @@ VESPER.RecordDetails = function (divID) {
 
         var cells = existOrNew.selectAll("td").data(function(d) { return d; });
         cells.enter().append("td");
-        cells.each(addHrefIfNecc).on("click", jumpToClick);
+        cells.each(addHrefIfNecc).on("click", jumpToClick).style("cursor", "pointer");
 
         function addHrefIfNecc (d) {
             if (d.substring && d.substring(0,7) === "http://") {
@@ -4180,15 +4275,14 @@ VESPER.Tree = function (divid) {
 		},
         "Selected": function (a,b) {
             var sModel = model.getSelectionModel();
-            //console.log (a,b);
             var sel1 = sModel.contains(model.getIndexedDataPoint (a,keyField));
             var sel2 = sModel.contains(model.getIndexedDataPoint (b,keyField));
             return (sel1 === sel2) ? 0 :  (sel1 === true ? -1 : 1);
         },
         "SelectedDesc": function (a,b) {
             //console.log (a,b);
-            var sel1 = a.sdcount;
-            var sel2 = b.sdcount;
+            var sel1 = model.getSelectedDescendantCount(a);
+            var sel2 = model.getSelectedDescendantCount(b);
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
@@ -4198,6 +4292,7 @@ VESPER.Tree = function (divid) {
         var tooltipStr = "Placeholder";
         return tooltipStr;
     };
+
 
 
     var spaceAllocationOptions = {
@@ -4233,6 +4328,15 @@ VESPER.Tree = function (divid) {
         return null;
     }
 
+    function logSelProp (node) {
+        //var containCount = containsCount (node);
+        //var sdcount = model.getSelectedDescendantCount(node);
+        var containCount = model.getObjectCount (node);
+        var sdcount = model.getSelectedObjectCount(node);
+        var prop = sdcount > 0 && containCount > 0 ? Math.log (sdcount + 1) / Math.log (containCount + 1) : 0;
+        return prop;
+    }
+
 
     var partitionLayout = {
 
@@ -4254,15 +4358,12 @@ VESPER.Tree = function (divid) {
 
         widthLogFunc: function (d) {
             var node = getNode (d.id);
-            var containCount = containsCount (node);
-            var prop = node.sdcount > 0 && containCount > 0 ? Math.log (node.sdcount + 1) / Math.log (containCount + 1) : 0;
-            return prop * d.dy;
+            return logSelProp (node) * d.dy;
         },
 
         xFunc: function (d) {
             var node = getNode (d.id);
-            var containCount = containsCount (node);
-            var prop = node.sdcount > 0 && containCount > 0 ? Math.log (node.sdcount + 1) / Math.log (containCount + 1) : 0;
+            var prop = logSelProp (node);
             return d.y + ((1.0 - prop) * d.dy);
         },
 
@@ -4461,13 +4562,8 @@ VESPER.Tree = function (divid) {
                 var oRad = Math.sqrt(d.y + d.dy);
                 var diff = oRad - Math.sqrt (d.y);
                 var node = getNode (d.id);
-                var prop = 0;
-                var containCount = containsCount (node);
-                if (containCount > 0 && node.sdcount > 0) {
-                    //console.log (node, node.dcount, node.sdcount);
-                    prop = Math.log (node.sdcount + 1) / Math.log (containCount + 1);
-                    prop *= prop; // square cos area of ring is square of radius
-                }
+                var prop = logSelProp (node);
+                prop *= prop; // square cos area of ring is square of radius
                 return oRad - (prop * diff);
             })
             .outerRadius(function(d) {
@@ -4662,7 +4758,7 @@ VESPER.Tree = function (divid) {
         var vals = model.getSelectionModel().values();
         var root = (vals.length === 1) ? getNode(vals[0]) : self.getRoot(model);
         if (root === undefined) {
-            console.log ("no root defined for tree", self.getRoot(model), root, vals);
+            VESPER.log ("no root defined for tree", self.getRoot(model), root, vals);
             return;
         }
 
@@ -4699,7 +4795,7 @@ VESPER.Tree = function (divid) {
         VESPER.DWCAHelper.addDragArea (cpanel);
 
         MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"Orientation", "sectionID":"Layout"},
+            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"View Style", "sectionID":"Layout"},
                 {"header":"Sort By", sectionID:"Sort"}],
         "section");
 
@@ -4813,7 +4909,7 @@ VESPER.Tree = function (divid) {
     }
 
     function containsCount (node) {
-        var cc = node.dcount;
+        var cc = (model.getDescendantCount(node) || 0);// + (model.getSynonymCount(node) || 0);
         if (!cc) {
             var specs = model.getSpecimens(node);
             if (specs) {
@@ -4885,8 +4981,7 @@ VESPER.Tree = function (divid) {
     // suitable root is first node who has more than one child either holding selected descendants or is selected
     function firstBranch (node) {
         var nid = model.getIndexedDataPoint (node, keyField);
-        //if (node.sdcount == undefined || node.sdcount == 0 || model.getSelectionModel().contains (nid)) {
-        if (!node.sdcount || model.getSelectionModel().contains (nid)) {
+        if (!model.getSelectedDescendantCount(node) || model.getSelectionModel().contains (nid)) {
             return node;
         }
         var children = model.getSubTaxa (node);
@@ -4899,7 +4994,7 @@ VESPER.Tree = function (divid) {
                 if (model.getSelectionModel().contains (cid)) {
                     splitCount++;
                 }
-                else if (child.sdcount > 0) {
+                else if (model.getSelectedDescendantCount(child) > 0) {
                     splitCount++;
                     singleNode = child;
                 }
@@ -4995,19 +5090,19 @@ VESPER.Tree = function (divid) {
 
         var taxa = model.getSubTaxa (node);
         if (taxa) {
-            for (var n = 0; n < taxa.length; n++) {
+            for (var n = taxa.length; --n >= 0;) {
                 selectSubTreeR (taxa[n], ids, recurse);
             }
         }
         var specs = model.getSpecimens (node);
         if (specs) {
-            for (var n = 0; n < specs.length; n++) {
+            for (var n = specs.length; --n >= 0;) {
                 selectSubTreeR (specs[n], ids, recurse);
             }
         }
         var syns = model.getSynonyms (node);
         if (syns) {
-            for (var n = 0; n < syns.length; n++) {
+            for (var n = syns.length; --n >= 0;) {
                 selectSubTreeR (syns[n], ids, false);
             }
         }
@@ -5031,7 +5126,7 @@ VESPER.ImplicitTaxonomy = function (div) {
     };
     tree.tooltipString = function (node, model, ffields) {
         console.log ("tooltip node", node);
-        var desc = model.getDescendantCount(node);
+        var desc = model.getDescendantCount (node);
         var sdesc = model.getSelectedDescendantCount(node);
         var subt = model.getSubTaxa(node);
 
@@ -5051,14 +5146,16 @@ VESPER.ImplicitTaxonomy = function (div) {
 
         var synCount = model.getSynonymCount (node);
         if (synCount) {
-            tooltipStr+="<br>Contains "+synCount+" Synonyms";
+            tooltipStr+="<br>Also contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
         }
 
         var syn = model.getSynonyms(node);
         if (syn) {
             tooltipStr += "<hr><i>Taxon Synonymy</i>";
             for (n = 0; n < syn.length; n++) {
-                tooltipStr += "<br>" + model.getIndexedDataPoint(syn[n], ffields[0])+": "+model.getLabel (syn[n]);
+                var id = model.getIndexedDataPoint(syn[n], ffields[0]);
+                var klass = model.getSelectionModel().contains (id) ? "selected" : "";
+                tooltipStr += "<br><span class=\""+klass+"\">" + id+"</span>: "+model.getLabel (syn[n]);
             }
         }
 
@@ -5077,11 +5174,8 @@ VESPER.ExplicitTaxonomy = function (div) {
     tree.tooltipString = function (node, model, ffields) {
         console.log ("tooltip node", node);
         var specs = model.getSpecimens(node);
-        var desc = model.getDescendantCount(node);
-        var sdesc = model.getSelectedDescendantCount(node);
-        var subt = model.getSubTaxa(node);
-
         var tooltipStr = "";
+        var limit = 10;
 
         for (var n = 0; n < ffields.length; n++) {
             if (ffields[n]) {
@@ -5089,25 +5183,26 @@ VESPER.ExplicitTaxonomy = function (div) {
             }
         }
 
-        if (node.value) {
-            tooltipStr += "<hr>Contains "+node.value+" specimen"+(node.value !== 1 ? "s" : "");
-        }
-
-        var si = 0;
-        if (/*subt === undefined &&*/ specs) {
-            if (sdesc < specs.length) {
-                tooltipStr += tree.sepArray[si++]+specs.length+" immediate specimen"+(specs.length !== 1 ? "s" : "");
-            }
-            if (sdesc > 0) {
-                tooltipStr += tree.sepArray[si]+sdesc+" immediate selected specimen"+(sdesc !== 1 ? "s" : "");
+        var specCount = model.getSpecimenCount(node);
+        if (specCount) {
+            tooltipStr += "<hr>Contains<br>"+specCount+" specimen"+(specCount !== 1 ? "s" : "");
+            var SspecCount = model.getSelectedSpecimenCount (node);
+            if (SspecCount) {
+                tooltipStr += "<br>"+SspecCount+(SspecCount !== 1 ? " are " : " is ")+" selected";
             }
         }
 
-        var specsYes = (/*subt === undefined &&*/ specs);
-        if (specsYes) {
-            for (n = 0; n < Math.min(specs.length, 5); n++) {
+        // specimens directly attached to node
+        if (specs) {
+            tooltipStr += "<hr><i>Specimens</i>";
+            for (n = 0; n < Math.min(specs.length, limit); n++) {
                 var spec = specs[n];
-                tooltipStr += "<br>" + model.getIndexedDataPoint(spec, ffields[0])+", "+model.getLabel(spec);
+                var id = model.getIndexedDataPoint(spec, ffields[0]);
+                var klass = model.getSelectionModel().contains (id) ? "selected" : "";
+                tooltipStr += "<br><span class=\""+klass+"\">" + id+"</span>, "+model.getLabel(spec);
+            }
+            if (specs.length - limit > 0) {
+                tooltipStr += "<br>... and "+(specs.length - limit)+" more";
             }
         }
 
@@ -5115,7 +5210,7 @@ VESPER.ExplicitTaxonomy = function (div) {
     };
     return tree;
 };
-VESPER.tooltip = new function () {
+VESPER.tooltip = (function () {
     this.holdDuration = 10000;
     this.fadeDuration = 200;
     var self = this;
@@ -5173,7 +5268,9 @@ VESPER.tooltip = new function () {
             .style ("left", (e.pageX+10)+"px")
         ;
      };
-}();
+
+    return this;
+}());
 /**
  * Created with JetBrains WebStorm.
  * User: cs22
@@ -5305,7 +5402,7 @@ VESPER.VisLauncher = function (divid, options) {
             })
         ;
 
-        encloser.selectAll("button").style("display", "block");
+        encloser.selectAll("button").style("display", "block").attr("class", "safetyGap");
     }
 
 

@@ -11,7 +11,7 @@ module.exports = function(grunt) {
             },
             js: {
                 // http://stackoverflow.com/questions/18453974/how-to-ignore-files-grunt-uglify
-                src: ['src/vesper.js', 'src/*.js', '!src/DWCAZipParseDB.js', '!src/occList.js'],
+                src: ['src/vesper.js', 'src/*.js', '!src/DWCAZipParseDB.js'],
                 //src: ['src.vesper.js', 'src/*.js'],
                 dest: 'build/<%= pkg.name %>temp.js'
             },
@@ -40,10 +40,15 @@ module.exports = function(grunt) {
 
         copy: {
             main: {
-                expand: true,
-                cwd: 'src/',
-                src: ['dwca.xsd', 'demoNewMin.html', 'instructions.html', 'credits.html', 'background.html'],
-                dest: 'build/'
+                files:[
+                    {expand: true, cwd: 'src/', src: ['dwca.xsd', 'demoNewMin.html', 'instructions.html', 'credits.html', 'background.html'], dest: 'build/'}
+                    /*
+                    ,
+                    {expand: true, cwd: 'node_modules', src:['d3/d3.min.js'], dest:'lib'},
+                    {expand: true, cwd: 'node_modules', src:['jquery/dist/jquery.min.js'], dest:'lib'},
+                    {expand: true, cwd: 'node_modules', src:['jquery-ui/jquery-ui.min.js'], dest:'lib'}
+                    */
+                ]
             }
         }
     });

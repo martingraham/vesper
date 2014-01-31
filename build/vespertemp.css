@@ -95,6 +95,7 @@ DIV .vis {
 .visControl DIV.dragHandle {
     background: #aaa url('../img/bumpPat.png') 100% 100% repeat;
     height: 14px;
+    cursor: move;
 }
 
 .controlHeading {
@@ -171,6 +172,26 @@ DIV.encloser {
     color: #ff8800;
 }
 
+label {
+    cursor: pointer;
+}
+
+button {
+    cursor: pointer;
+}
+
+input[type="radio"] {
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
+}
+
+
+button.safetyGap {
+    margin-bottom: 15px;
+}
 .vesperMapIcon {
     text-align: right;
     border: #888 solid 1px;
@@ -300,6 +321,7 @@ button[type="button"] {
     width: 130px;
     white-space: normal;
     font-family: "Gill Sans MT", Georgia, Arial;
+    cursor: pointer;
 }
 
 button[type="button"].load {
@@ -406,6 +428,7 @@ tr.col {
     border-radius: 5px;
     padding: 0px 8px 0px 8px;
     height: auto;
+    cursor: move;
 }
 
 div.visTitle {
