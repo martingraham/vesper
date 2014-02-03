@@ -6,7 +6,7 @@ A demo is available at http://www.soc.napier.ac.uk/~cs22/vesperDemo/vesper/demoN
 
 Libraries
 ---------
-Vesper uses D3, JQuery, Leaflet and an adapted version of JSZip. And some of our own libraries. We did experiment with a load more libraries but they either didn't add much or we were importing them for just one function (most of which we usually found we could do in JQuery later).
+Vesper uses D3, JQuery, Leaflet and an adapted version of JSZip. And one of our own libraries.
 
 Runnables
 ---------
