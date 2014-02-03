@@ -165,7 +165,7 @@ VESPER.Tree = function (divid) {
                         return "translate ("+ (d.y)+","+(d.x + Math.max (((d.dx - 14) / 2) + 14, 14))+") " ;
                     }
                 })
-                .attr ("clip-path", function (d) { return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)";})
+                .attr ("clip-path", function (d) { return rotate(d, this) ? null : "url(#"+noHashID+"depthclipR0)";})
             ;
         },
 
@@ -255,7 +255,7 @@ VESPER.Tree = function (divid) {
 
             var clipBind = svg
                 .select ("defs")
-                .selectAll (".napierClip")
+                .selectAll (".napierClipR")
                 .data (depths)
             ;
 
@@ -278,8 +278,8 @@ VESPER.Tree = function (divid) {
 
             clipBind.enter()
                 .append ("clipPath")
-                .attr ("class", "napierClip")
-                .attr ("id", function(d) { return noHashID+"depthclip"+d.depth; })
+                .attr ("class", "napierClipR")
+                .attr ("id", function(d) { return noHashID+"depthclipR"+d.depth; })
                 .append ("rect")
                 .call (sharedClipAttrs)
             ;
