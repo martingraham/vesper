@@ -6,7 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 // this is invoked with ()
-VESPER.DWCAZipParse = (function () {
+VESPER.DWCAZipParse = new function () {
 
     var fileData;
     var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, lineDelimLength, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
@@ -331,4 +331,4 @@ VESPER.DWCAZipParse = (function () {
     };
 
     return this;
-}());
+}();

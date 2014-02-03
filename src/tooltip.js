@@ -1,4 +1,4 @@
-VESPER.tooltip = (function () {
+VESPER.tooltip = new function () {
     this.holdDuration = 10000;
     this.fadeDuration = 200;
     var self = this;
@@ -58,4 +58,4 @@ VESPER.tooltip = (function () {
      };
 
     return this;
-}());
+}();

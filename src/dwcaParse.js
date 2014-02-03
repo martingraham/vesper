@@ -1,4 +1,4 @@
-VESPER.DWCAParser = (function () {
+VESPER.DWCAParser = new function () {
 
     this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
     this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
@@ -16,6 +16,7 @@ VESPER.DWCAParser = (function () {
     this.SUPERROOT = "superroot";
     var superrootID = "-1000";
 
+    console.log ("This", this);
 
 	// terms from old darwin core archive format superseded by newer ones
     // http://rs.tdwg.org/dwc/terms/history/index.htm
@@ -1011,4 +1012,4 @@ VESPER.DWCAParser = (function () {
     this.loadxsd ('dwca.xsd');
 
     return this;
-}());
+}();

@@ -147,17 +147,25 @@ VESPER.Tree = function (divid) {
 
         sharedTextAttrs: function (sel) {
             function rotate (d, elem) {
-                return d.dx > d.dy && d3.select(elem).node().getComputedTextLength() < d.dx - 4;
+                return d.dx > d.dy && elem.getComputedTextLength() < d.dx - 4;
             }
 
             sel
                 .attr ("transform", function (d) {
-                return "translate ("+ (d.y)+","+(d.x + Math.max (((d.dx - 14) / 2) + 14, 14))+")"
-                    + " rotate ("+(rotate(d, this) ? 90 : 0)+" "+(d.dy/2)+" 0)"
-                    //: "rotate (0 0,0)"
-                    ;
+                    var rot = rotate (d, this);
+
+                    if (rot) {
+                        var sl = this.getComputedTextLength();
+                        var mg = Math.max (0, (d.dx - sl) / 2);
+                        return "translate ("+ (d.y)+","+d.x+") "
+                            + " rotate (90 0 0)"
+                            + " translate ("+mg+", -"+(d.dy/2)+")"
+                        ;
+                    } else {
+                        return "translate ("+ (d.y)+","+(d.x + Math.max (((d.dx - 14) / 2) + 14, 14))+") " ;
+                    }
                 })
-                .attr ("clip-path", function (d) { /*var node = getNode (d.id);*/ return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
+                .attr ("clip-path", function (d) { return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)";})
             ;
         },
 
@@ -190,11 +198,10 @@ VESPER.Tree = function (divid) {
             ;
 
             newNodes.append ("svg:text")
-                .text (function(d) { var node = getNode (d.id); return model.getLabel(node); })
+                .text (function(d) { return model.getLabel (getNode (d.id)); })
                 //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
                 .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
                 .call (partitionLayout.sharedTextAttrs)
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
             ;
 
             return newNodes;
@@ -218,7 +225,6 @@ VESPER.Tree = function (divid) {
             group.select("text")
                 //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
                 .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
                 .transition()
                 .delay (delay)
                 .duration (updateDur)
@@ -301,18 +307,22 @@ VESPER.Tree = function (divid) {
         },
 
         sharedTextAttrs: function (sel) {
-            function rotate (d, elem) {
-                return d.dx > d.dy && d3.select(elem).node().getComputedTextLength() < d.dx - 4;
-            }
 
             sel
                 .attr ("transform", function (d) {
-                return "translate ("+ (d.x)+","+ d.y+")"
-                   // + " rotate ("+(rotate(d, this) ? 90 : 0)+" "+(d.dy/2)+" 0)"
-                    //: "rotate (0 0,0)"
+                    var node = getNode (d.id);
+                    if (node.depth === 0) {
+                        return "translate (0,0)" ;
+                    }
+
+                    var ang = (d.x + (d.dx/2)) * (360 / (2 * Math.PI)) - 90;
+                    return "rotate ("+ang+" 0 0) "
+                        + "translate ("+Math.sqrt(d.y)+",0) "
                     ;
-                })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)"; /*"url(#"+noHashID+"depthclip"+node.depth+")";*/})
+                 })
+                .style ("text-anchor", function (d) { return getNode(d.id).depth === 0 ? "middle" : null; })
+                .style ("display", function (d) { return d.dx > 0.1 && (Math.sqrt(d.y+ d.dy) - Math.sqrt(d.y)) > 20 ? null: "none"; })
+                .attr ("clip-path", function (d) { return "url(#"+noHashID+"depthclip"+getNode(d.id).depth+")";})
             ;
         },
 
@@ -382,9 +392,9 @@ VESPER.Tree = function (divid) {
             };
         },
 
-        prep: function () {
+        prep: function (coordSet) {
             treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] / 2 + ")");
-           // partitionLayout.makeTextClips (coordSet);
+            sunburstLayout.makeTextClips (coordSet);
         },
 
         removeOld: function (exitSel) {
@@ -431,6 +441,12 @@ VESPER.Tree = function (divid) {
                 .each(sunburstLayout.pstash)
             ;
 
+            newNodes
+                .append("svg:text")
+                    .text (function(d) { return model.getLabel (getNode (d.id)); })
+                    .call (sunburstLayout.sharedTextAttrs)
+            ;
+
             return newNodes;
         },
 
@@ -455,8 +471,70 @@ VESPER.Tree = function (divid) {
                 .each ("end", sunburstLayout.pstash)
             ;
 
+            var endFunc = function () {
+                d3.select(this)
+                    .call (sunburstLayout.sharedTextAttrs)
+                ;
+            };
+
             group.select("text")
-                .style ("visibility", function (d) { return d.dx > 1 ? "visible": "collapse"; })
+                .style ("display", "none")
+                .transition()
+                .delay (delay)
+                .duration (updateDur)
+                .each ("end", endFunc)
+            ;
+        },
+
+        makeTextClips: function (viewableNodes) {
+            //var height = svg.node().getBoundingClientRect().height;
+            //var width = svg.node().getBoundingClientRect().width;
+            var depths = [];
+            for (var n = 0; n < viewableNodes.length; n++) {
+                var coord = viewableNodes[n];
+                var node = getNode (coord.id);
+                if (!depths [node.depth]) {
+                    depths [node.depth] = {depth: node.depth, inner: Math.sqrt(coord.y), outer: Math.sqrt(coord.y + coord.dy)};
+                }
+            }
+            //VESPER.log ("depths", depths);
+
+            // aaargh, webkit has a bug that means camelcase elements can't be selected
+            // which meant I spent a fruitless morning trying to select "clipPath" elements.
+            // Instead you have to add a class type to the clipPaths and select by that class.
+            // http://stackoverflow.com/questions/11742812/cannot-select-svg-foreignobject-element-in-d3
+            // https://bugs.webkit.org/show_bug.cgi?id=83438
+
+            var clipBind = svg
+                .select ("defs")
+                .selectAll (".napierClip")
+                .data (depths)
+            ;
+
+            // hnng. 'r' is related to the difference between inner and outer radii and not just the outer radius
+            // this appears to be because the text elements all start at (0,0) and are transformed from there
+            // rather than given x,y values as directa attributes
+            var sharedClipAttrs = function (group) {
+                group
+                    .attr ("cx", 0)
+                    .attr ("cy", 0)
+                    .attr ("r", function(d) { return d.outer - d.inner; })
+                ;
+            };
+
+            clipBind.exit().remove();
+
+            clipBind
+                .select ("circle")
+                .call (sharedClipAttrs)
+            ;
+
+            clipBind.enter()
+                .append ("clipPath")
+                .attr ("class", "napierClip")
+                .attr ("id", function(d) { return noHashID+"depthclip"+d.depth; })
+                .append ("circle")
+                .call (sharedClipAttrs)
             ;
         }
     };
@@ -906,20 +984,24 @@ VESPER.ImplicitTaxonomy = function (div) {
             }
         }
 
-        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" total subtaxa")
+        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" deeper subtaxa")
             + (sdesc > 0 ?
-                (subt === undefined ? "" : "<br>"+sdesc+" selected total subtaxa")
+                (subt === undefined ? "" : "<br>("+sdesc+" selected)")
             : "")
         ;
 
         var synCount = model.getSynonymCount (node);
         if (synCount) {
-            tooltipStr+="<br>Also contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
+            tooltipStr+="<hr>Contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
+            var synSelCount = model.getSelectedSynonymCount (node);
+            if (synSelCount) {
+                tooltipStr+="<br>("+synSelCount+" selected)";
+            }
         }
 
         var syn = model.getSynonyms(node);
         if (syn) {
-            tooltipStr += "<hr><i>Taxon Synonymy</i>";
+            tooltipStr += "<hr><i>Synonymous with</i>";
             for (n = 0; n < syn.length; n++) {
                 var id = model.getIndexedDataPoint(syn[n], ffields[0]);
                 var klass = model.getSelectionModel().contains (id) ? "selected" : "";
@@ -953,10 +1035,10 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         var specCount = model.getSpecimenCount(node);
         if (specCount) {
-            tooltipStr += "<hr>Contains<br>"+specCount+" specimen"+(specCount !== 1 ? "s" : "");
+            tooltipStr += "<hr>Contains "+specCount+" specimen"+(specCount > 1 ? "s" : "");
             var SspecCount = model.getSelectedSpecimenCount (node);
             if (SspecCount) {
-                tooltipStr += "<br>"+SspecCount+(SspecCount !== 1 ? " are " : " is ")+" selected";
+                tooltipStr += "<br>("+SspecCount+" selected)";
             }
         }
 
@@ -976,5 +1058,7 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         return tooltipStr;
     };
+
+
     return tree;
 };

@@ -100,7 +100,7 @@ DIV .vis {
     display: inline-block;
 }
 
-
+/*
 .selected {
     fill: #f00;
     background: #f00;
@@ -109,6 +109,17 @@ DIV .vis {
 .holdsSelected {
     fill: #d8d;
     background: #d8d;
+}
+*/
+
+.selected {
+    fill: #f00;
+    background: #f00;
+}
+
+.holdsSelected {
+    fill: #f44;
+    background: #f44;
 }
 
 .unselected {

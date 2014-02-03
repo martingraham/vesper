@@ -20,7 +20,7 @@ VESPER.Model = function (metaData, data) {
 
 VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
-    // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getTaxonomy return the same
+    // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getImplicitTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
     this.getData = function (){ return this.data.records; };
     this.getImplicitTaxonomy = function () { return this.data.impTree; };

@@ -8,9 +8,10 @@
 }
 
 .treeNode text {
-	fill: #000;
+	fill: #222;
     stroke: none;
 	font-size: 14px;
+    font-variant: small-caps;
 	pointer-events: none;
     text-anchor: start;
 }

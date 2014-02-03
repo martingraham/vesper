@@ -133,7 +133,8 @@ VESPER.demo = function (files, exampleDivID) {
                 var setVal = d3.select(this).property("checked");
                 DWCAHelper.setAllFields (checkListParent, setVal, d.attList, DWCAHelper.isIdWrap, getMeta(), selectionOptions);
 
-                var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
+                //var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
+                var cBoxClass = d3.select(this.parentNode).attr("class"); // up one
                 var cGroup = bdiv.selectAll("span."+cBoxClass+" input[type='checkbox']");
                 var ggroup = DWCAHelper.reselectActiveVisChoices (cGroup, checkListParent, function() { return getMeta(); }, selectionOptions);
                 d3.select("#loadButton").property("disabled", ggroup.empty());

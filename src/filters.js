@@ -6,7 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
-VESPER.Filters = (function () {
+VESPER.Filters = new function () {
 
     this.nameLabelFilter = function (model, regex) {
         VESPER.log ("regex", regex);
@@ -47,4 +47,4 @@ VESPER.Filters = (function () {
     };
 
     return this;
-}());
+}();
