@@ -10,7 +10,7 @@ Vesper uses D3, JQuery, Leaflet and an adapted version of JSZip. And some of our
 
 Runnables
 ---------
-A minimised version sits in the build dir (demoMinNew.html) and uses minimized library files found in lib
+A minimised version sits in the build dir (demoMinNew.html) and uses minimized library files found in lib. You can export this along with the source using github's repository download function and run Vesper on your own local server if desired. (Which is basically how the demo above is produced.)
 
 NPMness
 -------
