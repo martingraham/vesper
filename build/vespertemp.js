@@ -5,7 +5,8 @@
  * Time: 13:02
  * To change this template use File | Settings | File Templates.
  */
-var VESPER = (function() {
+
+/*var VESPER =*/ (function() {
     var vesper = {};
     vesper.alerts = false;
     vesper.logRun = false;
@@ -17,7 +18,16 @@ var VESPER = (function() {
     };
     vesper.imgbase = "../img/";
     vesper.log (vesper);
-    return vesper;
+
+    if (typeof define === "function" && define.amd) {
+        define(vesper);
+    } else if (typeof module === "object" && module.exports) {
+        module.exports = vesper;
+    } else {
+        this.VESPER = vesper;
+    }
+
+    //return vesper;
 }());
 /**
  * Created with JetBrains WebStorm.
@@ -27,7 +37,7 @@ var VESPER = (function() {
  * To change this template use File | Settings | File Templates.
  */
 // this is invoked with ()
-VESPER.DWCAZipParse = (function () {
+VESPER.DWCAZipParse = new function () {
 
     var fileData;
     var fieldDelimiter, fieldDelimiterVal, lineDelimiter, lineDelimVal, lineDelimLength, quoteDelimiter, qDelimVal, firstTrue, readFields, lineNo;
@@ -352,7 +362,7 @@ VESPER.DWCAZipParse = (function () {
     };
 
     return this;
-}());
+}();
 
 // TimeLine
 
@@ -872,7 +882,7 @@ VESPER.Model = function (metaData, data) {
 
 VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
-    // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getTaxonomy return the same
+    // In an implicit taxonomy, data.records and data.tree are the same object, so getData and getImplicitTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
     this.getData = function (){ return this.data.records; };
     this.getImplicitTaxonomy = function () { return this.data.impTree; };
@@ -1256,7 +1266,8 @@ VESPER.demo = function (files, exampleDivID) {
                 var setVal = d3.select(this).property("checked");
                 DWCAHelper.setAllFields (checkListParent, setVal, d.attList, DWCAHelper.isIdWrap, getMeta(), selectionOptions);
 
-                var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
+                //var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
+                var cBoxClass = d3.select(this.parentNode).attr("class"); // up one
                 var cGroup = bdiv.selectAll("span."+cBoxClass+" input[type='checkbox']");
                 var ggroup = DWCAHelper.reselectActiveVisChoices (cGroup, checkListParent, function() { return getMeta(); }, selectionOptions);
                 d3.select("#loadButton").property("disabled", ggroup.empty());
@@ -1457,7 +1468,7 @@ VESPER.demo = function (files, exampleDivID) {
     setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);
 };
 
-VESPER.DWCAHelper = (function () {
+VESPER.DWCAHelper = new function () {
 
     var DWCAHelper = this; // self
 
@@ -1960,7 +1971,7 @@ VESPER.DWCAHelper = (function () {
     };
 
     return DWCAHelper;
-}());
+}();
 VESPER.DWCAMapLeaflet = function (divid) {
 
 	var dims;
@@ -2401,7 +2412,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
     );
 };
 		
-VESPER.DWCAParser = (function () {
+VESPER.DWCAParser = new function () {
 
     this.TDATA = 0;     // taxa data, essentially the selected data from the core data file in the DWCA for each record/taxon
     this.TAXA = 1;      // taxa, i.e. in a taxonomy, the children of the current taxon
@@ -2419,6 +2430,7 @@ VESPER.DWCAParser = (function () {
     this.SUPERROOT = "superroot";
     var superrootID = "-1000";
 
+    console.log ("This", this);
 
 	// terms from old darwin core archive format superseded by newer ones
     // http://rs.tdwg.org/dwc/terms/history/index.htm
@@ -3414,7 +3426,7 @@ VESPER.DWCAParser = (function () {
     this.loadxsd ('dwca.xsd');
 
     return this;
-}());
+}();
 /**
  * Created with JetBrains WebStorm.
  * User: cs22
@@ -3423,7 +3435,7 @@ VESPER.DWCAParser = (function () {
  * To change this template use File | Settings | File Templates.
  */
 
-VESPER.Filters = (function () {
+VESPER.Filters = new function () {
 
     this.nameLabelFilter = function (model, regex) {
         VESPER.log ("regex", regex);
@@ -3464,7 +3476,7 @@ VESPER.Filters = (function () {
     };
 
     return this;
-}());
+}();
 
 /**
  * Created with JetBrains WebStorm.
@@ -3473,15 +3485,15 @@ VESPER.Filters = (function () {
  * Time: 15:17
  * To change this template use File | Settings | File Templates.
  */
-VESPER.modelComparisons = (function () {
+VESPER.modelComparisons = new function () {
 
-    this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
+    this.modelCoverageToSelectionOld = function (model1, model2, linkField1, linkField2) {
         var small = smaller (model1, model2);
         var large = (small === model1 ? model2 : model1);
         var smallLinkField = (small === model1 ? linkField1 : linkField2);
         var largeLinkField = (small === model1 ? linkField2 : linkField1);
-        var smallData = small.getExplicitTaxonomy() || small.getImplicitTaxonomy();
-        var largeData = large.getExplicitTaxonomy() || large.getImplicitTaxonomy();
+        var smallData = [small.getExplicitTaxonomy(), small.getImplicitTaxonomy()];
+        var largeData = [large.getExplicitTaxonomy(), large.getImplicitTaxonomy()];
         var smallSelection = small.getSelectionModel();
         var largeSelection = large.getSelectionModel();
         VESPER.log ("lf", linkField1, linkField2);
@@ -3493,28 +3505,129 @@ VESPER.modelComparisons = (function () {
         largeSelection.setUpdating (true);
 
         var invMap = {};
-        for (var prop in smallData) {
-            if (smallData.hasOwnProperty (prop)) {
-                var val = small.getDataPoint (smallData[prop], smallLinkField);
-                invMap[val] = prop;
+        for (var stset = 0; stset < smallData.length; stset++) {
+            var tree = smallData[stset];
+            if (tree) {
+                for (var prop in tree) {
+                    if (tree.hasOwnProperty (prop)) {
+                        var val = small.getDataPoint (tree[prop], smallLinkField);
+                        invMap[val] = prop;
+                    }
+                }
             }
         }
        // VESPER.log ("invMap", invMap);
        // var c = 0;
-        for (var prop in largeData) {
-            if (largeData.hasOwnProperty (prop)) {
-                var val = large.getDataPoint (largeData[prop], largeLinkField);
+        for (var ltset = 0; ltset < largeData.length; ltset++) {
+            var tree = largeData[ltset];
+            if (tree) {
+                for (var prop in tree) {
+                    if (tree.hasOwnProperty (prop)) {
+                        var val = large.getDataPoint (tree[prop], largeLinkField);
 
-                if (invMap[val]) {
-                    smallSelection.addToMap (invMap[val]);
-                    largeSelection.addToMap (prop);
-                    //if (c % 100 == 0) {
-                    //    VESPER.log ("match", val, invMap[val], prop);
-                    //}
-                    //c++;
+                        if (invMap[val]) {
+                            smallSelection.addToMap (invMap[val]);
+                            largeSelection.addToMap (prop);
+                            //if (c % 100 == 0) {
+                            //    VESPER.log ("match", val, invMap[val], prop);
+                            //}
+                            //c++;
+                        }
+                    }
                 }
             }
         }
+
+        smallSelection.setUpdating (false);
+        largeSelection.setUpdating (false);
+    };
+
+    this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
+        var small = smaller (model1, model2);
+        var large = (small === model1 ? model2 : model1);
+        var smallLinkField = (small === model1 ? linkField1 : linkField2);
+        var largeLinkField = (small === model1 ? linkField2 : linkField1);
+        var smallData = [small.getExplicitTaxonomy(), small.getData()];
+        var largeData = [large.getExplicitTaxonomy(), large.getData()];
+        var smallSelection = small.getSelectionModel();
+        var largeSelection = large.getSelectionModel();
+        VESPER.log ("lf", linkField1, linkField2);
+
+        smallSelection.clear();
+        largeSelection.clear();
+
+        smallSelection.setUpdating (true);
+        largeSelection.setUpdating (true);
+
+        var invMap = [];
+        for (var stset = 0; stset < smallData.length; stset++) {
+            var tree = smallData[stset];
+            if (tree) {
+                for (var prop in tree) {
+                    if (tree.hasOwnProperty (prop)) {
+                        var val = small.getDataPoint (tree[prop], smallLinkField);
+                        invMap.push ([prop, val]);
+                    }
+                }
+            }
+        }
+
+        var stopwatch = {base: 0};
+        MGNapier.NapVisLib.resetStopwatch (stopwatch);
+
+        invMap.sort (function(a,b) {
+            if ( a[1] < b[1] )
+                { return -1; }
+            if ( a[1] > b[1] )
+                { return 1; }
+            return 0;
+        });
+        console.log ("sorted array", invMap);
+
+        console.log ("sort", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+        MGNapier.NapVisLib.resetStopwatch (stopwatch);
+
+        var c = 0;
+
+        var lastVal, lastWhere;
+        for (var ltset = 0; ltset < largeData.length; ltset++) {
+            var tree = largeData[ltset];
+            if (tree) {
+
+                for (var prop in tree) {
+                    if (tree.hasOwnProperty (prop)) {
+                        var val = large.getDataPoint (tree[prop], largeLinkField);
+                        // lastVal === val is a useful shortcut when we have lots of specimens of the same name, usually they are grouped sequentially in the record data
+                        var where = (lastVal === val ? lastWhere : binaryIndexOf (invMap, val));
+                        //var where = binaryIndexOf (invMap, val);
+                        lastVal = val;
+                        lastWhere = where;
+                        c++;
+
+                        // exact match
+                        if (where >= 0) {
+                            smallSelection.addToMap (invMap[where][0]);
+                            largeSelection.addToMap (prop);
+                            //if (c % 100 == 0) {
+                            //    VESPER.log ("match", val, invMap[val], prop);
+                            //}
+                            //c++;
+                        }
+                        else {
+                            where = Math.abs (where);
+                            if (c % 1000 === 0) {
+                                console.log (prop, val, invMap[Math.max(0, where-1)], invMap[where]);
+
+                            }
+                            partMatch (prop, val, where, invMap, smallSelection, largeSelection);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log ("search", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+        console.log ("Done",c,"comparisons");
 
         smallSelection.setUpdating (false);
         largeSelection.setUpdating (false);
@@ -3526,9 +3639,83 @@ VESPER.modelComparisons = (function () {
         return (c1 < c2 ? model1 : model2);
     }
 
+    function jointPrefixLength (s1, s2) {
+        var min = Math.min ((s1 ? s1.length : 0), (s2 ? s2.length : 0));
+        for (var n = 0; n < min; n++) {
+            if (s1[n] !== s2[n]) {
+                return n;
+            }
+        }
+        return min;
+    }
+
+    function partMatch (prop, val, where, invMap, smallSel, largeSel) {
+        var valL = val.length;
+        var e1 = invMap[Math.max(0, where-1)];
+        var e2 = invMap[where];
+        var l1 = Math.min (valL, e1[1].length);
+        var l2 = Math.min (valL, e2[1].length);
+
+        var m1 = jointPrefixLength (val, e1[1]);
+        var m2 = jointPrefixLength (val, e2[1]);
+        if (m1 < 10 && m2 < 10) {
+            return; // no reasonable match
+        }
+        if (m1 === l1) {
+            smallSel.addToMap (e1[0]);
+            largeSel.addToMap (prop);
+        }
+        if (m2 === l2) {
+            smallSel.addToMap (e2[0]);
+            largeSel.addToMap (prop);
+        }
+    }
+
+    /**
+     * Performs a binary search on the host array. This method can either be
+     * injected into Array.prototype or called with a specified scope like this:
+     * binaryIndexOf.call(someArray, searchElement);
+     *
+     * @param {*} searchElement The item to search for within the array.
+     * @return {Number} The index of the element which defaults to -1 when not found.
+     */
+    // http://oli.me.uk/2013/06/08/searching-javascript-arrays-with-a-binary-search/
+    function binaryIndexOf (arr, searchElement) {
+        var minIndex = 0;
+        var maxIndex = arr.length - 1;
+        var currentIndex;
+        var currentElement;
+        var resultIndex;
+
+        while (minIndex <= maxIndex) {
+            resultIndex = currentIndex = (minIndex + maxIndex) / 2 | 0;
+            currentElement = arr[currentIndex][1]; // cos its an array of arrays
+
+            if (currentElement < searchElement) {
+                minIndex = currentIndex + 1;
+            }
+            else if (currentElement > searchElement) {
+                maxIndex = currentIndex - 1;
+            }
+            else {
+                return currentIndex;
+            }
+        }
+
+        return (-(Math.max(maxIndex,minIndex)));
+    }
+
+    this.test1 = function () {
+        var arr = [["345", "ant"], ["2013","bat"], ["45", "cat"], ["133", "dog"], ["708", "eel"]];
+        var tests = ["rabbit", "aardvark", "cat", "cattus fattus"];
+        for (var n = 0; n < tests.length; n++) {
+            console.log ("binary test", tests[n], binaryIndexOf (arr, tests[n]));
+        }
+    };
+
 
     return this;
-}());
+}();
 VESPER.FilterView = function (divID) {
 
     var model;
@@ -4379,17 +4566,25 @@ VESPER.Tree = function (divid) {
 
         sharedTextAttrs: function (sel) {
             function rotate (d, elem) {
-                return d.dx > d.dy && d3.select(elem).node().getComputedTextLength() < d.dx - 4;
+                return d.dx > d.dy && elem.getComputedTextLength() < d.dx - 4;
             }
 
             sel
                 .attr ("transform", function (d) {
-                return "translate ("+ (d.y)+","+(d.x + Math.max (((d.dx - 14) / 2) + 14, 14))+")"
-                    + " rotate ("+(rotate(d, this) ? 90 : 0)+" "+(d.dy/2)+" 0)"
-                    //: "rotate (0 0,0)"
-                    ;
+                    var rot = rotate (d, this);
+
+                    if (rot) {
+                        var sl = this.getComputedTextLength();
+                        var mg = Math.max (0, (d.dx - sl) / 2);
+                        return "translate ("+ (d.y)+","+d.x+") "
+                            + " rotate (90 0 0)"
+                            + " translate ("+mg+", -"+(d.dy/2)+")"
+                        ;
+                    } else {
+                        return "translate ("+ (d.y)+","+(d.x + Math.max (((d.dx - 14) / 2) + 14, 14))+") " ;
+                    }
                 })
-                .attr ("clip-path", function (d) { /*var node = getNode (d.id);*/ return rotate(d, this) ? null : "url(#depthclip0)"; /*"url(#depthclip"+node.depth+")";*/})
+                .attr ("clip-path", function (d) { return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)";})
             ;
         },
 
@@ -4422,11 +4617,10 @@ VESPER.Tree = function (divid) {
             ;
 
             newNodes.append ("svg:text")
-                .text (function(d) { var node = getNode (d.id); return model.getLabel(node); })
+                .text (function(d) { return model.getLabel (getNode (d.id)); })
                 //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
                 .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
                 .call (partitionLayout.sharedTextAttrs)
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
             ;
 
             return newNodes;
@@ -4450,7 +4644,6 @@ VESPER.Tree = function (divid) {
             group.select("text")
                 //.style ("visibility", function (d) { return d.dx > 15 && d.dy > 15 ? "visible": textHide; })
                 .style ("display", function (d) { return d.dx > 15 && d.dy > 15 ? null: "none"; })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return "url(#depthclip"+node.depth+")"; })
                 .transition()
                 .delay (delay)
                 .duration (updateDur)
@@ -4533,18 +4726,22 @@ VESPER.Tree = function (divid) {
         },
 
         sharedTextAttrs: function (sel) {
-            function rotate (d, elem) {
-                return d.dx > d.dy && d3.select(elem).node().getComputedTextLength() < d.dx - 4;
-            }
 
             sel
                 .attr ("transform", function (d) {
-                return "translate ("+ (d.x)+","+ d.y+")"
-                   // + " rotate ("+(rotate(d, this) ? 90 : 0)+" "+(d.dy/2)+" 0)"
-                    //: "rotate (0 0,0)"
+                    var node = getNode (d.id);
+                    if (node.depth === 0) {
+                        return "translate (0,0)" ;
+                    }
+
+                    var ang = (d.x + (d.dx/2)) * (360 / (2 * Math.PI)) - 90;
+                    return "rotate ("+ang+" 0 0) "
+                        + "translate ("+Math.sqrt(d.y)+",0) "
                     ;
-                })
-                //.attr ("clip-path", function (d) { var node = getNode (d.id) /*d*/; return rotate(d, this) ? null : "url(#"+noHashID+"depthclip0)"; /*"url(#"+noHashID+"depthclip"+node.depth+")";*/})
+                 })
+                .style ("text-anchor", function (d) { return getNode(d.id).depth === 0 ? "middle" : null; })
+                .style ("display", function (d) { return d.dx > 0.1 && (Math.sqrt(d.y+ d.dy) - Math.sqrt(d.y)) > 20 ? null: "none"; })
+                .attr ("clip-path", function (d) { return "url(#"+noHashID+"depthclip"+getNode(d.id).depth+")";})
             ;
         },
 
@@ -4614,9 +4811,9 @@ VESPER.Tree = function (divid) {
             };
         },
 
-        prep: function () {
+        prep: function (coordSet) {
             treeG.attr("transform", "translate(" + dims[0] / 2 + "," + dims[1] / 2 + ")");
-           // partitionLayout.makeTextClips (coordSet);
+            sunburstLayout.makeTextClips (coordSet);
         },
 
         removeOld: function (exitSel) {
@@ -4663,6 +4860,12 @@ VESPER.Tree = function (divid) {
                 .each(sunburstLayout.pstash)
             ;
 
+            newNodes
+                .append("svg:text")
+                    .text (function(d) { return model.getLabel (getNode (d.id)); })
+                    .call (sunburstLayout.sharedTextAttrs)
+            ;
+
             return newNodes;
         },
 
@@ -4687,8 +4890,70 @@ VESPER.Tree = function (divid) {
                 .each ("end", sunburstLayout.pstash)
             ;
 
+            var endFunc = function () {
+                d3.select(this)
+                    .call (sunburstLayout.sharedTextAttrs)
+                ;
+            };
+
             group.select("text")
-                .style ("visibility", function (d) { return d.dx > 1 ? "visible": "collapse"; })
+                .style ("display", "none")
+                .transition()
+                .delay (delay)
+                .duration (updateDur)
+                .each ("end", endFunc)
+            ;
+        },
+
+        makeTextClips: function (viewableNodes) {
+            //var height = svg.node().getBoundingClientRect().height;
+            //var width = svg.node().getBoundingClientRect().width;
+            var depths = [];
+            for (var n = 0; n < viewableNodes.length; n++) {
+                var coord = viewableNodes[n];
+                var node = getNode (coord.id);
+                if (!depths [node.depth]) {
+                    depths [node.depth] = {depth: node.depth, inner: Math.sqrt(coord.y), outer: Math.sqrt(coord.y + coord.dy)};
+                }
+            }
+            //VESPER.log ("depths", depths);
+
+            // aaargh, webkit has a bug that means camelcase elements can't be selected
+            // which meant I spent a fruitless morning trying to select "clipPath" elements.
+            // Instead you have to add a class type to the clipPaths and select by that class.
+            // http://stackoverflow.com/questions/11742812/cannot-select-svg-foreignobject-element-in-d3
+            // https://bugs.webkit.org/show_bug.cgi?id=83438
+
+            var clipBind = svg
+                .select ("defs")
+                .selectAll (".napierClip")
+                .data (depths)
+            ;
+
+            // hnng. 'r' is related to the difference between inner and outer radii and not just the outer radius
+            // this appears to be because the text elements all start at (0,0) and are transformed from there
+            // rather than given x,y values as directa attributes
+            var sharedClipAttrs = function (group) {
+                group
+                    .attr ("cx", 0)
+                    .attr ("cy", 0)
+                    .attr ("r", function(d) { return d.outer - d.inner; })
+                ;
+            };
+
+            clipBind.exit().remove();
+
+            clipBind
+                .select ("circle")
+                .call (sharedClipAttrs)
+            ;
+
+            clipBind.enter()
+                .append ("clipPath")
+                .attr ("class", "napierClip")
+                .attr ("id", function(d) { return noHashID+"depthclip"+d.depth; })
+                .append ("circle")
+                .call (sharedClipAttrs)
             ;
         }
     };
@@ -5138,20 +5403,24 @@ VESPER.ImplicitTaxonomy = function (div) {
             }
         }
 
-        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" total subtaxa")
+        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" deeper subtaxa")
             + (sdesc > 0 ?
-                (subt === undefined ? "" : "<br>"+sdesc+" selected total subtaxa")
+                (subt === undefined ? "" : "<br>("+sdesc+" selected)")
             : "")
         ;
 
         var synCount = model.getSynonymCount (node);
         if (synCount) {
-            tooltipStr+="<br>Also contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
+            tooltipStr+="<hr>Contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
+            var synSelCount = model.getSelectedSynonymCount (node);
+            if (synSelCount) {
+                tooltipStr+="<br>("+synSelCount+" selected)";
+            }
         }
 
         var syn = model.getSynonyms(node);
         if (syn) {
-            tooltipStr += "<hr><i>Taxon Synonymy</i>";
+            tooltipStr += "<hr><i>Synonymous with</i>";
             for (n = 0; n < syn.length; n++) {
                 var id = model.getIndexedDataPoint(syn[n], ffields[0]);
                 var klass = model.getSelectionModel().contains (id) ? "selected" : "";
@@ -5185,10 +5454,10 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         var specCount = model.getSpecimenCount(node);
         if (specCount) {
-            tooltipStr += "<hr>Contains<br>"+specCount+" specimen"+(specCount !== 1 ? "s" : "");
+            tooltipStr += "<hr>Contains "+specCount+" specimen"+(specCount > 1 ? "s" : "");
             var SspecCount = model.getSelectedSpecimenCount (node);
             if (SspecCount) {
-                tooltipStr += "<br>"+SspecCount+(SspecCount !== 1 ? " are " : " is ")+" selected";
+                tooltipStr += "<br>("+SspecCount+" selected)";
             }
         }
 
@@ -5208,9 +5477,11 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         return tooltipStr;
     };
+
+
     return tree;
 };
-VESPER.tooltip = (function () {
+VESPER.tooltip = new function () {
     this.holdDuration = 10000;
     this.fadeDuration = 200;
     var self = this;
@@ -5270,7 +5541,7 @@ VESPER.tooltip = (function () {
      };
 
     return this;
-}());
+}();
 /**
  * Created with JetBrains WebStorm.
  * User: cs22

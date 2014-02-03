@@ -5,7 +5,8 @@
  * Time: 13:02
  * To change this template use File | Settings | File Templates.
  */
-var VESPER = (function() {
+
+/*var VESPER =*/ (function() {
     var vesper = {};
     vesper.alerts = false;
     vesper.logRun = false;
@@ -17,5 +18,14 @@ var VESPER = (function() {
     };
     vesper.imgbase = "../img/";
     vesper.log (vesper);
-    return vesper;
+
+    if (typeof define === "function" && define.amd) {
+        define(vesper);
+    } else if (typeof module === "object" && module.exports) {
+        module.exports = vesper;
+    } else {
+        this.VESPER = vesper;
+    }
+
+    //return vesper;
 }());
