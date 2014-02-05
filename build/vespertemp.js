@@ -19,6 +19,11 @@
     vesper.imgbase = "../img/";
     vesper.log (vesper);
 
+    vesper.init = function () {
+        vesper.tooltip.init();
+        vesper.titles = $.t("vesper.visTitles", {"returnObjectTrees":true});
+    };
+
     if (typeof define === "function" && define.amd) {
         define(vesper);
     } else if (typeof module === "object" && module.exports) {
@@ -1145,7 +1150,8 @@ VESPER.DWCAModel = function (metaData, data) {
 
 VESPER.demo = function (files, exampleDivID) {
 
-    VESPER.tooltip.init();
+    //VESPER.tooltip.init();
+    VESPER.init();
 
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
     var DWCAHelper = VESPER.DWCAHelper;
@@ -1212,7 +1218,7 @@ VESPER.demo = function (files, exampleDivID) {
         if (table.empty()) {
             table = d3.select(exampleDivID).append("table");
             var headerRow = table.append("tr");
-            var headerText = ["Data Set", "Description", "Originator"];
+            var headerText = [$.t("demo.dataHeader"), $.t("demo.descHeader"), $.t("demo.origHeader")];
             var headers = headerRow.selectAll("th").data(headerText);
             headers.enter().append("th").text(function(d) { return d; });
         }
@@ -1347,7 +1353,7 @@ VESPER.demo = function (files, exampleDivID) {
 
         DWCAHelper.divDisplay(["#"+progressBarID], "block");
         function notifyFunc (fileName, lines) {
-            d3.select("#"+progressBarID).select("p").html("Zip processing: "+fileName+". Parsed "+lines+" records.");
+            d3.select("#"+progressBarID).select("p").html($.t("demo.zipProcTemplate", {"fileName":fileName, "count": lines}));
         }
         VESPER.DWCAZipParse.setNotifyFunc (notifyFunc);
 
@@ -1366,7 +1372,7 @@ VESPER.demo = function (files, exampleDivID) {
 
         DWCAHelper.divDisplay(["#selDiv"], "none");
         DWCAHelper.divDisplay(["#allVisDiv"], "block");
-        d3.select("#"+progressBarID).select("p").html("Initialising Chosen Views... Please wait...");
+        d3.select("#"+progressBarID).select("p").html($.t("demo.initViewsMessage"));
 
         // Do a set timeout so the progressbar is updated with the above message before the views start initialising
         setTimeout (
@@ -1426,7 +1432,7 @@ VESPER.demo = function (files, exampleDivID) {
 
             DWCAHelper.divDisplay (["#showOnZipLoadDiv"], "block");
         } else {
-            alert (meta.error+" Check DWCA meta.xml compliance.");
+            alert (meta.error+" "+$.t("demo.DWCAErrorMeta"));
             // flash up something to say not a dwca file (one we can read at least)
         }
     };
@@ -2013,9 +2019,11 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     // what a markercluster does when the mouse is over it
     var clusterMouseOverListener = function (a) {
-        VESPER.tooltip.updateText (a.layer.getChildCount()+" Records",
-            (a.layer.getSelectedChildCount() > 0 ? a.layer.getSelectedChildCount()+' Selected<br>' : "")
-            + dFormat(a.latlng.lat)+" Lat<br>"+dFormat(a.latlng.lng)+" Long"
+        var sCount = a.layer.getSelectedChildCount();
+        // careful with lng, as i18text interprets var with that name as changing translation language!
+        VESPER.tooltip.updateText ($.t("map.tooltipHeader", {count: a.layer.getChildCount()}),
+            (sCount > 0 ? $.t("map.tooltipSel", {count: sCount}) : "")
+            + $.t("map.tooltipLatLong", {lat: dFormat(a.latlng.lat), llong: dFormat(a.latlng.lng)})
         );
         VESPER.tooltip.updatePosition (a.originalEvent);
     };
@@ -2038,7 +2046,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
         var eid = e.target.extId;
         var node = model.getNodeFromID (eid);
         VESPER.tooltip.updateText (model.getLabel (node),
-            e.latlng+(model.getSelectionModel().contains (eid) ? "<br>Selected" : "")
+            e.latlng+(model.getSelectionModel().contains (eid) ? $.t("map.tooltipIndSel") : "")
+            + $.t("map.tooltipLatLong", {lat: dFormat(e.latlng.lat), llong: dFormat(e.latlng.lng)})
         );
         VESPER.tooltip.updatePosition (e.originalEvent);
     };
@@ -2617,7 +2626,7 @@ VESPER.DWCAParser = new function () {
             var metaData = VESPER.DWCAParser.parseMeta ($.parseXML (metaFile.uncompressedFileData));
             return {jszip: zip, meta: metaData};
         }
-        return {jszip: zip, meta: {error:"Cannot locate "+metaFileName+" within zip."}};
+        return {jszip: zip, meta: {error:$.t("parser.zipError", {"file":metaFileName})}};
     };
 
 
@@ -2831,7 +2840,7 @@ VESPER.DWCAParser = new function () {
                             //delete jsonObj[id];
                         }
                         else {
-                            VESPER.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
+                            VESPER.log ($.t("parser.deadonymError", {aid: aid, rec: rec}));
                         }
                     }
                 }
@@ -3248,7 +3257,7 @@ VESPER.DWCAParser = new function () {
 		var metaData = {"coreRowType":coreRowType, "extRowTypes":extRowTypes, "fileData":fileData, "vesperAdds":{}};
 
         if (coreRowType == undefined) {
-            metaData.error = "JQuery cannot find element[attribute]: core[rowType] within xml.";
+            metaData.error = $.t("parser.missingCoreError");
         }
         else if (fileData[coreRowType].error) {
             metaData.error = fileData[coreRowType].error;
@@ -3344,9 +3353,9 @@ VESPER.DWCAParser = new function () {
                 VESPER.log ("filenames: ", fileNames);
                 return fileData;
             }
-            return {"error": "JQuery cannot find path [files location] within "+fragQ+" section of xml."};
+            return {"error": $.t("parser.missingFilesError", {"part": fragQ})};
         }
-        return {"error": "JQuery cannot find path ["+fragQ+"] within xml."};
+        return {"error": $.t("parser.missingPathError", {"path": fragQ})};
 	};
 
 
@@ -3819,7 +3828,7 @@ VESPER.RecordDetails = function (divID) {
             var node = model.getNodeFromID (curID);
 
             // Set up taxon data table
-            var tableSel = makeTableAndHeader (divSel, detailTable, ["Field", "Value"]);
+            var tableSel = makeTableAndHeader (divSel, detailTable, [$.t("search.fieldLabel"), $.t("search.valueLabel")]);
             var tableData = [];
             var tInvFields = fileData[metaData.coreRowType].filteredInvFieldIndex;
             var tdata = model.getTaxaData(node);
@@ -4345,7 +4354,11 @@ VESPER.Sanity = function(divid) {
         function getSelPC (val) { return selectedSize > 0 ? val / selectedSize : 0; }
 
         // Check missing data by vis type
-        var sTable = createTable ("visSanityTests", ["Vis Type", "Partial records", "No records", "Partial records (sel)", "No records (sel)"]);
+        var visSanHeaders = [];
+        for (var n = 0; n < 5; n++) {
+            visSanHeaders.push ($.t("sanity.visSanHeaders."+n));
+        }
+        var sTable = createTable ("visSanityTests", visSanHeaders);
         var processors = [{name:"listName", func:getOrig, klass:"showSanityText"}, {name:"some", func:getAllPC, klass:"dontShowSanityText"}, {name:"all", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selSome", func:getSelPC, klass:"dontShowSanityText"}, {name:"selAll", func:getSelPC, klass:"dontShowSanityText"}
         ];
@@ -4353,8 +4366,12 @@ VESPER.Sanity = function(divid) {
 
 
         // Check missing data by field type
+        var fieldSanHeaders = [];
+        for (var n = 0; n < 4; n++) {
+            fieldSanHeaders.push ($.t("sanity.fieldSanHeaders."+n));
+        }
         if (!$.isEmptyObject(allFieldsComplete)) {
-            sTable = createTable ("fieldSanityTests", ["Record Type", "Field Type", "No value", "No value (sel)"]);
+            sTable = createTable ("fieldSanityTests", fieldSanHeaders);
             processors = [{name:"recordType", func:getOrig, klass:"showSanityText"}, {name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selCount", func:getSelPC, klass:"dontShowSanityText"}
             ];
@@ -4362,8 +4379,12 @@ VESPER.Sanity = function(divid) {
         }
 
         // Check fields with controlled vocabularies
+        var vocabSanHeaders = [];
+        for (var n = 0; n < 2; n++) {
+            vocabSanHeaders.push ($.t("sanity.vocabSanHeaders."+n));
+        }
         if (!$.isEmptyObject(vocabCounts)) {
-            sTable = createTable ("vocabSanityTests", ["Field Type", "Vocabulary Size"]);
+            sTable = createTable ("vocabSanityTests", vocabSanHeaders);
             processors = [{name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getOrig, klass:"showSanityText"}];
             popTable (sTable.selectAll("tr.sanityRow").data(d3.values(vocabCounts)), fillCells);
         } else {
