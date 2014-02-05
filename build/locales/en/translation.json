@@ -1,0 +1,125 @@
+{
+    "web": {
+        "BackTab":"Background"
+    },
+    "vesper":{
+        "visTitles": {
+            "VisLauncher":"Controls",
+            "ImplicitTaxonomy":"Normalised Taxonomy",
+            "ExplicitTaxonomy":"Unnormalised Taxonomy",
+            "DWCAMapLeaflet":"Map",
+            "Timeline":"Timeline",
+            "Sanity":"Missing Data Check",
+            "RecordDetails":"Record Details",
+            "TaxaDistribution":"Taxa Distribution",
+            "FilterView":"Search Box"
+        }
+    },
+    "demo": {
+        "dataHeader":"Data Set",
+        "descHeader":"Description",
+        "origHeader":"Originator",
+        "loadChoices":"Load Data For",
+        "labelLabel":"Use this field as label",
+        "allFieldsLabel":"Select All Fields",
+        "clearFieldsLabel":"Clear All Fields",
+        "loadLabel":"Load",
+        "zipProcTemplate":"Zip processing: __fileName__. Parsed __count__ records.",
+        "initViewsMessage":"Initialising Chosen Views... Please wait...",
+        "DWCAErrorMeta":"Check DWCA meta.xml compliance."
+    },
+    "tree": {
+        "sortAlpha": "Label",
+        "sortDesc": "Size",
+        "sortSel": "Direct Selection",
+        "sortDescSel": "Selection Size",
+        "sizeBottomUp": "Bottom Up",
+        "sizeBottomUpLog": "Bottom Up Log",
+        "sizeTopDown": "Top Down",
+        "layoutIcicle": "Left to Right",
+        "layoutSunburst": "Centre out",
+        "sortLabel":"Sort By",
+        "sizeLabel":"Space Allocation",
+        "layoutLabel":"View Style",
+
+        "taxaTooltip":"__count__ deeper subtaxon",
+        "taxaTooltip_plural":"__count__ deeper subtaxa",
+        "taxaSelTooltip":"(__count__ Selected)",
+        "synTooltip":"Contains __count__ Synonym",
+        "synTooltip_plural":"Contains __count__ Synonyms",
+        "synSelTooltip":"(__syn__ Selected)",
+        "synLabel":"Synonymous with",
+        "specLabel":"Specimens",
+        "specTooltip":"Contains __count__ specimen",
+        "specTooltip_plural":"Contains __count__ specimens",
+        "specSelTooltip":"(__count__ Selected)",
+        "andMore":"...and __count__ more"
+    },
+    "launcher": {
+        "launchHeader":"Launch Visualisation",
+        "selectHeader":"Current Selections",
+        "selectSave":"Save",
+        "selectInvert":"Invert Selection",
+        "selectClear":"Clear",
+        "compareHeader":"Taxonomy Comparison",
+        "compareLabel":"Compare This",
+        "noFileWriter":"This Browser does not support the HTML5 FileWriter API",
+        "closeTooltip":"Close This View",
+        "hideTooltip":"Toggle View Visibility"
+    },
+    "barChart": {
+        "minPrefix":"Min: ",
+        "maxPrefix":"Max: ",
+        "timeMinPrefix":"From: ",
+        "timeMaxPrefix":"To: ",
+        "typeLabel":"Bar Type",
+        "allLabel":"All",
+        "selLabel":"Selected",
+        "taxaTooltip":"Subtaxa: __start__",
+        "taxaTooltip_plural":"Subtaxa: __start__ to __end__",
+        "taxaCountLabel":"Count: __count__"
+    },
+    "search": {
+        "label":"Search",
+        "keystrokeLabel":"Keystroke Search",
+        "findLabel":"Find Details for Record ID",
+        "noResult":"No Such Record",
+        "recordSyn":"Synonym ID",
+        "recordSpec":"Specimen ID",
+        "fieldLabel":"Field",
+        "valueLabel":"Value"
+    },
+    "map": {
+        "tooltipHeader":"__count__ Record",
+        "tooltipHeader_plural":"__count__ Records",
+        "tooltipLatLong":"__lat__ Lat<br>__llong__ Long",
+        "tooltipSel":"__count__ Selected<br>",
+        "tooltipIndSel":"Selected"
+    },
+    "parser": {
+        "zipError":"Cannot locate _file__ within zip.",
+        "missingCoreError":"JQuery cannot find element[attribute]: core[rowType] within meta.xml.",
+        "missingFilesError":"JQuery cannot find path [files location] within __part__ section of meta.xml.",
+        "missingPathError":"JQuery cannot find path [__path__] within meta.xml.",
+        "deadonymError":"Deadonym. No link to accepted name id __aid__ for __rec__"
+    },
+    "sanity": {
+        "visSanHeaders": {
+            "0":"Vis Type",
+            "1":"Partial Records",
+            "2":"No Records",
+            "3":"Selected: Part Records",
+            "4":"Selected: No Records"
+        },
+        "fieldSanHeaders": {
+            "0":"Record Type",
+            "1": "Field Type",
+            "2": "No Value",
+            "3": "Sel No Value"
+        },
+        "vocabSanHeaders": {
+            "0":"Field Type",
+            "1":"Vocabulary Size"
+        }
+    }
+}
