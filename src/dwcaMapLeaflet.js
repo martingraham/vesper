@@ -38,9 +38,11 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     // what a markercluster does when the mouse is over it
     var clusterMouseOverListener = function (a) {
-        VESPER.tooltip.updateText (a.layer.getChildCount()+" Records",
-            (a.layer.getSelectedChildCount() > 0 ? a.layer.getSelectedChildCount()+' Selected<br>' : "")
-            + dFormat(a.latlng.lat)+" Lat<br>"+dFormat(a.latlng.lng)+" Long"
+        var sCount = a.layer.getSelectedChildCount();
+        // careful with lng, as i18text interprets var with that name as changing translation language!
+        VESPER.tooltip.updateText ($.t("map.tooltipHeader", {count: a.layer.getChildCount()}),
+            (sCount > 0 ? $.t("map.tooltipSel", {count: sCount}) : "")
+            + $.t("map.tooltipLatLong", {lat: dFormat(a.latlng.lat), llong: dFormat(a.latlng.lng)})
         );
         VESPER.tooltip.updatePosition (a.originalEvent);
     };
@@ -63,7 +65,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
         var eid = e.target.extId;
         var node = model.getNodeFromID (eid);
         VESPER.tooltip.updateText (model.getLabel (node),
-            e.latlng+(model.getSelectionModel().contains (eid) ? "<br>Selected" : "")
+            e.latlng+(model.getSelectionModel().contains (eid) ? $.t("map.tooltipIndSel") : "")
+            + $.t("map.tooltipLatLong", {lat: dFormat(e.latlng.lat), llong: dFormat(e.latlng.lng)})
         );
         VESPER.tooltip.updatePosition (e.originalEvent);
     };

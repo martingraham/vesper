@@ -385,8 +385,8 @@ VESPER.BarChart = function(divid) {
     var binned, selBinned;
     var rangeSlider = MGNapier.NapVisLib.rangeSlider();
     rangeSlider.tooltipTemplates ({
-        "min": function (r,s) { return "Min: "+self.wrapDataType (self.makeToNearest (s.invert (r[0]))); },
-        "max": function (r,s) { return "Max: "+self.wrapDataType (self.makeToNearest (s.invert (r[1]))); },
+        "min": function (r,s) { return $.t("barChart.minPrefix")+self.wrapDataType (self.makeToNearest (s.invert (r[0]))); },
+        "max": function (r,s) { return $.t("barChart.maxPrefix")+self.wrapDataType (self.makeToNearest (s.invert (r[1]))); },
         "bar": function () { return null; }
     });
 	
@@ -455,7 +455,7 @@ VESPER.BarChart = function(divid) {
 
             //MGNapier.NapVisLib.addHRGrooves (butdiv);
             VESPER.DWCAHelper.addDragArea (butdiv);
-            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":"Bar Type", "sectionID":"Totals"}],"section");
+            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
 
             var choices = {Interval: self.uncalcCumulative, Cumulative: self.calcCumulative};
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
@@ -594,7 +594,7 @@ VESPER.BarChart = function(divid) {
                 .on ("mouseover", function(d) {
                     d3.select(this).classed("highlight", true);
                     var selected = d3.select(this).classed("selected");
-                    VESPER.tooltip.updateText(selected ? "Selected" : "All", self.makeTitle (d));
+                    VESPER.tooltip.updateText($.t("barChart."+(selected ? "allLabel" : "selLabel")), self.makeTitle (d));
                     VESPER.tooltip.updatePosition (d3.event);
                 })
                 .on ("mouseout", function() {
@@ -801,8 +801,9 @@ VESPER.BarChart = function(divid) {
 VESPER.TaxaDistribution = function (div) {
     var chart = new VESPER.BarChart (div);
     chart.makeTitle = function (d) {
-        var singleVal = ((d.end - d.start) === 1);
-        return "Subtaxa: "+d.start+(singleVal ? "" : " to "+(d.end - 1))+"<br>Count: "+d.count;
+        return $.t("barChart.taxaTooltip", {count: d.end - d.start, start: d.start, end: d.end - 1})
+            +"<br>"
+            +$.t("barChart.taxaCountLabel", {count: d.count});
     };
     chart.wrapDataType = function (d) { return d; };
     chart.unwrapDataType = function (o) { return o; };
@@ -848,8 +849,8 @@ VESPER.TimeLine = function (div) {
         timeCache = {};     // clear time cache
     };
     chart.getRangeSlider().tooltipTemplates ({
-        "min": function (r,s) { return "From "+chart.wrapDataType (chart.makeToNearest (s.invert (r[0]))); },
-        "max": function (r,s) { return "To "+chart.wrapDataType (chart.makeToNearest (s.invert (r[1]))); },
+        "min": function (r,s) { return $.t("barChart.timeMinPrefix")+chart.wrapDataType (chart.makeToNearest (s.invert (r[0]))); },
+        "max": function (r,s) { return $.t("barChart.timeMaxPrefix")+chart.wrapDataType (chart.makeToNearest (s.invert (r[1]))); },
         "bar": function () { return null; }
     });
     var oneDayInMs = 24 * 60 * 60 * 1000;
@@ -3487,61 +3488,6 @@ VESPER.Filters = new function () {
  */
 VESPER.modelComparisons = new function () {
 
-    this.modelCoverageToSelectionOld = function (model1, model2, linkField1, linkField2) {
-        var small = smaller (model1, model2);
-        var large = (small === model1 ? model2 : model1);
-        var smallLinkField = (small === model1 ? linkField1 : linkField2);
-        var largeLinkField = (small === model1 ? linkField2 : linkField1);
-        var smallData = [small.getExplicitTaxonomy(), small.getImplicitTaxonomy()];
-        var largeData = [large.getExplicitTaxonomy(), large.getImplicitTaxonomy()];
-        var smallSelection = small.getSelectionModel();
-        var largeSelection = large.getSelectionModel();
-        VESPER.log ("lf", linkField1, linkField2);
-
-        smallSelection.clear();
-        largeSelection.clear();
-
-        smallSelection.setUpdating (true);
-        largeSelection.setUpdating (true);
-
-        var invMap = {};
-        for (var stset = 0; stset < smallData.length; stset++) {
-            var tree = smallData[stset];
-            if (tree) {
-                for (var prop in tree) {
-                    if (tree.hasOwnProperty (prop)) {
-                        var val = small.getDataPoint (tree[prop], smallLinkField);
-                        invMap[val] = prop;
-                    }
-                }
-            }
-        }
-       // VESPER.log ("invMap", invMap);
-       // var c = 0;
-        for (var ltset = 0; ltset < largeData.length; ltset++) {
-            var tree = largeData[ltset];
-            if (tree) {
-                for (var prop in tree) {
-                    if (tree.hasOwnProperty (prop)) {
-                        var val = large.getDataPoint (tree[prop], largeLinkField);
-
-                        if (invMap[val]) {
-                            smallSelection.addToMap (invMap[val]);
-                            largeSelection.addToMap (prop);
-                            //if (c % 100 == 0) {
-                            //    VESPER.log ("match", val, invMap[val], prop);
-                            //}
-                            //c++;
-                        }
-                    }
-                }
-            }
-        }
-
-        smallSelection.setUpdating (false);
-        largeSelection.setUpdating (false);
-    };
-
     this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
         var small = smaller (model1, model2);
         var large = (small === model1 ? model2 : model1);
@@ -3551,7 +3497,7 @@ VESPER.modelComparisons = new function () {
         var largeData = [large.getExplicitTaxonomy(), large.getData()];
         var smallSelection = small.getSelectionModel();
         var largeSelection = large.getSelectionModel();
-        VESPER.log ("lf", linkField1, linkField2);
+        //VESPER.log ("lf", linkField1, linkField2);
 
         smallSelection.clear();
         largeSelection.clear();
@@ -3559,14 +3505,14 @@ VESPER.modelComparisons = new function () {
         smallSelection.setUpdating (true);
         largeSelection.setUpdating (true);
 
-        var invMap = [];
+        var arr = [];
         for (var stset = 0; stset < smallData.length; stset++) {
             var tree = smallData[stset];
             if (tree) {
                 for (var prop in tree) {
                     if (tree.hasOwnProperty (prop)) {
                         var val = small.getDataPoint (tree[prop], smallLinkField);
-                        invMap.push ([prop, val]);
+                        arr.push ([prop, val]);
                     }
                 }
             }
@@ -3575,16 +3521,16 @@ VESPER.modelComparisons = new function () {
         var stopwatch = {base: 0};
         MGNapier.NapVisLib.resetStopwatch (stopwatch);
 
-        invMap.sort (function(a,b) {
+        arr.sort (function(a,b) {
             if ( a[1] < b[1] )
                 { return -1; }
             if ( a[1] > b[1] )
                 { return 1; }
             return 0;
         });
-        console.log ("sorted array", invMap);
 
-        console.log ("sort", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+        //VESPER.log ("sorted array", arr);
+        VESPER.log ("sort", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
         MGNapier.NapVisLib.resetStopwatch (stopwatch);
 
         var c = 0;
@@ -3598,7 +3544,7 @@ VESPER.modelComparisons = new function () {
                     if (tree.hasOwnProperty (prop)) {
                         var val = large.getDataPoint (tree[prop], largeLinkField);
                         // lastVal === val is a useful shortcut when we have lots of specimens of the same name, usually they are grouped sequentially in the record data
-                        var where = (lastVal === val ? lastWhere : binaryIndexOf (invMap, val));
+                        var where = (lastVal === val ? lastWhere : binaryIndexOf (arr, val));
                         //var where = binaryIndexOf (invMap, val);
                         lastVal = val;
                         lastWhere = where;
@@ -3606,28 +3552,19 @@ VESPER.modelComparisons = new function () {
 
                         // exact match
                         if (where >= 0) {
-                            smallSelection.addToMap (invMap[where][0]);
+                            smallSelection.addToMap (arr[where][0]);
                             largeSelection.addToMap (prop);
-                            //if (c % 100 == 0) {
-                            //    VESPER.log ("match", val, invMap[val], prop);
-                            //}
-                            //c++;
-                        }
-                        else {
-                            where = Math.abs (where);
-                            if (c % 1000 === 0) {
-                                console.log (prop, val, invMap[Math.max(0, where-1)], invMap[where]);
-
-                            }
-                            partMatch (prop, val, where, invMap, smallSelection, largeSelection);
+                        } else {
+                            where = ~where;
+                            partMatch (prop, val, where, arr, smallSelection, largeSelection);
                         }
                     }
                 }
             }
         }
 
-        console.log ("search", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
-        console.log ("Done",c,"comparisons");
+        VESPER.log ("search", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+        VESPER.log ("Done",c,"comparisons");
 
         smallSelection.setUpdating (false);
         largeSelection.setUpdating (false);
@@ -3649,26 +3586,53 @@ VESPER.modelComparisons = new function () {
         return min;
     }
 
-    function partMatch (prop, val, where, invMap, smallSel, largeSel) {
-        var valL = val.length;
-        var e1 = invMap[Math.max(0, where-1)];
-        var e2 = invMap[where];
-        var l1 = Math.min (valL, e1[1].length);
-        var l2 = Math.min (valL, e2[1].length);
+    function startsWith (ls, ss) {
+        return ls.lastIndexOf (ss, 0) === 0;
+    }
 
-        var m1 = jointPrefixLength (val, e1[1]);
-        var m2 = jointPrefixLength (val, e2[1]);
-        if (m1 < 10 && m2 < 10) {
-            return; // no reasonable match
+
+    /**
+     * Naive matching routine. Checks if one string is a prefix of another.
+     * @param prop
+     * @param val
+     * @param where
+     * @param arr
+     * @param smallSel
+     * @param largeSel
+     */
+    function partMatch (prop, val, where, arr, smallSel, largeSel) {
+        var valL = val.length;
+
+        if (where > 0) {
+            var e1 = arr[where-1];
+            var l1 = Math.min (valL, e1[1].length);
+            var m1 = jointPrefixLength (val, e1[1]);
+            if (m1 >= 10 && m1 === l1) {
+                smallSel.addToMap (e1[0]);
+                largeSel.addToMap (prop);
+            }
         }
-        if (m1 === l1) {
+
+        if (where < arr.length) {
+            var e2 = arr[where];
+            var l2 = Math.min (valL, e2[1].length);
+            var m2 = jointPrefixLength (val, e2[1]);
+            if (m2 >= 10 && m2 === l2) {
+                smallSel.addToMap (e2[0]);
+                largeSel.addToMap (prop);
+            }
+        }
+        /*
+        if (startsWith (valL === l1 ? e1[1] : val)) {
             smallSel.addToMap (e1[0]);
             largeSel.addToMap (prop);
         }
-        if (m2 === l2) {
+
+        if (startsWith (valL === l2 ? e2[1] : val)) {
             smallSel.addToMap (e2[0]);
             largeSel.addToMap (prop);
         }
+        */
     }
 
     /**
@@ -3702,7 +3666,7 @@ VESPER.modelComparisons = new function () {
             }
         }
 
-        return (-(Math.max(maxIndex,minIndex)));
+        return (~(Math.max(maxIndex,minIndex))); // ~ unary not negates number and subtracts 1 if no match found. Subtract 1 needed to avoid minus zeroes.
     }
 
     this.test1 = function () {
@@ -3734,7 +3698,7 @@ VESPER.FilterView = function (divID) {
         var textSearch = d3.select(divID).append("span");
         textSearch.append("label")
             .attr("for", tid)
-            .text ("Search")
+            .text ($.t("search.label"))
         ;
         textSearch.append("input")
             .attr("type", "text")
@@ -3757,7 +3721,7 @@ VESPER.FilterView = function (divID) {
         typeAheadDiv
             .append ("label")
             .attr ("for", tid+"TypeAhead")
-            .text ("Keystroke Search")
+            .text ($.t("search.keystrokeLabel"))
         ;
 
         bindSearch ();
@@ -3819,7 +3783,7 @@ VESPER.RecordDetails = function (divID) {
         var iid = divSel.attr("id")+"textinput";
         recordInput.append("label")
             .attr("for", iid)
-            .text ("Find Details for Record ID")
+            .text ($.t("search.findLabel"))
         ;
         recordInput.append("input")
             .attr("type", "text")
@@ -3827,7 +3791,7 @@ VESPER.RecordDetails = function (divID) {
         ;
         recordInput.append("span")
             .attr ("class", "vesperWarning")
-            .text("No such record")
+            .text($.t("search.noResult"))
             .style("display", "none")
         ;
 
@@ -3907,7 +3871,7 @@ VESPER.RecordDetails = function (divID) {
             }
 
             // Synonymy table
-            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID"]);
+            var synTablesSel = makeTableAndHeader (divSel, "synTable", [$.t("search.recordSyn")]);
             var syns = model.getSynonyms(node);
             tableData = [];
             if (syns) {
@@ -3934,7 +3898,7 @@ VESPER.RecordDetails = function (divID) {
 
 
             // Specimens table
-            var specTablesSel = makeTableAndHeader (divSel, "specTable", ["Specimen ID"]);
+            var specTablesSel = makeTableAndHeader (divSel, "specTable", [$.t("search.recordSpec")]);
             var specs = model.getSpecimens(node);
             tableData = [];
             if (specs) {
@@ -4473,7 +4437,8 @@ VESPER.Tree = function (divid) {
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
-    var sortOptionLabels = {"Alpha": "Label", "Descendants": "Size", "Selected": "Direct Selection", "SelectedDesc":"Selection Size"};
+    var sortOptionLabels = {"Alpha": $.t("tree.sortAlpha"), "Descendants": $.t("tree.sortDesc"),
+        "Selected": $.t("tree.sortSel"), "SelectedDesc": $.t("tree.sortDescSel")};
 
     this.tooltipString = function () {
         var tooltipStr = "Placeholder";
@@ -4505,7 +4470,7 @@ VESPER.Tree = function (divid) {
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
            // .filter (function (d) { return allowedRanks[model.getTaxaData(d)[rankField]]; })
     };
-    var spaceAllocationLabels = {"bottomUp": "Bottom Up", "bottomUpLog": "Bottom Up Log", "topDown": "Top Down"};
+    var spaceAllocationLabels = {"bottomUp": $.t("tree.sizeBottomUp"), "bottomUpLog": $.t("tree.sizeBottomUpLog"), "topDown": $.t("tree.sizeTopDown")};
 
     function patternFill (nodeId) {
         if (nodeId !== undefined && nodeId.charAt(0) === '*') {
@@ -4959,7 +4924,7 @@ VESPER.Tree = function (divid) {
     };
 
     var layoutOptions = {Icicle: partitionLayout, Sunburst: sunburstLayout};
-    var layoutOptionLabels = {Icicle:"Left to right", Sunburst: "Centre out"};
+    var layoutOptionLabels = {Icicle:$.t("tree.layoutIcicle"), Sunburst: $.t("tree.layoutSunburst")};
 
     this.set = function (fields, mmodel) {
         ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
@@ -5056,18 +5021,13 @@ VESPER.Tree = function (divid) {
             .attr ("id", noHashID+"controls")
         ;
 
-        //MGNapier.NapVisLib.addHRGrooves (cpanel);
         VESPER.DWCAHelper.addDragArea (cpanel);
 
         MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"View Style", "sectionID":"Layout"},
-                {"header":"Sort By", sectionID:"Sort"}],
+            [{"header":$.t("tree.sizeLabel"), "sectionID":"Space"},{"header":$.t("tree.layoutLabel"), "sectionID":"Layout"},
+                {"header":$.t("tree.sortLabel"), sectionID:"Sort"}],
         "section");
 
-        //var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
-        //spaceDiv.append("p").html("Space Allocation");
-        //var allocBinds = spaceDiv.selectAll("button.allocChoice")
-        //    .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
         var allocBinds = d3.select(divid+"controlsSpace").selectAll("button.allocChoice")
             .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
         var aHolders = allocBinds.enter()
@@ -5094,12 +5054,6 @@ VESPER.Tree = function (divid) {
             .html (function(d) { return spaceAllocationLabels[d.key]; })
         ;
 
-        /*
-        var layoutDiv = cpanel.append("div").attr("class", "taxaControlsLayout");
-        layoutDiv.append("p").html("Layout Style");
-        var layoutBinds = layoutDiv.selectAll("button.layoutChoice")
-            .data(d3.entries (layoutOptions), function(d) { return d.key; });
-            */
         var layoutBinds = d3.select(divid+"controlsLayout").selectAll("button.layoutChoice")
             .data(d3.entries (layoutOptions), function(d) { return d.key; });
         var lHolders = layoutBinds.enter()
@@ -5129,12 +5083,6 @@ VESPER.Tree = function (divid) {
             .html (function(d) { return layoutOptionLabels[d.key]; })
         ;
 
-        /*
-        var sortDiv = cpanel.append("div").attr("class", "taxaControlsSort");
-		sortDiv.append("p").html("Sort");
-        var sortBinds = sortDiv.selectAll("button.sortChoice")
-            .data(d3.entries (sortOptions), function(d) { return d.key; });
-            */
         var sortBinds = d3.select(divid+"controlsSort").selectAll("button.sortChoice")
             .data(d3.entries (sortOptions), function(d) { return d.key; });
         var sHolders = sortBinds.enter()
@@ -5403,24 +5351,24 @@ VESPER.ImplicitTaxonomy = function (div) {
             }
         }
 
-        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" deeper subtaxa")
+        tooltipStr += (subt === undefined ? "" : "<hr>"+$.t("tree.taxaTooltip", {count: desc}))
             + (sdesc > 0 ?
-                (subt === undefined ? "" : "<br>("+sdesc+" selected)")
+                (subt === undefined ? "" : "<br>"+$.t("tree.taxaSelTooltip", {count: sdesc}))
             : "")
         ;
 
         var synCount = model.getSynonymCount (node);
         if (synCount) {
-            tooltipStr+="<hr>Contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
+            tooltipStr+="<hr>"+$.t("tree.synTooltip", {count: synCount});
             var synSelCount = model.getSelectedSynonymCount (node);
             if (synSelCount) {
-                tooltipStr+="<br>("+synSelCount+" selected)";
+                tooltipStr+="<br>"+$.t("tree.synSelTooltip", {syn: synSelCount});
             }
         }
 
         var syn = model.getSynonyms(node);
         if (syn) {
-            tooltipStr += "<hr><i>Synonymous with</i>";
+            tooltipStr += "<hr><i>"+$.t("tree.synLabel")+"</i>";
             for (n = 0; n < syn.length; n++) {
                 var id = model.getIndexedDataPoint(syn[n], ffields[0]);
                 var klass = model.getSelectionModel().contains (id) ? "selected" : "";
@@ -5454,16 +5402,16 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         var specCount = model.getSpecimenCount(node);
         if (specCount) {
-            tooltipStr += "<hr>Contains "+specCount+" specimen"+(specCount > 1 ? "s" : "");
+            tooltipStr += "<hr>"+$.t("tree.specTooltip", {count: specCount});
             var SspecCount = model.getSelectedSpecimenCount (node);
             if (SspecCount) {
-                tooltipStr += "<br>("+SspecCount+" selected)";
+                tooltipStr += "<br>"+$.t("tree.specSelTooltip", {count: SspecCount});
             }
         }
 
         // specimens directly attached to node
         if (specs) {
-            tooltipStr += "<hr><i>Specimens</i>";
+            tooltipStr += "<hr><i>"+$.t("tree.specLabel")+"</i>";
             for (n = 0; n < Math.min(specs.length, limit); n++) {
                 var spec = specs[n];
                 var id = model.getIndexedDataPoint(spec, ffields[0]);
@@ -5471,7 +5419,7 @@ VESPER.ExplicitTaxonomy = function (div) {
                 tooltipStr += "<br><span class=\""+klass+"\">" + id+"</span>, "+model.getLabel(spec);
             }
             if (specs.length - limit > 0) {
-                tooltipStr += "<br>... and "+(specs.length - limit)+" more";
+                tooltipStr += "<br>"+$.t("tree.andMore", {count: specs.length - limit});
             }
         }
 
@@ -5608,7 +5556,7 @@ VESPER.VisLauncher = function (divid, options) {
 
     function setVisChoices (data) {
        // MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Launch Visualisation", "sectionID":"Vis", "init":"none"}], "encloser");
-        d3.select(divid).append("H3").text("Launch Visualisation");
+        d3.select(divid).append("H3").text($.t("launcher.launchHeader"));
        // var visChoices = d3.select(divid).select(divid+"Vis").selectAll("button").data (data);
         var visChoices = d3.select(divid).append("div").attr("id", divid+"Vis").selectAll("button").data (data);
 
@@ -5636,12 +5584,12 @@ VESPER.VisLauncher = function (divid, options) {
         //MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
         //var encloser = d3.select(divid).select(divid+"Sel");
 
-        d3.select(divid).append("H3").text("Current Selections");
+        d3.select(divid).append("H3").text($.t("launcher.selectHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"Sel");
 
         encloser.append("button")
             .attr ("type", "button")
-            .text ("Save")
+            .text ($.t("launcher.selectSave"))
         ;
 
         if (window.requestFileSystem) {
@@ -5651,13 +5599,13 @@ VESPER.VisLauncher = function (divid, options) {
                 })
             ;
         } else {
-            MGNapier.NapVisLib.html5LacksOnButton(encloser.select("button"), "This Browser does not support the HTML5 FileWriter API");
+            MGNapier.NapVisLib.html5LacksOnButton(encloser.select("button"), $.t("launcher.noFileWriter"));
         }
 
 
         encloser.append("button")
             .attr ("type", "button")
-            .text ("Invert Selection")
+            .text ($.t("launcher.selectInvert"))
             .on ("click", function() {
                 model.invertSelection ();
             })
@@ -5666,7 +5614,7 @@ VESPER.VisLauncher = function (divid, options) {
         encloser.append("button")
             .attr ("type", "button")
             //.attr ("id", "clearSel")
-            .text ("Clear")
+            .text ($.t("launcher.selectClear"))
             .on ("click", function() {
                 model.getSelectionModel().clear();
                 model.getSelectionModel().update();
@@ -5679,11 +5627,11 @@ VESPER.VisLauncher = function (divid, options) {
 
 
     function setModelCompareOps () {
-        d3.select(divid).append("H3").text("Taxonomy Comparison");
+        d3.select(divid).append("H3").text($.t("launcher.compareHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"TComp");
         //var encloser = d3.select(divid).append("div").attr("class", "encloser");
         //encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
-        var basicText = "Compare This";
+        var basicText = $.t("launcher.compareLabel");
 
         encloser.append("button")
             .attr ("type", "button")
@@ -5772,7 +5720,7 @@ VESPER.VisLauncher = function (divid, options) {
                 if (view && view.destroy) { view.destroy(); }
                 d3.select(d3.event.target).on ("click", null); // remove event from this very button to avoid dom holding refs to data
             } )
-            .attr ("title", "Close this view")
+            .attr ("title", $.t("launcher.closeTooltip"))
             .append ("img")
             .attr ("src", VESPER.imgbase+"close.png")
             .attr ("alt", "Close")
@@ -5792,7 +5740,7 @@ VESPER.VisLauncher = function (divid, options) {
                         "0,12 12,12 6,0" :  "0,0 12,0 6,12"
                 );
             } )
-            .attr ("title", "Toggle view visibility")
+            .attr ("title", $.t("launcher.hideTooltip"))
             .append("svg")
             .attr ("width", 13)
             .attr ("height", 13)
@@ -5830,6 +5778,5 @@ VESPER.VisLauncher = function (divid, options) {
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divid);
     };
-
 
 };

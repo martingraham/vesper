@@ -54,7 +54,8 @@ VESPER.Tree = function (divid) {
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
         }
 	};
-    var sortOptionLabels = {"Alpha": "Label", "Descendants": "Size", "Selected": "Direct Selection", "SelectedDesc":"Selection Size"};
+    var sortOptionLabels = {"Alpha": $.t("tree.sortAlpha"), "Descendants": $.t("tree.sortDesc"),
+        "Selected": $.t("tree.sortSel"), "SelectedDesc": $.t("tree.sortDescSel")};
 
     this.tooltipString = function () {
         var tooltipStr = "Placeholder";
@@ -86,7 +87,7 @@ VESPER.Tree = function (divid) {
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
            // .filter (function (d) { return allowedRanks[model.getTaxaData(d)[rankField]]; })
     };
-    var spaceAllocationLabels = {"bottomUp": "Bottom Up", "bottomUpLog": "Bottom Up Log", "topDown": "Top Down"};
+    var spaceAllocationLabels = {"bottomUp": $.t("tree.sizeBottomUp"), "bottomUpLog": $.t("tree.sizeBottomUpLog"), "topDown": $.t("tree.sizeTopDown")};
 
     function patternFill (nodeId) {
         if (nodeId !== undefined && nodeId.charAt(0) === '*') {
@@ -540,7 +541,7 @@ VESPER.Tree = function (divid) {
     };
 
     var layoutOptions = {Icicle: partitionLayout, Sunburst: sunburstLayout};
-    var layoutOptionLabels = {Icicle:"Left to right", Sunburst: "Centre out"};
+    var layoutOptionLabels = {Icicle:$.t("tree.layoutIcicle"), Sunburst: $.t("tree.layoutSunburst")};
 
     this.set = function (fields, mmodel) {
         ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
@@ -637,18 +638,13 @@ VESPER.Tree = function (divid) {
             .attr ("id", noHashID+"controls")
         ;
 
-        //MGNapier.NapVisLib.addHRGrooves (cpanel);
         VESPER.DWCAHelper.addDragArea (cpanel);
 
         MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":"Space Allocation", "sectionID":"Space"},{"header":"View Style", "sectionID":"Layout"},
-                {"header":"Sort By", sectionID:"Sort"}],
+            [{"header":$.t("tree.sizeLabel"), "sectionID":"Space"},{"header":$.t("tree.layoutLabel"), "sectionID":"Layout"},
+                {"header":$.t("tree.sortLabel"), sectionID:"Sort"}],
         "section");
 
-        //var spaceDiv = cpanel.append("div").attr("class", "taxaControlsSpaceAlloc");
-        //spaceDiv.append("p").html("Space Allocation");
-        //var allocBinds = spaceDiv.selectAll("button.allocChoice")
-        //    .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
         var allocBinds = d3.select(divid+"controlsSpace").selectAll("button.allocChoice")
             .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
         var aHolders = allocBinds.enter()
@@ -675,12 +671,6 @@ VESPER.Tree = function (divid) {
             .html (function(d) { return spaceAllocationLabels[d.key]; })
         ;
 
-        /*
-        var layoutDiv = cpanel.append("div").attr("class", "taxaControlsLayout");
-        layoutDiv.append("p").html("Layout Style");
-        var layoutBinds = layoutDiv.selectAll("button.layoutChoice")
-            .data(d3.entries (layoutOptions), function(d) { return d.key; });
-            */
         var layoutBinds = d3.select(divid+"controlsLayout").selectAll("button.layoutChoice")
             .data(d3.entries (layoutOptions), function(d) { return d.key; });
         var lHolders = layoutBinds.enter()
@@ -710,12 +700,6 @@ VESPER.Tree = function (divid) {
             .html (function(d) { return layoutOptionLabels[d.key]; })
         ;
 
-        /*
-        var sortDiv = cpanel.append("div").attr("class", "taxaControlsSort");
-		sortDiv.append("p").html("Sort");
-        var sortBinds = sortDiv.selectAll("button.sortChoice")
-            .data(d3.entries (sortOptions), function(d) { return d.key; });
-            */
         var sortBinds = d3.select(divid+"controlsSort").selectAll("button.sortChoice")
             .data(d3.entries (sortOptions), function(d) { return d.key; });
         var sHolders = sortBinds.enter()
@@ -984,24 +968,24 @@ VESPER.ImplicitTaxonomy = function (div) {
             }
         }
 
-        tooltipStr += (subt === undefined ? "" : "<hr>"+desc+" deeper subtaxa")
+        tooltipStr += (subt === undefined ? "" : "<hr>"+$.t("tree.taxaTooltip", {count: desc}))
             + (sdesc > 0 ?
-                (subt === undefined ? "" : "<br>("+sdesc+" selected)")
+                (subt === undefined ? "" : "<br>"+$.t("tree.taxaSelTooltip", {count: sdesc}))
             : "")
         ;
 
         var synCount = model.getSynonymCount (node);
         if (synCount) {
-            tooltipStr+="<hr>Contains "+synCount+" Synonym" + (synCount > 1 ? "s" : "");
+            tooltipStr+="<hr>"+$.t("tree.synTooltip", {count: synCount});
             var synSelCount = model.getSelectedSynonymCount (node);
             if (synSelCount) {
-                tooltipStr+="<br>("+synSelCount+" selected)";
+                tooltipStr+="<br>"+$.t("tree.synSelTooltip", {syn: synSelCount});
             }
         }
 
         var syn = model.getSynonyms(node);
         if (syn) {
-            tooltipStr += "<hr><i>Synonymous with</i>";
+            tooltipStr += "<hr><i>"+$.t("tree.synLabel")+"</i>";
             for (n = 0; n < syn.length; n++) {
                 var id = model.getIndexedDataPoint(syn[n], ffields[0]);
                 var klass = model.getSelectionModel().contains (id) ? "selected" : "";
@@ -1035,16 +1019,16 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         var specCount = model.getSpecimenCount(node);
         if (specCount) {
-            tooltipStr += "<hr>Contains "+specCount+" specimen"+(specCount > 1 ? "s" : "");
+            tooltipStr += "<hr>"+$.t("tree.specTooltip", {count: specCount});
             var SspecCount = model.getSelectedSpecimenCount (node);
             if (SspecCount) {
-                tooltipStr += "<br>("+SspecCount+" selected)";
+                tooltipStr += "<br>"+$.t("tree.specSelTooltip", {count: SspecCount});
             }
         }
 
         // specimens directly attached to node
         if (specs) {
-            tooltipStr += "<hr><i>Specimens</i>";
+            tooltipStr += "<hr><i>"+$.t("tree.specLabel")+"</i>";
             for (n = 0; n < Math.min(specs.length, limit); n++) {
                 var spec = specs[n];
                 var id = model.getIndexedDataPoint(spec, ffields[0]);
@@ -1052,7 +1036,7 @@ VESPER.ExplicitTaxonomy = function (div) {
                 tooltipStr += "<br><span class=\""+klass+"\">" + id+"</span>, "+model.getLabel(spec);
             }
             if (specs.length - limit > 0) {
-                tooltipStr += "<br>... and "+(specs.length - limit)+" more";
+                tooltipStr += "<br>"+$.t("tree.andMore", {count: specs.length - limit});
             }
         }
 

@@ -64,7 +64,7 @@ VESPER.VisLauncher = function (divid, options) {
 
     function setVisChoices (data) {
        // MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Launch Visualisation", "sectionID":"Vis", "init":"none"}], "encloser");
-        d3.select(divid).append("H3").text("Launch Visualisation");
+        d3.select(divid).append("H3").text($.t("launcher.launchHeader"));
        // var visChoices = d3.select(divid).select(divid+"Vis").selectAll("button").data (data);
         var visChoices = d3.select(divid).append("div").attr("id", divid+"Vis").selectAll("button").data (data);
 
@@ -92,12 +92,12 @@ VESPER.VisLauncher = function (divid, options) {
         //MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
         //var encloser = d3.select(divid).select(divid+"Sel");
 
-        d3.select(divid).append("H3").text("Current Selections");
+        d3.select(divid).append("H3").text($.t("launcher.selectHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"Sel");
 
         encloser.append("button")
             .attr ("type", "button")
-            .text ("Save")
+            .text ($.t("launcher.selectSave"))
         ;
 
         if (window.requestFileSystem) {
@@ -107,13 +107,13 @@ VESPER.VisLauncher = function (divid, options) {
                 })
             ;
         } else {
-            MGNapier.NapVisLib.html5LacksOnButton(encloser.select("button"), "This Browser does not support the HTML5 FileWriter API");
+            MGNapier.NapVisLib.html5LacksOnButton(encloser.select("button"), $.t("launcher.noFileWriter"));
         }
 
 
         encloser.append("button")
             .attr ("type", "button")
-            .text ("Invert Selection")
+            .text ($.t("launcher.selectInvert"))
             .on ("click", function() {
                 model.invertSelection ();
             })
@@ -122,7 +122,7 @@ VESPER.VisLauncher = function (divid, options) {
         encloser.append("button")
             .attr ("type", "button")
             //.attr ("id", "clearSel")
-            .text ("Clear")
+            .text ($.t("launcher.selectClear"))
             .on ("click", function() {
                 model.getSelectionModel().clear();
                 model.getSelectionModel().update();
@@ -135,11 +135,11 @@ VESPER.VisLauncher = function (divid, options) {
 
 
     function setModelCompareOps () {
-        d3.select(divid).append("H3").text("Taxonomy Comparison");
+        d3.select(divid).append("H3").text($.t("launcher.compareHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"TComp");
         //var encloser = d3.select(divid).append("div").attr("class", "encloser");
         //encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
-        var basicText = "Compare This";
+        var basicText = $.t("launcher.compareLabel");
 
         encloser.append("button")
             .attr ("type", "button")
@@ -228,7 +228,7 @@ VESPER.VisLauncher = function (divid, options) {
                 if (view && view.destroy) { view.destroy(); }
                 d3.select(d3.event.target).on ("click", null); // remove event from this very button to avoid dom holding refs to data
             } )
-            .attr ("title", "Close this view")
+            .attr ("title", $.t("launcher.closeTooltip"))
             .append ("img")
             .attr ("src", VESPER.imgbase+"close.png")
             .attr ("alt", "Close")
@@ -248,7 +248,7 @@ VESPER.VisLauncher = function (divid, options) {
                         "0,12 12,12 6,0" :  "0,0 12,0 6,12"
                 );
             } )
-            .attr ("title", "Toggle view visibility")
+            .attr ("title", $.t("launcher.hideTooltip"))
             .append("svg")
             .attr ("width", 13)
             .attr ("height", 13)
@@ -286,6 +286,5 @@ VESPER.VisLauncher = function (divid, options) {
         model = null;
         VESPER.DWCAHelper.twiceUpRemove(divid);
     };
-
 
 };

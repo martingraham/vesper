@@ -31,6 +31,7 @@
 <!-- JQuery's includes -->
 <script type="text/javascript" src="../lib/jquery/jquery-2.0.3.js"></script>
 <script type="text/javascript" src="../lib/jquery-ui/jquery-ui.js"></script>
+<script type="text/javascript" src="../lib/i18next/i18next-1.7.1.js"></script>
 
 <!-- IndexedDBShim include -->
 <!-- <script type="text/javascript" src="../lib/indexedDBShim/IndexedDBShim.js"></script> -->
@@ -81,8 +82,8 @@
 </div>
 
 <div id="tabs">
-    <ul>
-        <li><a href="background.html"><span>Background</span></a></li>
+    <ul class="demo">
+        <li><a href="background.html"><span data-i18n="web.BackTab">-</span></a></li>
         <li><a href="instructions.html"><span>Instructions</span></a></li>
         <li><a href="credits.html"><span>Credits</span></a></li>
         <li><a href="#examples"><span>Example Data</span></a></li>
@@ -101,38 +102,7 @@
 <div id="vesperProgressBar"></div>
 
 <div id="selDiv" class="selectionWrapper">
-    <div id="basicSelectDiv" class="leftColumn">
-        <p id="filenamePlaceholder"></p>
-        <p id="filesizePlaceholder"></p>
-        <hr>
-        <div id="showOnZipLoadDiv">
-            <div id="labelSelectOuter">
-                <p class="controlHeading">Use this field as label</p>
-                <div id="labelSelectDiv"></div>
-                <hr>
-            </div>
-            <div id="dynamicSelectionOuter">
-                <p class="controlHeading">Load Data For</p>
-                <div id="dynamicSelectDiv"></div>
-                <hr>
-            </div>
-            <div id="advancedSelectOuter">
-                <span id="advRevealPlaceholder"></span>
-                <!-- <button type="button" id="advRevealButton" class="load">Show Advanced Options</button> -->
-                <div id="advancedSelectDiv">
-                    <button type="button" id="allButton" class="selButtonStyle">Select All Fields</button>
-                    <button type="button" id="clearButton" class="selButtonStyle">Clear All Fields</button>
-                </div>
-                <hr>
-            </div>
-            <button type="button" id="loadButton" class="load">Load</button>
-        </div>
-    </div>
-
-    <div id="listDiv"></div>
 </div>
-
-<!-- <div id="buttonVisDiv" style="display: none;"></div> -->
 
 <div id="allVisDiv"></div>
 
@@ -150,7 +120,16 @@
          {name:"MT Specimens", file:"../data/dwca-mt-specimens.zip", origin: "Candensys, Montreal, Canada", description: "140,000 specimens of plants collected mainly in Canada. Location and time data."},
          {name:"HIBG Specimens", file:"../data/dwca-hibg-specimens.zip", origin: "Candensys, Montreal, Canada", description: "Harriet Irving Botanic Garden collection of roughly 10,000 specimens"}
      ];
-    VESPER.demo (files, "#examples");
+
+     // Load in the control block html, and when that's done, initialise the i18n scripts, and when that's done
+     // launch the demo script that fills that block with buttons.
+     // (needs to be done as callbacks or stuff runs before other things finish loading and that equals crash)
+     $("#selDiv").load ("demoControlBlock.html",
+             function() { i18n.init ({lng:'en'},
+                     function () { $(".demo").i18n(); $("#selDiv").i18n(); VESPER.demo (files, "#examples"); }
+             )}
+     );
+
  </script>
 
 </body>

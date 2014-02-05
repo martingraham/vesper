@@ -287,7 +287,11 @@ VESPER.Sanity = function(divid) {
         function getSelPC (val) { return selectedSize > 0 ? val / selectedSize : 0; }
 
         // Check missing data by vis type
-        var sTable = createTable ("visSanityTests", ["Vis Type", "Partial records", "No records", "Partial records (sel)", "No records (sel)"]);
+        var visSanHeaders = [];
+        for (var n = 0; n < 5; n++) {
+            visSanHeaders.push ($.t("sanity.visSanHeaders."+n));
+        }
+        var sTable = createTable ("visSanityTests", visSanHeaders);
         var processors = [{name:"listName", func:getOrig, klass:"showSanityText"}, {name:"some", func:getAllPC, klass:"dontShowSanityText"}, {name:"all", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selSome", func:getSelPC, klass:"dontShowSanityText"}, {name:"selAll", func:getSelPC, klass:"dontShowSanityText"}
         ];
@@ -295,8 +299,12 @@ VESPER.Sanity = function(divid) {
 
 
         // Check missing data by field type
+        var fieldSanHeaders = [];
+        for (var n = 0; n < 4; n++) {
+            fieldSanHeaders.push ($.t("sanity.fieldSanHeaders."+n));
+        }
         if (!$.isEmptyObject(allFieldsComplete)) {
-            sTable = createTable ("fieldSanityTests", ["Record Type", "Field Type", "No value", "No value (sel)"]);
+            sTable = createTable ("fieldSanityTests", fieldSanHeaders);
             processors = [{name:"recordType", func:getOrig, klass:"showSanityText"}, {name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selCount", func:getSelPC, klass:"dontShowSanityText"}
             ];
@@ -304,8 +312,12 @@ VESPER.Sanity = function(divid) {
         }
 
         // Check fields with controlled vocabularies
+        var vocabSanHeaders = [];
+        for (var n = 0; n < 2; n++) {
+            vocabSanHeaders.push ($.t("sanity.vocabSanHeaders."+n));
+        }
         if (!$.isEmptyObject(vocabCounts)) {
-            sTable = createTable ("vocabSanityTests", ["Field Type", "Vocabulary Size"]);
+            sTable = createTable ("vocabSanityTests", vocabSanHeaders);
             processors = [{name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getOrig, klass:"showSanityText"}];
             popTable (sTable.selectAll("tr.sanityRow").data(d3.values(vocabCounts)), fillCells);
         } else {

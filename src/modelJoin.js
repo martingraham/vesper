@@ -7,61 +7,6 @@
  */
 VESPER.modelComparisons = new function () {
 
-    this.modelCoverageToSelectionOld = function (model1, model2, linkField1, linkField2) {
-        var small = smaller (model1, model2);
-        var large = (small === model1 ? model2 : model1);
-        var smallLinkField = (small === model1 ? linkField1 : linkField2);
-        var largeLinkField = (small === model1 ? linkField2 : linkField1);
-        var smallData = [small.getExplicitTaxonomy(), small.getImplicitTaxonomy()];
-        var largeData = [large.getExplicitTaxonomy(), large.getImplicitTaxonomy()];
-        var smallSelection = small.getSelectionModel();
-        var largeSelection = large.getSelectionModel();
-        VESPER.log ("lf", linkField1, linkField2);
-
-        smallSelection.clear();
-        largeSelection.clear();
-
-        smallSelection.setUpdating (true);
-        largeSelection.setUpdating (true);
-
-        var invMap = {};
-        for (var stset = 0; stset < smallData.length; stset++) {
-            var tree = smallData[stset];
-            if (tree) {
-                for (var prop in tree) {
-                    if (tree.hasOwnProperty (prop)) {
-                        var val = small.getDataPoint (tree[prop], smallLinkField);
-                        invMap[val] = prop;
-                    }
-                }
-            }
-        }
-       // VESPER.log ("invMap", invMap);
-       // var c = 0;
-        for (var ltset = 0; ltset < largeData.length; ltset++) {
-            var tree = largeData[ltset];
-            if (tree) {
-                for (var prop in tree) {
-                    if (tree.hasOwnProperty (prop)) {
-                        var val = large.getDataPoint (tree[prop], largeLinkField);
-
-                        if (invMap[val]) {
-                            smallSelection.addToMap (invMap[val]);
-                            largeSelection.addToMap (prop);
-                            //if (c % 100 == 0) {
-                            //    VESPER.log ("match", val, invMap[val], prop);
-                            //}
-                            //c++;
-                        }
-                    }
-                }
-            }
-        }
-
-        smallSelection.setUpdating (false);
-        largeSelection.setUpdating (false);
-    };
-
     this.modelCoverageToSelection = function (model1, model2, linkField1, linkField2) {
         var small = smaller (model1, model2);
         var large = (small === model1 ? model2 : model1);
@@ -71,7 +16,7 @@ VESPER.modelComparisons = new function () {
         var largeData = [large.getExplicitTaxonomy(), large.getData()];
         var smallSelection = small.getSelectionModel();
         var largeSelection = large.getSelectionModel();
-        VESPER.log ("lf", linkField1, linkField2);
+        //VESPER.log ("lf", linkField1, linkField2);
 
         smallSelection.clear();
         largeSelection.clear();
@@ -79,14 +24,14 @@ VESPER.modelComparisons = new function () {
         smallSelection.setUpdating (true);
         largeSelection.setUpdating (true);
 
-        var invMap = [];
+        var arr = [];
         for (var stset = 0; stset < smallData.length; stset++) {
             var tree = smallData[stset];
             if (tree) {
                 for (var prop in tree) {
                     if (tree.hasOwnProperty (prop)) {
                         var val = small.getDataPoint (tree[prop], smallLinkField);
-                        invMap.push ([prop, val]);
+                        arr.push ([prop, val]);
                     }
                 }
             }
@@ -95,16 +40,16 @@ VESPER.modelComparisons = new function () {
         var stopwatch = {base: 0};
         MGNapier.NapVisLib.resetStopwatch (stopwatch);
 
-        invMap.sort (function(a,b) {
+        arr.sort (function(a,b) {
             if ( a[1] < b[1] )
                 { return -1; }
             if ( a[1] > b[1] )
                 { return 1; }
             return 0;
         });
-        console.log ("sorted array", invMap);
 
-        console.log ("sort", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+        //VESPER.log ("sorted array", arr);
+        VESPER.log ("sort", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
         MGNapier.NapVisLib.resetStopwatch (stopwatch);
 
         var c = 0;
@@ -118,7 +63,7 @@ VESPER.modelComparisons = new function () {
                     if (tree.hasOwnProperty (prop)) {
                         var val = large.getDataPoint (tree[prop], largeLinkField);
                         // lastVal === val is a useful shortcut when we have lots of specimens of the same name, usually they are grouped sequentially in the record data
-                        var where = (lastVal === val ? lastWhere : binaryIndexOf (invMap, val));
+                        var where = (lastVal === val ? lastWhere : binaryIndexOf (arr, val));
                         //var where = binaryIndexOf (invMap, val);
                         lastVal = val;
                         lastWhere = where;
@@ -126,28 +71,19 @@ VESPER.modelComparisons = new function () {
 
                         // exact match
                         if (where >= 0) {
-                            smallSelection.addToMap (invMap[where][0]);
+                            smallSelection.addToMap (arr[where][0]);
                             largeSelection.addToMap (prop);
-                            //if (c % 100 == 0) {
-                            //    VESPER.log ("match", val, invMap[val], prop);
-                            //}
-                            //c++;
-                        }
-                        else {
-                            where = Math.abs (where);
-                            if (c % 1000 === 0) {
-                                console.log (prop, val, invMap[Math.max(0, where-1)], invMap[where]);
-
-                            }
-                            partMatch (prop, val, where, invMap, smallSelection, largeSelection);
+                        } else {
+                            where = ~where;
+                            partMatch (prop, val, where, arr, smallSelection, largeSelection);
                         }
                     }
                 }
             }
         }
 
-        console.log ("search", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
-        console.log ("Done",c,"comparisons");
+        VESPER.log ("search", MGNapier.NapVisLib.elapsedStopwatch (stopwatch), "ms");
+        VESPER.log ("Done",c,"comparisons");
 
         smallSelection.setUpdating (false);
         largeSelection.setUpdating (false);
@@ -169,26 +105,53 @@ VESPER.modelComparisons = new function () {
         return min;
     }
 
-    function partMatch (prop, val, where, invMap, smallSel, largeSel) {
-        var valL = val.length;
-        var e1 = invMap[Math.max(0, where-1)];
-        var e2 = invMap[where];
-        var l1 = Math.min (valL, e1[1].length);
-        var l2 = Math.min (valL, e2[1].length);
+    function startsWith (ls, ss) {
+        return ls.lastIndexOf (ss, 0) === 0;
+    }
 
-        var m1 = jointPrefixLength (val, e1[1]);
-        var m2 = jointPrefixLength (val, e2[1]);
-        if (m1 < 10 && m2 < 10) {
-            return; // no reasonable match
+
+    /**
+     * Naive matching routine. Checks if one string is a prefix of another.
+     * @param prop
+     * @param val
+     * @param where
+     * @param arr
+     * @param smallSel
+     * @param largeSel
+     */
+    function partMatch (prop, val, where, arr, smallSel, largeSel) {
+        var valL = val.length;
+
+        if (where > 0) {
+            var e1 = arr[where-1];
+            var l1 = Math.min (valL, e1[1].length);
+            var m1 = jointPrefixLength (val, e1[1]);
+            if (m1 >= 10 && m1 === l1) {
+                smallSel.addToMap (e1[0]);
+                largeSel.addToMap (prop);
+            }
         }
-        if (m1 === l1) {
+
+        if (where < arr.length) {
+            var e2 = arr[where];
+            var l2 = Math.min (valL, e2[1].length);
+            var m2 = jointPrefixLength (val, e2[1]);
+            if (m2 >= 10 && m2 === l2) {
+                smallSel.addToMap (e2[0]);
+                largeSel.addToMap (prop);
+            }
+        }
+        /*
+        if (startsWith (valL === l1 ? e1[1] : val)) {
             smallSel.addToMap (e1[0]);
             largeSel.addToMap (prop);
         }
-        if (m2 === l2) {
+
+        if (startsWith (valL === l2 ? e2[1] : val)) {
             smallSel.addToMap (e2[0]);
             largeSel.addToMap (prop);
         }
+        */
     }
 
     /**
@@ -222,7 +185,7 @@ VESPER.modelComparisons = new function () {
             }
         }
 
-        return (-(Math.max(maxIndex,minIndex)));
+        return (~(Math.max(maxIndex,minIndex))); // ~ unary not negates number and subtracts 1 if no match found. Subtract 1 needed to avoid minus zeroes.
     }
 
     this.test1 = function () {

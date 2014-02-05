@@ -6,6 +6,7 @@
   "dependencies": {
     "jquery":">=2.0.3 <=2.1.0",
     "jquery-ui":"git://github.com/jquery/jquery-ui.git#master",
+    "i18next":"~1.7.0",
     "d3":"~3.0",
     "leaflet":"~0.7.0",
     "leaflet-draw": "~0.2.2",

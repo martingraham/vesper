@@ -19,6 +19,11 @@
     vesper.imgbase = "../img/";
     vesper.log (vesper);
 
+    vesper.init = function () {
+        vesper.tooltip.init();
+        vesper.titles = $.t("vesper.visTitles", {"returnObjectTrees":true});
+    };
+
     if (typeof define === "function" && define.amd) {
         define(vesper);
     } else if (typeof module === "object" && module.exports) {

@@ -11,7 +11,8 @@
 
 VESPER.demo = function (files, exampleDivID) {
 
-    VESPER.tooltip.init();
+    //VESPER.tooltip.init();
+    VESPER.init();
 
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
     var DWCAHelper = VESPER.DWCAHelper;
@@ -78,7 +79,7 @@ VESPER.demo = function (files, exampleDivID) {
         if (table.empty()) {
             table = d3.select(exampleDivID).append("table");
             var headerRow = table.append("tr");
-            var headerText = ["Data Set", "Description", "Originator"];
+            var headerText = [$.t("demo.dataHeader"), $.t("demo.descHeader"), $.t("demo.origHeader")];
             var headers = headerRow.selectAll("th").data(headerText);
             headers.enter().append("th").text(function(d) { return d; });
         }
@@ -213,7 +214,7 @@ VESPER.demo = function (files, exampleDivID) {
 
         DWCAHelper.divDisplay(["#"+progressBarID], "block");
         function notifyFunc (fileName, lines) {
-            d3.select("#"+progressBarID).select("p").html("Zip processing: "+fileName+". Parsed "+lines+" records.");
+            d3.select("#"+progressBarID).select("p").html($.t("demo.zipProcTemplate", {"fileName":fileName, "count": lines}));
         }
         VESPER.DWCAZipParse.setNotifyFunc (notifyFunc);
 
@@ -232,7 +233,7 @@ VESPER.demo = function (files, exampleDivID) {
 
         DWCAHelper.divDisplay(["#selDiv"], "none");
         DWCAHelper.divDisplay(["#allVisDiv"], "block");
-        d3.select("#"+progressBarID).select("p").html("Initialising Chosen Views... Please wait...");
+        d3.select("#"+progressBarID).select("p").html($.t("demo.initViewsMessage"));
 
         // Do a set timeout so the progressbar is updated with the above message before the views start initialising
         setTimeout (
@@ -292,7 +293,7 @@ VESPER.demo = function (files, exampleDivID) {
 
             DWCAHelper.divDisplay (["#showOnZipLoadDiv"], "block");
         } else {
-            alert (meta.error+" Check DWCA meta.xml compliance.");
+            alert (meta.error+" "+$.t("demo.DWCAErrorMeta"));
             // flash up something to say not a dwca file (one we can read at least)
         }
     };

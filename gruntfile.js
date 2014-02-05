@@ -41,7 +41,9 @@ module.exports = function(grunt) {
         copy: {
             main: {
                 files:[
-                    {expand: true, cwd: 'src/', src: ['dwca.xsd', 'demoNewMin.html', 'instructions.html', 'credits.html', 'background.html'], dest: 'build/'}
+                    {expand: true, cwd: 'src/', src: ['dwca.xsd', 'demoNewMin.html', 'demoControlBlock.html', 'instructions.html', 'credits.html', 'background.html'], dest: 'build/'},
+                    {expand: true, cwd: 'src/', src: ['locales/**'], dest: 'build/'}
+
                     /*
                     ,
                     {expand: true, cwd: 'node_modules', src:['d3/d3.min.js'], dest:'lib'},

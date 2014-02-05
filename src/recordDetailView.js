@@ -16,7 +16,7 @@ VESPER.FilterView = function (divID) {
         var textSearch = d3.select(divID).append("span");
         textSearch.append("label")
             .attr("for", tid)
-            .text ("Search")
+            .text ($.t("search.label"))
         ;
         textSearch.append("input")
             .attr("type", "text")
@@ -39,7 +39,7 @@ VESPER.FilterView = function (divID) {
         typeAheadDiv
             .append ("label")
             .attr ("for", tid+"TypeAhead")
-            .text ("Keystroke Search")
+            .text ($.t("search.keystrokeLabel"))
         ;
 
         bindSearch ();
@@ -101,7 +101,7 @@ VESPER.RecordDetails = function (divID) {
         var iid = divSel.attr("id")+"textinput";
         recordInput.append("label")
             .attr("for", iid)
-            .text ("Find Details for Record ID")
+            .text ($.t("search.findLabel"))
         ;
         recordInput.append("input")
             .attr("type", "text")
@@ -109,7 +109,7 @@ VESPER.RecordDetails = function (divID) {
         ;
         recordInput.append("span")
             .attr ("class", "vesperWarning")
-            .text("No such record")
+            .text($.t("search.noResult"))
             .style("display", "none")
         ;
 
@@ -137,7 +137,7 @@ VESPER.RecordDetails = function (divID) {
             var node = model.getNodeFromID (curID);
 
             // Set up taxon data table
-            var tableSel = makeTableAndHeader (divSel, detailTable, ["Field", "Value"]);
+            var tableSel = makeTableAndHeader (divSel, detailTable, [$.t("search.fieldLabel"), $.t("search.valueLabel")]);
             var tableData = [];
             var tInvFields = fileData[metaData.coreRowType].filteredInvFieldIndex;
             var tdata = model.getTaxaData(node);
@@ -189,7 +189,7 @@ VESPER.RecordDetails = function (divID) {
             }
 
             // Synonymy table
-            var synTablesSel = makeTableAndHeader (divSel, "synTable", ["Synonym ID"]);
+            var synTablesSel = makeTableAndHeader (divSel, "synTable", [$.t("search.recordSyn")]);
             var syns = model.getSynonyms(node);
             tableData = [];
             if (syns) {
@@ -216,7 +216,7 @@ VESPER.RecordDetails = function (divID) {
 
 
             // Specimens table
-            var specTablesSel = makeTableAndHeader (divSel, "specTable", ["Specimen ID"]);
+            var specTablesSel = makeTableAndHeader (divSel, "specTable", [$.t("search.recordSpec")]);
             var specs = model.getSpecimens(node);
             tableData = [];
             if (specs) {

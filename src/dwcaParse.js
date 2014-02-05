@@ -202,7 +202,7 @@ VESPER.DWCAParser = new function () {
             var metaData = VESPER.DWCAParser.parseMeta ($.parseXML (metaFile.uncompressedFileData));
             return {jszip: zip, meta: metaData};
         }
-        return {jszip: zip, meta: {error:"Cannot locate "+metaFileName+" within zip."}};
+        return {jszip: zip, meta: {error:$.t("parser.zipError", {"file":metaFileName})}};
     };
 
 
@@ -416,7 +416,7 @@ VESPER.DWCAParser = new function () {
                             //delete jsonObj[id];
                         }
                         else {
-                            VESPER.log ("Deadonym. No link to accepted name id "+aid+" for "+rec);
+                            VESPER.log ($.t("parser.deadonymError", {aid: aid, rec: rec}));
                         }
                     }
                 }
@@ -833,7 +833,7 @@ VESPER.DWCAParser = new function () {
 		var metaData = {"coreRowType":coreRowType, "extRowTypes":extRowTypes, "fileData":fileData, "vesperAdds":{}};
 
         if (coreRowType == undefined) {
-            metaData.error = "JQuery cannot find element[attribute]: core[rowType] within xml.";
+            metaData.error = $.t("parser.missingCoreError");
         }
         else if (fileData[coreRowType].error) {
             metaData.error = fileData[coreRowType].error;
@@ -929,9 +929,9 @@ VESPER.DWCAParser = new function () {
                 VESPER.log ("filenames: ", fileNames);
                 return fileData;
             }
-            return {"error": "JQuery cannot find path [files location] within "+fragQ+" section of xml."};
+            return {"error": $.t("parser.missingFilesError", {"part": fragQ})};
         }
-        return {"error": "JQuery cannot find path ["+fragQ+"] within xml."};
+        return {"error": $.t("parser.missingPathError", {"path": fragQ})};
 	};
 
 

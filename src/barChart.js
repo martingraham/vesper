@@ -19,8 +19,8 @@ VESPER.BarChart = function(divid) {
     var binned, selBinned;
     var rangeSlider = MGNapier.NapVisLib.rangeSlider();
     rangeSlider.tooltipTemplates ({
-        "min": function (r,s) { return "Min: "+self.wrapDataType (self.makeToNearest (s.invert (r[0]))); },
-        "max": function (r,s) { return "Max: "+self.wrapDataType (self.makeToNearest (s.invert (r[1]))); },
+        "min": function (r,s) { return $.t("barChart.minPrefix")+self.wrapDataType (self.makeToNearest (s.invert (r[0]))); },
+        "max": function (r,s) { return $.t("barChart.maxPrefix")+self.wrapDataType (self.makeToNearest (s.invert (r[1]))); },
         "bar": function () { return null; }
     });
 	
@@ -89,7 +89,7 @@ VESPER.BarChart = function(divid) {
 
             //MGNapier.NapVisLib.addHRGrooves (butdiv);
             VESPER.DWCAHelper.addDragArea (butdiv);
-            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":"Bar Type", "sectionID":"Totals"}],"section");
+            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
 
             var choices = {Interval: self.uncalcCumulative, Cumulative: self.calcCumulative};
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
@@ -228,7 +228,7 @@ VESPER.BarChart = function(divid) {
                 .on ("mouseover", function(d) {
                     d3.select(this).classed("highlight", true);
                     var selected = d3.select(this).classed("selected");
-                    VESPER.tooltip.updateText(selected ? "Selected" : "All", self.makeTitle (d));
+                    VESPER.tooltip.updateText($.t("barChart."+(selected ? "allLabel" : "selLabel")), self.makeTitle (d));
                     VESPER.tooltip.updatePosition (d3.event);
                 })
                 .on ("mouseout", function() {
@@ -435,8 +435,9 @@ VESPER.BarChart = function(divid) {
 VESPER.TaxaDistribution = function (div) {
     var chart = new VESPER.BarChart (div);
     chart.makeTitle = function (d) {
-        var singleVal = ((d.end - d.start) === 1);
-        return "Subtaxa: "+d.start+(singleVal ? "" : " to "+(d.end - 1))+"<br>Count: "+d.count;
+        return $.t("barChart.taxaTooltip", {count: d.end - d.start, start: d.start, end: d.end - 1})
+            +"<br>"
+            +$.t("barChart.taxaCountLabel", {count: d.count});
     };
     chart.wrapDataType = function (d) { return d; };
     chart.unwrapDataType = function (o) { return o; };
@@ -482,8 +483,8 @@ VESPER.TimeLine = function (div) {
         timeCache = {};     // clear time cache
     };
     chart.getRangeSlider().tooltipTemplates ({
-        "min": function (r,s) { return "From "+chart.wrapDataType (chart.makeToNearest (s.invert (r[0]))); },
-        "max": function (r,s) { return "To "+chart.wrapDataType (chart.makeToNearest (s.invert (r[1]))); },
+        "min": function (r,s) { return $.t("barChart.timeMinPrefix")+chart.wrapDataType (chart.makeToNearest (s.invert (r[0]))); },
+        "max": function (r,s) { return $.t("barChart.timeMaxPrefix")+chart.wrapDataType (chart.makeToNearest (s.invert (r[1]))); },
         "bar": function () { return null; }
     });
     var oneDayInMs = 24 * 60 * 60 * 1000;

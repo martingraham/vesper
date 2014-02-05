@@ -93,7 +93,7 @@ div.selectionWrapper {
     margin: 0 auto;
 }
 
-div.leftColumn {
+div#basicSelectDiv {
     width: 150px;
     float: left;
     background: #dff;
@@ -104,7 +104,7 @@ div.leftColumn {
     overflow: hidden;
 }
 
-.leftColumn hr {
+div#basicSelectDiv hr {
     border: 1px solid #add;
     border-top-width: 1px;
     border-bottom-width: 0px;
@@ -147,6 +147,11 @@ span.fieldGroup {
 /* hide certain div elements to start with*/
 #selDiv, #advancedSelectDiv, #advancedSelectOuter {
     display: none;
+}
+
+#selDiv H4 {
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 #listDiv {
