@@ -1001,7 +1001,6 @@ VESPER.ImplicitTaxonomy = function (div) {
 VESPER.ExplicitTaxonomy = function (div) {
     var tree = new VESPER.Tree (div);
     tree.type = "expTree";
-    tree.sepArray = ["<hr>", "<br>"];
     tree.getRoot = function (mod) {
         return mod.getExplicitRoot();
     };

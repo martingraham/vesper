@@ -114,11 +114,11 @@
      $("#tabs").tabs();
 
      var files = [
-         {name:"ENA", file:"../data/ena2.zip", origin: "EBI, Cambridge, UK", description: "Large Reference Taxonomy of almost a million taxa"},
-         {name:"GermanSL", file:"../data/germanSLfless.zip", origin: "GBIF, Copenhagen, Denmark", description: "German Standard List for Plants. Example taxonomy of 13,000 taxa (and many more synonyms)"},
-         {name:"VAScan", file:"../data/dwca-vascan.zip", origin: "Candensys, Montreal, Canada", description: "Vascular Plants of Canada. 10,000 taxa (and more synonyms"},
-         {name:"MT Specimens", file:"../data/dwca-mt-specimens.zip", origin: "Candensys, Montreal, Canada", description: "140,000 specimens of plants collected mainly in Canada. Location and time data."},
-         {name:"HIBG Specimens", file:"../data/dwca-hibg-specimens.zip", origin: "Candensys, Montreal, Canada", description: "Harriet Irving Botanic Garden collection of roughly 10,000 specimens"}
+         {name:"ENA", file:"../data/ena2.zip"},
+         {name:"GermanSL", file:"../data/germanSLfless.zip"},
+         {name:"VAScan", file:"../data/dwca-vascan.zip"},
+         {name:"MT Specimens", file:"../data/dwca-mt-specimens.zip"},
+         {name:"HIBG Specimens", file:"../data/dwca-hibg-specimens.zip"}
      ];
 
      // Load in the control block html, and when that's done, initialise the i18n scripts, and when that's done
@@ -126,7 +126,11 @@
      // (needs to be done as callbacks or stuff runs before other things finish loading and that equals crash)
      $("#selDiv").load ("demoControlBlock.html",
              function() { i18n.init ({lng:'en'},
-                     function () { $(".demo").i18n(); $("#selDiv").i18n(); VESPER.demo (files, "#examples"); }
+                     function () {
+                         $(".demo").i18n();
+                         $("#selDiv").i18n();
+                         VESPER.demo (files, "#examples");
+                     }
              )}
      );
 

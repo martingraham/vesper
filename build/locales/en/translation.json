@@ -2,6 +2,33 @@
     "web": {
         "BackTab":"Background"
     },
+    "demo": {
+        "dataHeader":"Data Set",
+        "descHeader":"Description",
+        "origHeader":"Originator",
+        "descriptions" : {
+            "ENA":"Large Reference Taxonomy of almost a million taxa.",
+            "GermanSL": "German Standard List for Plants. Example taxonomy of 13,000 taxa (and many more synonyms)",
+            "VAScan": "Vascular Plants of Canada. 10,000 taxa (and more synonyms)",
+            "MT Specimens": "140,000 specimens of plants collected mainly in Canada. Location and time data.",
+            "HIBG Specimens": "Harriet Irving Botanic Garden collection of roughly 10,000 specimens."
+        },
+        "origins": {
+            "ENA":"EBI, Cambridge, UK",
+            "GermanSL": "GBIF, Copenhagen, Denmark",
+            "VAScan": "Candensys, Montreal, Canada",
+            "MT Specimens": "Candensys, Montreal, Canada",
+            "HIBG Specimens": "Candensys, Montreal, Canada"
+        },
+        "loadChoices":"Load Data For",
+        "labelLabel":"Use this field as label",
+        "allFieldsLabel":"Select All Fields",
+        "clearFieldsLabel":"Clear All Fields",
+        "loadLabel":"Load",
+        "zipProcTemplate":"Zip processing: __fileName__. Parsed __count__ records.",
+        "initViewsMessage":"Initialising Chosen Views... Please wait...",
+        "DWCAErrorMeta":"Check DWCA meta.xml compliance."
+    },
     "vesper":{
         "visTitles": {
             "VisLauncher":"Controls",
@@ -14,19 +41,6 @@
             "TaxaDistribution":"Taxa Distribution",
             "FilterView":"Search Box"
         }
-    },
-    "demo": {
-        "dataHeader":"Data Set",
-        "descHeader":"Description",
-        "origHeader":"Originator",
-        "loadChoices":"Load Data For",
-        "labelLabel":"Use this field as label",
-        "allFieldsLabel":"Select All Fields",
-        "clearFieldsLabel":"Clear All Fields",
-        "loadLabel":"Load",
-        "zipProcTemplate":"Zip processing: __fileName__. Parsed __count__ records.",
-        "initViewsMessage":"Initialising Chosen Views... Please wait...",
-        "DWCAErrorMeta":"Check DWCA meta.xml compliance."
     },
     "tree": {
         "sortAlpha": "Label",

@@ -1157,40 +1157,40 @@ VESPER.demo = function (files, exampleDivID) {
     var DWCAHelper = VESPER.DWCAHelper;
 
     var visChoiceData = [
-        {title:"Controls", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
+        {type: "VisLauncher", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
             newVisFunc: function (div) { return new VESPER.VisLauncher (div, {"autoLaunch":"on"});},
             setupFunc: function () {return {"visChoiceData":visChoiceData}; }
         },
-        {title:"Reference Taxonomy", multiple: true,  attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
+        {type: "ImplicitTaxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.ImplicitTaxonomy (div);},
             setupFunc: function () {return {"rankField":"taxonRank"}; }
         },
-        {title:"Specimen Taxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
+        {type: "ExplicitTaxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.ExplicitTaxonomy (div);},
             setupFunc: function () {return {"rankField":"taxonRank"}; }
         },
-        {title:"Map", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
+        {type: "DWCAMapLeaflet", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
             setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}; }
         },
-        {title:"Timeline", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
+        {type: "TimeLine", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
             //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
             setupFunc: function () { return {"dateField":"eventDate"}; }
         },
-        {title:"Missing Data Check", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "400px",
+        {type: "Sanity", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.Sanity (div);},
             setupFunc: function () { return undefined; }
         },
-        {title:"Record Details", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "500px",
+        {type: "RecordDetails", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "500px",
             newVisFunc: function (div) { return new VESPER.RecordDetails (div);},
             setupFunc: function () { return undefined; }
         },
-        {title:"Taxa Distribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"dist.png", height: "200px",
+        {type: "TaxaDistribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"dist.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TaxaDistribution (div);},
             setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}; }
         },
-        {title:"Search Box", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "150px", width: "200px",
+        {type: "FilterView", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "150px", width: "200px",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
             setupFunc: function () { return {} ;}
         }
@@ -1214,6 +1214,14 @@ VESPER.demo = function (files, exampleDivID) {
     }
 
     function setChoices (choiceData) {
+        var descriptions = $.t("demo.descriptions", {"returnObjectTrees":true});
+        var origins = $.t("demo.origins", {"returnObjectTrees":true});
+        for (var n = choiceData.length; --n >= 0;) {
+            choiceData[n].description = descriptions[files[n].name];
+            choiceData[n].origin = origins[files[n].name];
+        }
+
+
         var table = d3.select(exampleDivID).select("table");
         if (table.empty()) {
             table = d3.select(exampleDivID).append("table");
@@ -1262,12 +1270,13 @@ VESPER.demo = function (files, exampleDivID) {
 
 
 
-    function setPresets (visboxes, radioChoices) {
+    function setPresets (visSetupData, radioChoices) {
         var checkListParent = d3.select("#listDiv");
         var bdiv = d3.select("#dynamicSelectDiv");
 
-        for (var n = 0; n < visboxes.length; n++) {
-            var data = visboxes[n];
+        for (var n = 0; n < visSetupData.length; n++) {
+            var data = visSetupData[n];
+            data.title = VESPER.titles [data.type];
             var spanSelection = DWCAHelper.addCheckbox (bdiv, data, "fieldGroup");
             var onVisOptClickFunc = function (d) {
                 var setVal = d3.select(this).property("checked");
@@ -5405,7 +5414,6 @@ VESPER.ImplicitTaxonomy = function (div) {
 VESPER.ExplicitTaxonomy = function (div) {
     var tree = new VESPER.Tree (div);
     tree.type = "expTree";
-    tree.sepArray = ["<hr>", "<br>"];
     tree.getRoot = function (mod) {
         return mod.getExplicitRoot();
     };
@@ -5525,8 +5533,6 @@ VESPER.VisLauncher = function (divid, options) {
     var self = this;
     var keyField, dims, choiceData;
 
-    this.title = "Controls";
-
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
         choiceData = fields.visChoiceData;
@@ -5597,14 +5603,11 @@ VESPER.VisLauncher = function (divid, options) {
         ;
 
         buttons.append ("span")
-            .text (function(d) { return d.title; })
+            .text (function(d) { return VESPER.titles [d.type]; })
         ;
     }
 
     function setSelectionOps () {
-        //MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
-        //var encloser = d3.select(divid).select(divid+"Sel");
-
         d3.select(divid).append("H3").text($.t("launcher.selectHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"Sel");
 
@@ -5650,8 +5653,6 @@ VESPER.VisLauncher = function (divid, options) {
     function setModelCompareOps () {
         d3.select(divid).append("H3").text($.t("launcher.compareHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"TComp");
-        //var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        //encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
         var basicText = $.t("launcher.compareLabel");
 
         encloser.append("button")
@@ -5697,7 +5698,8 @@ VESPER.VisLauncher = function (divid, options) {
     this.makeVis = function (details, aModel) {
         var id = aModel.name + "view" + (details.multiple ? aModel.getNextSessionModelViewID() : "");
         id = id.replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
-        var vid = details.title + " " + aModel.name;
+        var title = VESPER.titles [details.type];
+        var vid = title + " " + aModel.name;
 
         if (d3.select("#"+id).empty()) {
             var newDiv = d3.select("#allVisDiv")

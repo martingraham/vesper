@@ -12,8 +12,6 @@ VESPER.VisLauncher = function (divid, options) {
     var self = this;
     var keyField, dims, choiceData;
 
-    this.title = "Controls";
-
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
         choiceData = fields.visChoiceData;
@@ -84,14 +82,11 @@ VESPER.VisLauncher = function (divid, options) {
         ;
 
         buttons.append ("span")
-            .text (function(d) { return d.title; })
+            .text (function(d) { return VESPER.titles [d.type]; })
         ;
     }
 
     function setSelectionOps () {
-        //MGNapier.NapVisLib.makeSectionedDiv (d3.select(divid), [{"header":"Current Selections", "sectionID":"Sel"}], "encloser");
-        //var encloser = d3.select(divid).select(divid+"Sel");
-
         d3.select(divid).append("H3").text($.t("launcher.selectHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"Sel");
 
@@ -137,8 +132,6 @@ VESPER.VisLauncher = function (divid, options) {
     function setModelCompareOps () {
         d3.select(divid).append("H3").text($.t("launcher.compareHeader"));
         var encloser = d3.select(divid).append("div").attr("id", divid+"TComp");
-        //var encloser = d3.select(divid).append("div").attr("class", "encloser");
-        //encloser.append ("p").attr("class", "controlHeading").text("Taxonomy Comparison");
         var basicText = $.t("launcher.compareLabel");
 
         encloser.append("button")
@@ -184,7 +177,8 @@ VESPER.VisLauncher = function (divid, options) {
     this.makeVis = function (details, aModel) {
         var id = aModel.name + "view" + (details.multiple ? aModel.getNextSessionModelViewID() : "");
         id = id.replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
-        var vid = details.title + " " + aModel.name;
+        var title = VESPER.titles [details.type];
+        var vid = title + " " + aModel.name;
 
         if (d3.select("#"+id).empty()) {
             var newDiv = d3.select("#allVisDiv")
