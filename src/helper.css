@@ -247,13 +247,15 @@ div.buttonBank {
 .buttonBank button[type="button"] {
     font-size: 10pt;
     height: 20px;
-    width: 25px;
+    width: 30px;
 }
 
 .showHideColours {
-    stroke: none;
+    stroke: #000;
     stroke-width: 1;
-    fill: #000;
+    fill: none;
+    stroke-linejoin: miter;
+    shape-rendering: crispEdges;
 }
 
 .tabbedStuff {

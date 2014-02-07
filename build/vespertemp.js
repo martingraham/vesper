@@ -5751,24 +5751,26 @@ VESPER.VisLauncher = function (divid, options) {
     }
 
     function addHideShowButton (where, toggleThisID) {
+        var initPoly = "1,1 12,1";
         where.append("button")
             .attr("type", "button")
             .on ("click", function() {
                 var vdiv = d3.select(toggleThisID);
                 var dstate = vdiv.style("display");
+                //dstate is current vis display state, not the one we are switching it into...
                 vdiv.style("display", dstate === "none" ? null : "none");
                 //var svg = d3.select(this).select("svg polygon");
                 d3.select(this).select("svg polygon")
                     .attr("points", dstate === "none" ?
-                        "0,12 12,12 6,0" :  "0,0 12,0 6,12"
+                         initPoly : "1,1 12,1 12,12 1,12"
                 );
             } )
             .attr ("title", $.t("launcher.hideTooltip"))
             .append("svg")
-            .attr ("width", 13)
-            .attr ("height", 13)
+            .attr ("width", 14)
+           // .attr ("height", 13)
                 .append("polygon")
-                .attr("points", "0,12 12,12 6,0")
+                .attr("points", initPoly)
                 .attr("class", "showHideColours")
         ;
     }
