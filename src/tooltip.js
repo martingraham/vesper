@@ -32,19 +32,13 @@ VESPER.tooltip = new function () {
         tooltip.select("h2").text(title);
         tooltip.select("p").html(str);
         tooltip
+            .transition()
             .style ("visibility", "visible")
             .style ("opacity", null)
             .transition()
             .duration(self.holdDuration)
             .each ("end", function() {
-                d3.select(this)
-                    .transition()
-                    .duration (self.fadeDuration)
-                    .style ("opacity", 0)
-                    .each ("end", function () {
-                        d3.select(this).style ("visibility", "hidden");
-                    })
-                ;
+                self.setToFade ();
             })
         ;
     };

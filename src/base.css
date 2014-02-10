@@ -185,3 +185,9 @@ input[type="checkbox"] {
 button.safetyGap {
     margin-bottom: 15px;
 }
+
+/*placeholder stylings*/
+::-webkit-input-placeholder { color:#aaa; font-style: italic;}
+::-moz-placeholder { color:#aaa; font-style: italic; } /* firefox 19+ */
+:-ms-input-placeholder { color:#aaa; font-style: italic; } /* ie */
+input:-moz-placeholder { color:#aaa; font-style: italic; }

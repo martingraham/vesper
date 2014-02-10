@@ -203,6 +203,12 @@ input[type="checkbox"] {
 button.safetyGap {
     margin-bottom: 15px;
 }
+
+/*placeholder stylings*/
+::-webkit-input-placeholder { color:#aaa; font-style: italic;}
+::-moz-placeholder { color:#aaa; font-style: italic; } /* firefox 19+ */
+:-ms-input-placeholder { color:#aaa; font-style: italic; } /* ie */
+input:-moz-placeholder { color:#aaa; font-style: italic; }
 .vesperMapIcon {
     text-align: right;
     border: #888 solid 1px;
@@ -594,6 +600,7 @@ th {
     border-bottom-width: 0px;
     margin: 2px 0px;
 }
+
 
 
 .treeNode {

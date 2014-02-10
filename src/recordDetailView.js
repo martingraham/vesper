@@ -19,8 +19,9 @@ VESPER.FilterView = function (divID) {
             .text ($.t("search.label"))
         ;
         textSearch.append("input")
-            .attr("type", "text")
+            .attr("type", "search")
             .attr("id", tid)
+            .attr("placeholder", $.t("search.placeholderText"))
         ;
 
         var typeAheadDiv = textSearch.append("div");
@@ -104,8 +105,9 @@ VESPER.RecordDetails = function (divID) {
             .text ($.t("search.findLabel"))
         ;
         recordInput.append("input")
-            .attr("type", "text")
+            .attr("type", "search")
             .attr("id", iid)
+            .attr("placeholder", $.t("search.findPlaceholderText"))
         ;
         recordInput.append("span")
             .attr ("class", "vesperWarning")

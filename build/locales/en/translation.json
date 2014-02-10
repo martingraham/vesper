@@ -95,8 +95,10 @@
     },
     "search": {
         "label":"Search",
+        "placeholderText":"Enter part of name...",
         "keystrokeLabel":"Keystroke Search",
         "findLabel":"Find Details for Record ID",
+        "findPlaceholderText":"Enter DWCA ID...",
         "noResult":"No Such Record",
         "recordSyn":"Synonym ID",
         "recordSpec":"Specimen ID",
