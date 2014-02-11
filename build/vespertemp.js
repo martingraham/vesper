@@ -5460,9 +5460,12 @@ VESPER.ExplicitTaxonomy = function (div) {
 
     return tree;
 };
+var VESPER = VESPER || {};
+
 VESPER.tooltip = new function () {
     this.holdDuration = 10000;
     this.fadeDuration = 200;
+    var mouseOffset = 10;
     var self = this;
 
     this.init = function () {
@@ -5500,16 +5503,31 @@ VESPER.tooltip = new function () {
             .transition()
             .duration(self.holdDuration)
             .each ("end", function() {
-                self.setToFade ();
+                self.setToFade();
             })
         ;
     };
 
     this.updatePosition = function (e) {
         var tooltip = d3.select("#vesperTooltip");
+        var bw = $(window).width();
+        var bh = $(window).height();
+        var tw = $("#vesperTooltip").width();
+        var th = $("#vesperTooltip").height();
+        var allDefinedAndNonZero = (bw && bh && tw && th);
+
+        var ty = allDefinedAndNonZero
+            ? ((bh - e.pageY > th + mouseOffset) ? (e.pageY + mouseOffset) : Math.max (0, e.pageY - mouseOffset - th))
+            : e.pageY
+        ;
+        var tx = allDefinedAndNonZero
+            ? ((bw - e.pageX > tw + mouseOffset) ? (e.pageX + mouseOffset) : Math.max (0, e.pageX - mouseOffset - tw))
+            : e.pageX
+        ;
+        //console.log ("e", e, bw, bh, tw, th, allDefinedAndNonZero);
         tooltip
-            .style ("top", (e.pageY+10)+"px")
-            .style ("left", (e.pageX+10)+"px")
+            .style ("top", ty+"px")
+            .style ("left", tx+"px")
         ;
      };
 
