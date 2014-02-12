@@ -142,11 +142,12 @@ VESPER.VisLauncher = function (divid, options) {
             .attr("class", "safetyGap")
             .on("mouseover", function() {
                 var elem = d3.select(this);
-                var text = elem.attr("value");
+                var partVal = elem.attr("value");
+                var text = elem.text();
                 VESPER.tooltip.updatePosition (d3.event);
                 VESPER.tooltip.updateText (
                     text,
-                    $.t("launcher.helpTips."+text)
+                    $.t("launcher.helpTips"+partVal.substring (partVal.indexOf(".")))
                 );
             })
             .on("mouseout", function () { VESPER.tooltip.setToFade(); })
