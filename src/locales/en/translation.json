@@ -33,13 +33,23 @@
         "visTitles": {
             "VisLauncher":"Controls",
             "ImplicitTaxonomy":"Normalised Taxonomy",
-            "ExplicitTaxonomy":"Unnormalised Taxonomy",
+            "ExplicitTaxonomy":"Denormalised Taxonomy",
             "DWCAMapLeaflet":"Map",
-            "Timeline":"Timeline",
+            "TimeLine":"Timeline",
             "Sanity":"Missing Data Check",
             "RecordDetails":"Record Details",
             "TaxaDistribution":"Taxa Distribution",
             "FilterView":"Search Box"
+        },
+        "visHelpTips": {
+            "ImplicitTaxonomy":"A view of a taxonomy produced by mapping parent ID fields to taxon IDs in the same dataset.",
+            "ExplicitTaxonomy":"A view of a taxonomy based on explicit kingdom/order/family/genus etc fields in a DWCA dataset.",
+            "DWCAMapLeaflet":"A leaflet.js based map that clusters and plots available longitude and latitude data.",
+            "Timeline":"This view shows a zoomable bar chart that aggregates the dates on which specimens were collected.",
+            "Sanity":"This view produces a number of tables detailing the amount of missing data per field over the record set.",
+            "RecordDetails":"This launches a small view with a text input box. Type in a DWCA ID for the dataset under view to see details of that record.",
+            "TaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
+            "FilterView":"A small view with a text input that allows the names/labels of the current record set to be searched and selected for matches (inc. partial matches)."
         }
     },
     "tree": {
@@ -76,10 +86,19 @@
         "selectInvert":"Invert Selection",
         "selectClear":"Clear",
         "compareHeader":"Taxonomy Comparison",
-        "compareLabel":"Compare This",
+        "compareLabel":"Compare Names",
         "noFileWriter":"This Browser does not support the HTML5 FileWriter API",
         "closeTooltip":"Close This View",
-        "hideTooltip":"Toggle View Visibility"
+        "hideTooltip":"Toggle View Visibility",
+        "helpTips": {
+            "selectSave":"Save the DWCA IDs of the currently selected records to a web page. Here they can be cut'n'pasted to other applications.",
+            "selectInvert":"Invert the current selection. Repeating this will restore the original selection.",
+            "selectClear":"Clear the current selection. Not reversible.",
+            "compareLabel":["Compare the names in this taxonomy against those in another dataset. Clicking this button will turn it yellow.",
+                            " Clicking the equivalent button in another dataset's Controls view will then calculate the similarity between the two datasets' name sets.",
+                            " The matching names will be selected and highlighted accordingly."
+            ]
+        }
     },
     "barChart": {
         "minPrefix":"Min: ",

@@ -129,43 +129,43 @@ VESPER.demo = function (files, exampleDivID) {
     }
 
 
-
-
     function setPresets (visSetupData, radioChoices) {
         var checkListParent = d3.select("#listDiv");
         var bdiv = d3.select("#dynamicSelectDiv");
 
-        for (var n = 0; n < visSetupData.length; n++) {
-            var data = visSetupData[n];
-            data.title = VESPER.titles [data.type];
-            var spanSelection = DWCAHelper.addCheckbox (bdiv, data, "fieldGroup");
-            var onVisOptClickFunc = function (d) {
-                var setVal = d3.select(this).property("checked");
-                DWCAHelper.setAllFields (checkListParent, setVal, d.attList, DWCAHelper.isIdWrap, getMeta(), selectionOptions);
+        visSetupData.forEach (function (elem) { elem.title = VESPER.titles [elem.type]; });
 
-                //var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
-                var cBoxClass = d3.select(this.parentNode).attr("class"); // up one
-                var cGroup = bdiv.selectAll("span."+cBoxClass+" input[type='checkbox']");
-                var ggroup = DWCAHelper.reselectActiveVisChoices (cGroup, checkListParent, function() { return getMeta(); }, selectionOptions);
-                d3.select("#loadButton").property("disabled", ggroup.empty());
-            };
-            DWCAHelper.configureCheckbox (spanSelection, data.attList, onVisOptClickFunc);
-        }
+        var onVisOptClickFunc = function (d) {
+            var setVal = d3.select(this).property("checked");
+            DWCAHelper.setAllFields (checkListParent, setVal, d.attList, DWCAHelper.isIdWrap, getMeta(), selectionOptions);
+            var cBoxClass = d3.select(this.parentNode).attr("class"); // up one
+            var cGroup = bdiv.selectAll("span."+cBoxClass+" input[type='checkbox']");
+            var ggroup = DWCAHelper.reselectActiveVisChoices (cGroup, checkListParent, function() { return getMeta(); }, selectionOptions);
+            d3.select("#loadButton").property("disabled", ggroup.empty());
+        };
+        var spanSelection = DWCAHelper.addCheckboxes (bdiv, visSetupData, "fieldGroup");
+        spanSelection
+            .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
+            .on ("mouseover", function (d) {
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (d.title, $.t("vesper.visHelpTips."+ d.type));
+            })
+            .selectAll("input").on ("click", onVisOptClickFunc)
+        ;
 
         var ldiv = d3.select ("#labelSelectDiv");
-        for (var n = 0; n < radioChoices.length; n++) {
-            var data = {"fieldType":radioChoices[n], "rowType":undefined};
-            var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
-            DWCAHelper.configureRadioButton (elem, checkListParent,
-                function(result) {
-                    // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
-                    // (remember, we can have more than one dataset open at a time)
-                    getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
-                    reselectVisChoices();
-                },
-                function() { return getMeta(); },
-            selectionOptions);
-        }
+        var rbdata = [];
+        radioChoices.forEach (function(rc) { rbdata.push ({"fieldType": rc, "rowType": undefined}); });
+        var rbuttons = DWCAHelper.addRadioButtons (ldiv, rbdata, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
+        DWCAHelper.configureRadioButtons (rbuttons, checkListParent,
+            function(result) {
+                // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
+                // (remember, we can have more than one dataset open at a time)
+                getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
+                reselectVisChoices();
+            },
+            function() { return getMeta(); },
+        selectionOptions);
 
         var setVisOptionBoxes = function (bool) {
             var cboxes = d3.select("#dynamicSelectDiv").selectAll(".fieldGroup input");
@@ -192,7 +192,7 @@ VESPER.demo = function (files, exampleDivID) {
             setVisOptionBoxes (false);
             return false;
           });
-        var useExtBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Search DWCA Extensions", image:null}, "fieldGroup");
+        var useExtBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Search DWCA Extensions", image:null}], "fieldGroup");
         useExtBox.select("input")
             .property ("checked", selectionOptions.useExtRows)
             .on("click", function() {
@@ -200,7 +200,7 @@ VESPER.demo = function (files, exampleDivID) {
                 refilterNameChoices (getMeta());
                 refilterVisChoices (getMeta());
         });
-        var selectFirstOnlyBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Select First Matching Field Only", image:null}, "fieldGroup");
+        var selectFirstOnlyBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Select First Matching Field Only", image:null}], "fieldGroup");
         selectFirstOnlyBox.select("input")
             .property ("checked", selectionOptions.selectFirstOnly)
             .on("click", function() {
@@ -211,7 +211,7 @@ VESPER.demo = function (files, exampleDivID) {
             DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
             return false;
         };
-        var advCheckbox = DWCAHelper.addCheckbox (d3.select("#advRevealPlaceholder"), {title:"Advanced Options", image: null}, "showAdv");
+        var advCheckbox = DWCAHelper.addCheckboxes (d3.select("#advRevealPlaceholder"), [{title:"Advanced Options", image: null}], "showAdv");
         advCheckbox.select("input").on("click", advSelFunc);
     }
 

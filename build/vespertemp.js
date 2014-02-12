@@ -1268,43 +1268,43 @@ VESPER.demo = function (files, exampleDivID) {
     }
 
 
-
-
     function setPresets (visSetupData, radioChoices) {
         var checkListParent = d3.select("#listDiv");
         var bdiv = d3.select("#dynamicSelectDiv");
 
-        for (var n = 0; n < visSetupData.length; n++) {
-            var data = visSetupData[n];
-            data.title = VESPER.titles [data.type];
-            var spanSelection = DWCAHelper.addCheckbox (bdiv, data, "fieldGroup");
-            var onVisOptClickFunc = function (d) {
-                var setVal = d3.select(this).property("checked");
-                DWCAHelper.setAllFields (checkListParent, setVal, d.attList, DWCAHelper.isIdWrap, getMeta(), selectionOptions);
+        visSetupData.forEach (function (elem) { elem.title = VESPER.titles [elem.type]; });
 
-                //var cBoxClass = d3.select(d3.select(this).node().parentNode).attr("class"); // up one
-                var cBoxClass = d3.select(this.parentNode).attr("class"); // up one
-                var cGroup = bdiv.selectAll("span."+cBoxClass+" input[type='checkbox']");
-                var ggroup = DWCAHelper.reselectActiveVisChoices (cGroup, checkListParent, function() { return getMeta(); }, selectionOptions);
-                d3.select("#loadButton").property("disabled", ggroup.empty());
-            };
-            DWCAHelper.configureCheckbox (spanSelection, data.attList, onVisOptClickFunc);
-        }
+        var onVisOptClickFunc = function (d) {
+            var setVal = d3.select(this).property("checked");
+            DWCAHelper.setAllFields (checkListParent, setVal, d.attList, DWCAHelper.isIdWrap, getMeta(), selectionOptions);
+            var cBoxClass = d3.select(this.parentNode).attr("class"); // up one
+            var cGroup = bdiv.selectAll("span."+cBoxClass+" input[type='checkbox']");
+            var ggroup = DWCAHelper.reselectActiveVisChoices (cGroup, checkListParent, function() { return getMeta(); }, selectionOptions);
+            d3.select("#loadButton").property("disabled", ggroup.empty());
+        };
+        var spanSelection = DWCAHelper.addCheckboxes (bdiv, visSetupData, "fieldGroup");
+        spanSelection
+            .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
+            .on ("mouseover", function (d) {
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (d.title, $.t("vesper.visHelpTips."+ d.type));
+            })
+            .selectAll("input").on ("click", onVisOptClickFunc)
+        ;
 
         var ldiv = d3.select ("#labelSelectDiv");
-        for (var n = 0; n < radioChoices.length; n++) {
-            var data = {"fieldType":radioChoices[n], "rowType":undefined};
-            var elem = DWCAHelper.addRadioButton (ldiv, data, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
-            DWCAHelper.configureRadioButton (elem, checkListParent,
-                function(result) {
-                    // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
-                    // (remember, we can have more than one dataset open at a time)
-                    getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
-                    reselectVisChoices();
-                },
-                function() { return getMeta(); },
-            selectionOptions);
-        }
+        var rbdata = [];
+        radioChoices.forEach (function(rc) { rbdata.push ({"fieldType": rc, "rowType": undefined}); });
+        var rbuttons = DWCAHelper.addRadioButtons (ldiv, rbdata, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
+        DWCAHelper.configureRadioButtons (rbuttons, checkListParent,
+            function(result) {
+                // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
+                // (remember, we can have more than one dataset open at a time)
+                getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
+                reselectVisChoices();
+            },
+            function() { return getMeta(); },
+        selectionOptions);
 
         var setVisOptionBoxes = function (bool) {
             var cboxes = d3.select("#dynamicSelectDiv").selectAll(".fieldGroup input");
@@ -1331,7 +1331,7 @@ VESPER.demo = function (files, exampleDivID) {
             setVisOptionBoxes (false);
             return false;
           });
-        var useExtBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Search DWCA Extensions", image:null}, "fieldGroup");
+        var useExtBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Search DWCA Extensions", image:null}], "fieldGroup");
         useExtBox.select("input")
             .property ("checked", selectionOptions.useExtRows)
             .on("click", function() {
@@ -1339,7 +1339,7 @@ VESPER.demo = function (files, exampleDivID) {
                 refilterNameChoices (getMeta());
                 refilterVisChoices (getMeta());
         });
-        var selectFirstOnlyBox = DWCAHelper.addCheckbox (d3.select("#advancedSelectDiv"), {title:"Select First Matching Field Only", image:null}, "fieldGroup");
+        var selectFirstOnlyBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Select First Matching Field Only", image:null}], "fieldGroup");
         selectFirstOnlyBox.select("input")
             .property ("checked", selectionOptions.selectFirstOnly)
             .on("click", function() {
@@ -1350,7 +1350,7 @@ VESPER.demo = function (files, exampleDivID) {
             DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
             return false;
         };
-        var advCheckbox = DWCAHelper.addCheckbox (d3.select("#advRevealPlaceholder"), {title:"Advanced Options", image: null}, "showAdv");
+        var advCheckbox = DWCAHelper.addCheckboxes (d3.select("#advRevealPlaceholder"), [{title:"Advanced Options", image: null}], "showAdv");
         advCheckbox.select("input").on("click", advSelFunc);
     }
 
@@ -1801,13 +1801,23 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.addCheckbox = function (parentSelection, cdata, klass) {
+    this.addCheckboxes = function (parentSelection, cdata, klass) {
         var cboxGroup = parentSelection
             .selectAll("span")
-            .data([cdata], function (d) { return d.title; })
+            .data(cdata, function (d) { return d.title; })
         ;
 
         function titleOrName (d) { return d.title || d.name; }
+
+        function appendIcon (d) {
+            if (d.icon || d.image) {
+                d3.select(this).append ("img")
+                    .attr ("class", "vesperIcon")
+                    .attr ("alt",  titleOrName)
+                    .attr ("src", function(d) { return d.image || d.icon; })
+                ;
+            }
+        }
 
         if (!cboxGroup.enter().empty()) {
             var newGroup = cboxGroup.enter()
@@ -1824,39 +1834,18 @@ VESPER.DWCAHelper = new function () {
                 .property ("checked", false)
             ;
 
-
-
             var newLabel = newGroup
                 .append("label")
                 .attr ("for", titleOrName)
                // .text ( titleOrName)
             ;
-
-            if (cdata.icon || cdata.image) {
-                newLabel.append ("img")
-                    .attr ("class", "vesperIcon")
-                    .attr ("alt",  titleOrName)
-                    .attr ("src", function(d) { return d.image || d.icon; })
-                ;
-            }
-
+            newLabel.each (appendIcon);
             newLabel.append("span")
                 .text ( titleOrName)
             ;
         }
 
         return cboxGroup;
-    };
-
-
-    this.configureCheckbox = function (checkBoxSpanSelection, list, clickFunc) {
-        if (list) {
-            checkBoxSpanSelection.datum().attList = list;
-        }
-
-        checkBoxSpanSelection.select("input")
-            .on ("click", clickFunc)
-        ;
     };
 
     this.reselectActiveVisChoices = function (group, cboxListParentSelection, meta, selOptions) {
@@ -1868,10 +1857,10 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.addRadioButton = function (parentSelection, cdata, klass, groupName, textFunc) {
+    this.addRadioButtons = function (parentSelection, cdata, klass, groupName, textFunc) {
         var rbutControl = parentSelection
             .selectAll("span")
-            .data([cdata], function (d) { return textFunc(d); })
+            .data(cdata, function (d) { return textFunc(d); })
         ;
 
         if (!rbutControl.enter().empty()) {
@@ -1900,9 +1889,9 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.configureRadioButton = function (rbLabelWrapper, cboxListParentSelection, changeThisObjFunc, metaDataFunc, selOptions) {
-        rbLabelWrapper
-            .select("input")
+    this.configureRadioButtons = function (rbLabelWrappers, cboxListParentSelection, changeThisObjFunc, metaDataFunc, selOptions) {
+        rbLabelWrappers
+            .selectAll("input")
             .on ("click", function (d) {
                 var setVal = d3.select(this).property("checked");
                 var gName = d3.select(this).attr("name");
@@ -5310,6 +5299,7 @@ VESPER.Tree = function (divid) {
             VESPER.tooltip.updatePosition (d3.event);
         })
         .on ("mouseout", function() {
+            VESPER.tooltip.setToFade();
             d3.select(this).selectAll("*").classed("highlight", false);
         })
         .on("contextmenu", function(d) {
@@ -5510,8 +5500,8 @@ VESPER.tooltip = new function () {
 
     this.updatePosition = function (e) {
         var tooltip = d3.select("#vesperTooltip");
-        var bw = $(window).width();
-        var bh = $(window).height();
+        var bw = $(document).width();
+        var bh = $(document).height();
         var tw = $("#vesperTooltip").width();
         var th = $("#vesperTooltip").height();
         var allDefinedAndNonZero = (bw && bh && tw && th);
@@ -5524,7 +5514,7 @@ VESPER.tooltip = new function () {
             ? ((bw - e.pageX > tw + mouseOffset) ? (e.pageX + mouseOffset) : Math.max (0, e.pageX - mouseOffset - tw))
             : e.pageX
         ;
-        //console.log ("e", e, bw, bh, tw, th, allDefinedAndNonZero);
+        //console.log ("e", e, bw, bh, tw, th);
         tooltip
             .style ("top", ty+"px")
             .style ("left", tx+"px")
@@ -5609,6 +5599,16 @@ VESPER.VisLauncher = function (divid, options) {
                 self.makeVis (d, model);
                 return false;
             })
+            .on ("mouseover", function(d) {
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (
+                    VESPER.titles [d.type],
+                    $.t("vesper.visHelpTips."+ d.type)
+                );
+            })
+            .on ("mouseout", function() {
+                VESPER.tooltip.setToFade();
+            })
         ;
 
         buttons.append ("img")
@@ -5627,6 +5627,7 @@ VESPER.VisLauncher = function (divid, options) {
 
         encloser.append("button")
             .attr ("type", "button")
+            .attr ("value", "launcher.selectSave")
             .text ($.t("launcher.selectSave"))
         ;
 
@@ -5643,6 +5644,7 @@ VESPER.VisLauncher = function (divid, options) {
 
         encloser.append("button")
             .attr ("type", "button")
+            .attr ("value", "launcher.selectInvert")
             .text ($.t("launcher.selectInvert"))
             .on ("click", function() {
                 model.invertSelection ();
@@ -5651,6 +5653,7 @@ VESPER.VisLauncher = function (divid, options) {
 
         encloser.append("button")
             .attr ("type", "button")
+            .attr ("value", "launcher.selectClear")
             //.attr ("id", "clearSel")
             .text ($.t("launcher.selectClear"))
             .on ("click", function() {
@@ -5659,7 +5662,20 @@ VESPER.VisLauncher = function (divid, options) {
             })
         ;
 
-        encloser.selectAll("button").style("display", "block").attr("class", "safetyGap");
+        encloser.selectAll("button")
+            .style("display", "block")
+            .attr("class", "safetyGap")
+            .on("mouseover", function() {
+                var elem = d3.select(this);
+                var text = elem.attr("value");
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (
+                    text,
+                    $.t("launcher.helpTips."+text)
+                );
+            })
+            .on("mouseout", function () { VESPER.tooltip.setToFade(); })
+        ;
     }
 
 
@@ -5694,6 +5710,14 @@ VESPER.VisLauncher = function (divid, options) {
                     //curButtonSel.text (basicText);
                 }
             })
+            .on("mouseover", function() {
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (
+                    basicText,
+                    $.t("launcher.helpTips.compareLabel")  // cos its multi-line in the json (an array of strings)
+                );
+            })
+            .on("mouseout", function () { VESPER.tooltip.setToFade(); })
         ;
 
         encloser.selectAll("button").style("display", "block");

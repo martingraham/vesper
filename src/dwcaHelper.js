@@ -315,13 +315,23 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.addCheckbox = function (parentSelection, cdata, klass) {
+    this.addCheckboxes = function (parentSelection, cdata, klass) {
         var cboxGroup = parentSelection
             .selectAll("span")
-            .data([cdata], function (d) { return d.title; })
+            .data(cdata, function (d) { return d.title; })
         ;
 
         function titleOrName (d) { return d.title || d.name; }
+
+        function appendIcon (d) {
+            if (d.icon || d.image) {
+                d3.select(this).append ("img")
+                    .attr ("class", "vesperIcon")
+                    .attr ("alt",  titleOrName)
+                    .attr ("src", function(d) { return d.image || d.icon; })
+                ;
+            }
+        }
 
         if (!cboxGroup.enter().empty()) {
             var newGroup = cboxGroup.enter()
@@ -338,39 +348,18 @@ VESPER.DWCAHelper = new function () {
                 .property ("checked", false)
             ;
 
-
-
             var newLabel = newGroup
                 .append("label")
                 .attr ("for", titleOrName)
                // .text ( titleOrName)
             ;
-
-            if (cdata.icon || cdata.image) {
-                newLabel.append ("img")
-                    .attr ("class", "vesperIcon")
-                    .attr ("alt",  titleOrName)
-                    .attr ("src", function(d) { return d.image || d.icon; })
-                ;
-            }
-
+            newLabel.each (appendIcon);
             newLabel.append("span")
                 .text ( titleOrName)
             ;
         }
 
         return cboxGroup;
-    };
-
-
-    this.configureCheckbox = function (checkBoxSpanSelection, list, clickFunc) {
-        if (list) {
-            checkBoxSpanSelection.datum().attList = list;
-        }
-
-        checkBoxSpanSelection.select("input")
-            .on ("click", clickFunc)
-        ;
     };
 
     this.reselectActiveVisChoices = function (group, cboxListParentSelection, meta, selOptions) {
@@ -382,10 +371,10 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.addRadioButton = function (parentSelection, cdata, klass, groupName, textFunc) {
+    this.addRadioButtons = function (parentSelection, cdata, klass, groupName, textFunc) {
         var rbutControl = parentSelection
             .selectAll("span")
-            .data([cdata], function (d) { return textFunc(d); })
+            .data(cdata, function (d) { return textFunc(d); })
         ;
 
         if (!rbutControl.enter().empty()) {
@@ -414,9 +403,9 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.configureRadioButton = function (rbLabelWrapper, cboxListParentSelection, changeThisObjFunc, metaDataFunc, selOptions) {
-        rbLabelWrapper
-            .select("input")
+    this.configureRadioButtons = function (rbLabelWrappers, cboxListParentSelection, changeThisObjFunc, metaDataFunc, selOptions) {
+        rbLabelWrappers
+            .selectAll("input")
             .on ("click", function (d) {
                 var setVal = d3.select(this).property("checked");
                 var gName = d3.select(this).attr("name");

@@ -48,8 +48,8 @@ VESPER.tooltip = new function () {
 
     this.updatePosition = function (e) {
         var tooltip = d3.select("#vesperTooltip");
-        var bw = $(window).width();
-        var bh = $(window).height();
+        var bw = $(document).width();
+        var bh = $(document).height();
         var tw = $("#vesperTooltip").width();
         var th = $("#vesperTooltip").height();
         var allDefinedAndNonZero = (bw && bh && tw && th);
@@ -62,7 +62,7 @@ VESPER.tooltip = new function () {
             ? ((bw - e.pageX > tw + mouseOffset) ? (e.pageX + mouseOffset) : Math.max (0, e.pageX - mouseOffset - tw))
             : e.pageX
         ;
-        //console.log ("e", e, bw, bh, tw, th, allDefinedAndNonZero);
+        //console.log ("e", e, bw, bh, tw, th);
         tooltip
             .style ("top", ty+"px")
             .style ("left", tx+"px")

@@ -895,6 +895,7 @@ VESPER.Tree = function (divid) {
             VESPER.tooltip.updatePosition (d3.event);
         })
         .on ("mouseout", function() {
+            VESPER.tooltip.setToFade();
             d3.select(this).selectAll("*").classed("highlight", false);
         })
         .on("contextmenu", function(d) {

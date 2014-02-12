@@ -74,6 +74,16 @@ VESPER.VisLauncher = function (divid, options) {
                 self.makeVis (d, model);
                 return false;
             })
+            .on ("mouseover", function(d) {
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (
+                    VESPER.titles [d.type],
+                    $.t("vesper.visHelpTips."+ d.type)
+                );
+            })
+            .on ("mouseout", function() {
+                VESPER.tooltip.setToFade();
+            })
         ;
 
         buttons.append ("img")
@@ -92,6 +102,7 @@ VESPER.VisLauncher = function (divid, options) {
 
         encloser.append("button")
             .attr ("type", "button")
+            .attr ("value", "launcher.selectSave")
             .text ($.t("launcher.selectSave"))
         ;
 
@@ -108,6 +119,7 @@ VESPER.VisLauncher = function (divid, options) {
 
         encloser.append("button")
             .attr ("type", "button")
+            .attr ("value", "launcher.selectInvert")
             .text ($.t("launcher.selectInvert"))
             .on ("click", function() {
                 model.invertSelection ();
@@ -116,6 +128,7 @@ VESPER.VisLauncher = function (divid, options) {
 
         encloser.append("button")
             .attr ("type", "button")
+            .attr ("value", "launcher.selectClear")
             //.attr ("id", "clearSel")
             .text ($.t("launcher.selectClear"))
             .on ("click", function() {
@@ -124,7 +137,20 @@ VESPER.VisLauncher = function (divid, options) {
             })
         ;
 
-        encloser.selectAll("button").style("display", "block").attr("class", "safetyGap");
+        encloser.selectAll("button")
+            .style("display", "block")
+            .attr("class", "safetyGap")
+            .on("mouseover", function() {
+                var elem = d3.select(this);
+                var text = elem.attr("value");
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (
+                    text,
+                    $.t("launcher.helpTips."+text)
+                );
+            })
+            .on("mouseout", function () { VESPER.tooltip.setToFade(); })
+        ;
     }
 
 
@@ -159,6 +185,14 @@ VESPER.VisLauncher = function (divid, options) {
                     //curButtonSel.text (basicText);
                 }
             })
+            .on("mouseover", function() {
+                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip.updateText (
+                    basicText,
+                    $.t("launcher.helpTips.compareLabel")  // cos its multi-line in the json (an array of strings)
+                );
+            })
+            .on("mouseout", function () { VESPER.tooltip.setToFade(); })
         ;
 
         encloser.selectAll("button").style("display", "block");

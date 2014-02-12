@@ -576,6 +576,7 @@ th {
     background: #aadddd;
     opacity: 0.9;
     z-index: 1001;
+    max-width: 300px;
 }
 
 .vesperTooltip h2 {
