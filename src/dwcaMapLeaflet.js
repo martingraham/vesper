@@ -42,6 +42,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         // careful with lng, as i18text interprets var with that name as changing translation language!
         VESPER.tooltip.updateText ($.t("map.tooltipHeader", {count: a.layer.getChildCount()}),
             (sCount > 0 ? $.t("map.tooltipSel", {count: sCount}) : "")
+            + $.t("map.tooltipCluster")
             + $.t("map.tooltipLatLong", {lat: dFormat(a.latlng.lat), llong: dFormat(a.latlng.lng)})
         );
         VESPER.tooltip.updatePosition (a.originalEvent);
@@ -53,7 +54,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
         var sel = [];
         a.layer.getAllChildMarkers (theseMarkers);
         if (theseMarkers.length > 0) {
-            for (var n = 0; n < theseMarkers.length; n++) {
+            for (var n = theseMarkers.length; --n >= 0;) {
                 sel.push (theseMarkers[n].extId);
             }
             model.getSelectionModel().clear();
@@ -65,7 +66,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
         var eid = e.target.extId;
         var node = model.getNodeFromID (eid);
         VESPER.tooltip.updateText (model.getLabel (node),
-            e.latlng+(model.getSelectionModel().contains (eid) ? $.t("map.tooltipIndSel") : "")
+            (model.getSelectionModel().contains (eid) ? $.t("map.tooltipIndSel") : "")
+            + $.t("map.tooltipID", {dwcaId: eid})
             + $.t("map.tooltipLatLong", {lat: dFormat(e.latlng.lat), llong: dFormat(e.latlng.lng)})
         );
         VESPER.tooltip.updatePosition (e.originalEvent);
@@ -188,8 +190,11 @@ VESPER.DWCAMapLeaflet = function (divid) {
                 }
             });
 
-            markerGroup.on('clustermouseover', clusterMouseOverListener);
-            markerGroup.on('clustercontextmenu', clusterSelectionListener);
+            markerGroup
+                .on('clustermouseover', clusterMouseOverListener)
+                .on('clustermouseout', function() { VESPER.tooltip.setToFade(); })
+                .on('clustercontextmenu', clusterSelectionListener)
+            ;
         }
 
         var latlngs = [];
@@ -215,6 +220,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
                              var coord= [lat, longi];
                              var marker = L.marker(coord)
                                      .on ('mouseover', markerMouseOverListener)
+                                     .on ('mouseout', function() { VESPER.tooltip.setToFade(); })
                                      .on ('contextmenu', markerSelectionListener)
                                  ;
                              marker.extId = prop;
@@ -302,7 +308,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
             var lls = [];
             var lastLayer;
-            for (var n = 0; n < vals.length; n++) {
+            for (var n = 0, len = vals.length; n < len; n++) {
                 var layer = dwcaid2Marker[vals[n]];
                 if (layer) {
                     if (layer.extId) {
@@ -417,13 +423,13 @@ VESPER.DWCAMapLeaflet = function (divid) {
             setAllSelectedChildCounts: function (selectionModel) {
                 var curCount = 0;
 
-                for (var j = this._markers.length - 1; j >= 0; j--) {
+                for (var j = this._markers.length; --j >= 0;) {
                     if (selectionModel.contains (this._markers[j].extId)) {
                         curCount++;
                     }
                 }
 
-                for (var i = this._childClusters.length - 1; i >= 0; i--) {
+                for (var i = this._childClusters.length; --i >= 0;) {
                     curCount += this._childClusters[i].setAllSelectedChildCounts (selectionModel);
                 }
 

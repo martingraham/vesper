@@ -47,26 +47,42 @@ VESPER.tooltip = new function () {
     };
 
     this.updatePosition = function (e) {
-        var tooltip = d3.select("#vesperTooltip");
-        var bw = $(document).width();
-        var bh = $(document).height();
-        var tw = $("#vesperTooltip").width();
-        var th = $("#vesperTooltip").height();
-        var allDefinedAndNonZero = (bw && bh && tw && th);
+        if (e) {
+            // need the following measurements to ensure tooltip stays within visible and current bounds of document
+            var tooltip = d3.select("#vesperTooltip");
+            var dw = $(document).width();
+            var dh = $(document).height();
+            var ww = $(window).width();
+            var wh = $(window).height();
+            var sx = $(document).scrollLeft();
+            var sy = $(document).scrollTop();
 
-        var ty = allDefinedAndNonZero
-            ? ((bh - e.pageY > th + mouseOffset) ? (e.pageY + mouseOffset) : Math.max (0, e.pageY - mouseOffset - th))
-            : e.pageY
-        ;
-        var tx = allDefinedAndNonZero
-            ? ((bw - e.pageX > tw + mouseOffset) ? (e.pageX + mouseOffset) : Math.max (0, e.pageX - mouseOffset - tw))
-            : e.pageX
-        ;
-        //console.log ("e", e, bw, bh, tw, th);
-        tooltip
-            .style ("top", ty+"px")
-            .style ("left", tx+"px")
-        ;
+            var tx = e.pageX;
+            var ty = e.pageY;
+            var tw = $("#vesperTooltip").outerWidth();
+            var th = $("#vesperTooltip").outerHeight();
+
+            var allDefinedAndNonZero = (dw && dh && tw && th && ww && wh); // test all widths/heights are non-zero and defined
+            var newtx, newty;
+
+            if (allDefinedAndNonZero) {
+                var roomBelow = ty + th + mouseOffset < Math.min (dh, wh + sy);
+                newty = roomBelow ? ty + mouseOffset : ty - th - mouseOffset;
+
+                var roomRight = tx + tw + mouseOffset < Math.min (dw, ww + sx);
+                newtx = roomRight ? tx + mouseOffset : tx - tw - mouseOffset;
+            } else {
+                newtx = tx;
+                newty = ty;
+            }
+
+            console.log ("coords", "page xy: {",e.pageX, e.pageY, "}, client xy:{", e.clientX, e.clientY, "}, doc wh: {", dw, dh,"}, tooltip wh: {", tw, th,
+                "}, window wh: {", $(window).width(), $(window).height(), "}, docscroll xy: {", $(document).scrollLeft(), $(document).scrollTop());
+            tooltip
+                .style ("top", newty+"px")
+                .style ("left", newtx+"px")
+            ;
+        }
      };
 
     return this;

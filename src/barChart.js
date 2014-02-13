@@ -91,7 +91,9 @@ VESPER.BarChart = function(divid) {
             VESPER.DWCAHelper.addDragArea (butdiv);
             MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
 
-            var choices = {Interval: self.uncalcCumulative, Cumulative: self.calcCumulative};
+            var choices = {interval: self.uncalcCumulative, cumulative: self.calcCumulative};
+            var choiceLabels = {};
+            d3.keys(choices).forEach (function(elem) {choiceLabels[elem] = $.t("barChart."+elem+"Label"); });
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
                 .data (d3.entries(choices), function(d) { return d.key;})
             ;
@@ -106,7 +108,7 @@ VESPER.BarChart = function(divid) {
                 .attr("type", "radio")
                 .attr("id", function(d) { return noHashId+ d.key; })
                 .attr("name", "chartYType")
-                .property ("checked", function(d) { return d.key === "Interval"; })
+                .property ("checked", function(d) { return d.key === "interval"; })
                 .on ("change", function(d) {
                     var barDataSets = [binned.bins, selBinned.bins];
                     var barDataTypes = ["unselected", "selected"];
@@ -121,10 +123,10 @@ VESPER.BarChart = function(divid) {
             ;
             spans.append("label")
                 .attr("for", noHashId+"count")
-                .text (function(d) { return d.key; })
+                .text (function(d) { return choiceLabels [d.key]; })
             ;
 
-            $( divid+"Controls" ).draggable();
+            $( divid+"Controls" ).draggable({"containment": divid});
         }
 
         self.childScale.range([margin.left, dims[0] - margin.right]);
@@ -228,7 +230,7 @@ VESPER.BarChart = function(divid) {
                 .on ("mouseover", function(d) {
                     d3.select(this).classed("highlight", true);
                     var selected = d3.select(this).classed("selected");
-                    VESPER.tooltip.updateText($.t("barChart."+(selected ? "allLabel" : "selLabel")), self.makeTitle (d));
+                    VESPER.tooltip.updateText($.t("barChart."+(selected ? "selLabel" : "allLabel")), self.makeTitle (d));
                     VESPER.tooltip.updatePosition (d3.event);
                 })
                 .on ("mouseout", function() {

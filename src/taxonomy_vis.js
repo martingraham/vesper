@@ -166,7 +166,7 @@ VESPER.Tree = function (divid) {
                         return "translate ("+ (d.y)+","+(d.x + Math.max (((d.dx - 14) / 2) + 14, 14))+") " ;
                     }
                 })
-                .attr ("clip-path", function (d) { return rotate(d, this) ? null : "url(#"+noHashID+"depthclipR0)";})
+                .attr ("clip-path", function (d) { return rotate(d, this) ? null : "url("+divid+"depthclipR0)";})
             ;
         },
 
@@ -323,7 +323,7 @@ VESPER.Tree = function (divid) {
                  })
                 .style ("text-anchor", function (d) { return getNode(d.id).depth === 0 ? "middle" : null; })
                 .style ("display", function (d) { return d.dx > 0.1 && (Math.sqrt(d.y+ d.dy) - Math.sqrt(d.y)) > 20 ? null: "none"; })
-                .attr ("clip-path", function (d) { return "url(#"+noHashID+"depthclip"+getNode(d.id).depth+")";})
+                .attr ("clip-path", function (d) { return "url("+divid+"depthclip"+getNode(d.id).depth+")";})
             ;
         },
 
@@ -726,7 +726,7 @@ VESPER.Tree = function (divid) {
             .html (function(d) { return sortOptionLabels[d.key]; })
         ;
 
-        $("#"+noHashID+"controls").draggable();
+        $(divid+"controls").draggable({"containment":divid});
     }
 
 

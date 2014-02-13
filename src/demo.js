@@ -147,8 +147,8 @@ VESPER.demo = function (files, exampleDivID) {
         spanSelection
             .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
             .on ("mouseover", function (d) {
-                VESPER.tooltip.updatePosition (d3.event);
                 VESPER.tooltip.updateText (d.title, $.t("vesper.visHelpTips."+ d.type));
+                VESPER.tooltip.updatePosition (d3.event);
             })
             .selectAll("input").on ("click", onVisOptClickFunc)
         ;

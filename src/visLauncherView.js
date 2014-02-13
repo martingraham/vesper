@@ -75,11 +75,11 @@ VESPER.VisLauncher = function (divid, options) {
                 return false;
             })
             .on ("mouseover", function(d) {
-                VESPER.tooltip.updatePosition (d3.event);
                 VESPER.tooltip.updateText (
                     VESPER.titles [d.type],
                     $.t("vesper.visHelpTips."+ d.type)
                 );
+                VESPER.tooltip.updatePosition (d3.event);
             })
             .on ("mouseout", function() {
                 VESPER.tooltip.setToFade();
@@ -144,11 +144,11 @@ VESPER.VisLauncher = function (divid, options) {
                 var elem = d3.select(this);
                 var partVal = elem.attr("value");
                 var text = elem.text();
-                VESPER.tooltip.updatePosition (d3.event);
                 VESPER.tooltip.updateText (
                     text,
                     $.t("launcher.helpTips"+partVal.substring (partVal.indexOf(".")))
                 );
+                VESPER.tooltip.updatePosition (d3.event);
             })
             .on("mouseout", function () { VESPER.tooltip.setToFade(); })
         ;
@@ -187,11 +187,11 @@ VESPER.VisLauncher = function (divid, options) {
                 }
             })
             .on("mouseover", function() {
-                VESPER.tooltip.updatePosition (d3.event);
                 VESPER.tooltip.updateText (
                     basicText,
                     $.t("launcher.helpTips.compareLabel")  // cos its multi-line in the json (an array of strings)
                 );
+                VESPER.tooltip.updatePosition (d3.event);
             })
             .on("mouseout", function () { VESPER.tooltip.setToFade(); })
         ;

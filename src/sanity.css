@@ -26,11 +26,11 @@ td.showSanityText span {
 }
 
 td.dontShowSanityText span {
-    display: none;
+    display: inline;
 }
 
 td.showSanityText div {
-    display: none;
+    display: block;
 }
 
 td.value {

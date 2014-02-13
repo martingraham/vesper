@@ -245,6 +245,7 @@ VESPER.Sanity = function(divid) {
                     arr.push ({"key":item, "value":d[item]});
                 }
             }
+            console.log ("cells", processors, d);
 
             var cells = d3.select(this).selectAll("td").data(arr);
             cells.enter().append ("td")
@@ -279,6 +280,18 @@ VESPER.Sanity = function(divid) {
             }
             cells.select("span.sanityBarText").text (dstring);
             cells.attr ("title", dstring);
+            /*
+            cells
+                .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
+                .on ("mouseover", function(d, i, ii) {
+                    VESPER.tooltip.updateText (
+                        d.key+": "+ d.value,
+                        dstring (d,i)   // fails 'cos processors has been updated by the time this is called
+                    );
+                    console.log (d, i, ii);
+                    VESPER.tooltip.updatePosition (d3.event);
+            });
+            */
         }
 
 
