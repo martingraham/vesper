@@ -35,7 +35,7 @@ VESPER.Sanity = function(divid) {
                 var nullCount = MGNapier.NapVisLib.countNulls (present);
                 if (nullCount === 0) {
                     tests.push (present);
-                    testOutputs.push ({"listName":list, "all":0, "some":0});
+                    testOutputs.push ({"listName": $.t("sanity.visLabels."+list), "all":0, "some":0});
                 }
             }
         }
@@ -199,16 +199,22 @@ VESPER.Sanity = function(divid) {
             .text (oc+" Records"+(selectedSize > 0 ? ", "+selectedSize+" Selected" : ""))
         ;
 
-        function createTable (klass, headings) {
+        function createTable (klass, headings, caption, tooltipHeader) {
             var table = divSel.select("table."+klass);
             if (table.empty()) {
-                var topRow = divSel
+                var newTable = divSel
                     .append("table")
                     .attr ("class", klass)
-                    .append ("tr")
+                    .attr ("data-tooltipHeader", tooltipHeader)
                 ;
 
-                topRow.selectAll("th").data(headings)
+                newTable.append("caption")
+                    .attr ("class", "sanityCaption")
+                    .text (caption)
+                ;
+
+                newTable.append("tr")
+                    .selectAll("th").data(headings)
                     .enter()
                     .append("th")
                     .attr ("class", "sanityTableHeading")
@@ -236,16 +242,35 @@ VESPER.Sanity = function(divid) {
 
         var pcFormat = d3.format (".2%");
 
-        function fillCells (d) {
+        function fillCells (d, i) {
             var arr = [];
+            var ordering = [];
             // google chrome doesn't do returning object properties in the order they were added.
             for (var n = 0; n < processors.length; n++) {
                 var item = processors[n].name;
                 if (d[item] !== undefined) {
                     arr.push ({"key":item, "value":d[item]});
+                    ordering.push (item);
                 }
             }
-            console.log ("cells", processors, d);
+            d.ordering = ordering;
+
+            d3.select(this)
+                .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
+                .on ("mouseover", function(d) {
+                    var headers = d3.select(this.parentNode).selectAll("th");
+                    var headerText = [];
+                    headers.each (function(d) { headerText.push (d); });
+                    var str = "";
+                    for (var n = 0; n < ordering.length; n++) {
+                        str += headerText[n]+": "+d[ordering[n]] + (n < ordering.length - 1 ? "<br>" : "");
+                    }
+                    var ttheader = d3.select(this.parentNode).attr("data-tooltipHeader");
+                    if (!ttheader) { ttheader = $.t("sanity.defaultTooltipHeader"); }
+                    VESPER.tooltip.updateText (ttheader, str);
+                    VESPER.tooltip.updatePosition (d3.event);
+                })
+            ;
 
             var cells = d3.select(this).selectAll("td").data(arr);
             cells.enter().append ("td")
@@ -254,16 +279,15 @@ VESPER.Sanity = function(divid) {
 
             function dstring (d,i) {
                 var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
-                return d.value.toString() + (isNaN(d.value) || pcVal === undefined ? "" : " ("+ pcFormat (pcVal)+ ")") ;
+                return d.value.toString() + (isNaN(d.value) || pcVal === d.value ? "" : " ("+ pcFormat (pcVal)+ ")") ;
             }
 
 
             if (cells.select("div").empty()) {
-                cells.append("div").attr("class", function(d,i) {
-                    var barClass = (processors[i].func === getSelPC) ? "selected" : "unselected";
-                    return barClass;
-                });
-                cells.selectAll("div")
+                cells.append("div")
+                    .attr("class", function(d,i) {
+                        return (processors[i].func === getSelPC) ? "selected" : "unselected";
+                    })
                     .style("height", "10px")
                 ;
             }
@@ -273,29 +297,18 @@ VESPER.Sanity = function(divid) {
                     var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
                     return isNaN(d.value) ? 0 : Math.min (maxBarWidth, pcVal * maxBarWidth) + "px";
                 })
+                .style ("display", function(d) { return isNaN(d.value) || d.value == 0 ? "none" : null; })
             ;
 
             if (cells.select("span.sanityBarText").empty()) {
                 cells.append("span").attr("class", "sanityBarText");
             }
             cells.select("span.sanityBarText").text (dstring);
-            cells.attr ("title", dstring);
-            /*
-            cells
-                .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
-                .on ("mouseover", function(d, i, ii) {
-                    VESPER.tooltip.updateText (
-                        d.key+": "+ d.value,
-                        dstring (d,i)   // fails 'cos processors has been updated by the time this is called
-                    );
-                    console.log (d, i, ii);
-                    VESPER.tooltip.updatePosition (d3.event);
-            });
-            */
+            //cells.attr ("title", dstring);
         }
 
 
-        function getOrig () { return undefined; }
+        function getOrig (val) { return val; }
         function getAllPC (val) { return val / oc; }
         function getSelPC (val) { return selectedSize > 0 ? val / selectedSize : 0; }
 
@@ -304,7 +317,7 @@ VESPER.Sanity = function(divid) {
         for (var n = 0; n < 5; n++) {
             visSanHeaders.push ($.t("sanity.visSanHeaders."+n));
         }
-        var sTable = createTable ("visSanityTests", visSanHeaders);
+        var sTable = createTable ("visSanityTests", visSanHeaders, $.t("sanity.visSanHeaders.tableCaption"), $.t("sanity.visSanHeaders.tooltipHeader"));
         var processors = [{name:"listName", func:getOrig, klass:"showSanityText"}, {name:"some", func:getAllPC, klass:"dontShowSanityText"}, {name:"all", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selSome", func:getSelPC, klass:"dontShowSanityText"}, {name:"selAll", func:getSelPC, klass:"dontShowSanityText"}
         ];
@@ -317,10 +330,11 @@ VESPER.Sanity = function(divid) {
             fieldSanHeaders.push ($.t("sanity.fieldSanHeaders."+n));
         }
         if (!$.isEmptyObject(allFieldsComplete)) {
-            sTable = createTable ("fieldSanityTests", fieldSanHeaders);
+            sTable = createTable ("fieldSanityTests", fieldSanHeaders, $.t("sanity.fieldSanHeaders.tableCaption"), $.t("sanity.fieldSanHeaders.tooltipHeader"));
             processors = [{name:"recordType", func:getOrig, klass:"showSanityText"}, {name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getAllPC, klass:"dontShowSanityText"},
                 {name:"selCount", func:getSelPC, klass:"dontShowSanityText"}
             ];
+            //console.log ("AFC", allFieldsComplete);
             popTable (sTable.selectAll("tr.sanityRow").data(d3.values(allFieldsComplete)), fillCells);
         }
 
@@ -330,7 +344,7 @@ VESPER.Sanity = function(divid) {
             vocabSanHeaders.push ($.t("sanity.vocabSanHeaders."+n));
         }
         if (!$.isEmptyObject(vocabCounts)) {
-            sTable = createTable ("vocabSanityTests", vocabSanHeaders);
+            sTable = createTable ("vocabSanityTests", vocabSanHeaders, $.t("sanity.vocabSanHeaders.tableCaption"), $.t("sanity.vocabSanHeaders.tooltipHeader"));
             processors = [{name:"name", func:getOrig, klass:"showSanityText"}, {name:"count", func:getOrig, klass:"showSanityText"}];
             popTable (sTable.selectAll("tr.sanityRow").data(d3.values(vocabCounts)), fillCells);
         } else {

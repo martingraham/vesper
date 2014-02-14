@@ -76,8 +76,8 @@ VESPER.tooltip = new function () {
                 newty = ty;
             }
 
-            console.log ("coords", "page xy: {",e.pageX, e.pageY, "}, client xy:{", e.clientX, e.clientY, "}, doc wh: {", dw, dh,"}, tooltip wh: {", tw, th,
-                "}, window wh: {", $(window).width(), $(window).height(), "}, docscroll xy: {", $(document).scrollLeft(), $(document).scrollTop());
+            //console.log ("coords", "page xy: {",e.pageX, e.pageY, "}, client xy:{", e.clientX, e.clientY, "}, doc wh: {", dw, dh,"}, tooltip wh: {", tw, th,
+            //    "}, window wh: {", $(window).width(), $(window).height(), "}, docscroll xy: {", $(document).scrollLeft(), $(document).scrollTop());
             tooltip
                 .style ("top", newty+"px")
                 .style ("left", newtx+"px")

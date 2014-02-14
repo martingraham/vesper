@@ -77,7 +77,9 @@
         "specTooltip":"Contains __count__ specimen",
         "specTooltip_plural":"Contains __count__ specimens",
         "specSelTooltip":"(__count__ Selected)",
-        "andMore":"...and __count__ more"
+        "andMore":"...and __count__ more",
+
+        "flagKnownRankLabel":"Select Taxa at Standard Ranks"
     },
     "launcher": {
         "launchHeader":"Launch Visualisation",
@@ -143,22 +145,36 @@
         "deadonymError":"Deadonym. No link to accepted name id __aid__ for __rec__"
     },
     "sanity": {
+        "defaultTooltipHeader":"Missing Information",
         "visSanHeaders": {
             "0":"Vis Type",
-            "1":"Partial Records",
-            "2":"No Records",
-            "3":"Selected: Part Records",
-            "4":"Selected: No Records"
+            "1":"Partially Missing",
+            "2":"All Missing",
+            "3":"Selected, Partially Missing",
+            "4":"Selected, All Missing",
+            "tableCaption": "Count of Records missing necessary fields per visualisation type",
+            "tooltipHeader": "Records with Missing Info"
         },
         "fieldSanHeaders": {
             "0":"Record Type",
             "1": "Field Type",
-            "2": "No Value",
-            "3": "Sel No Value"
+            "2": "Missing",
+            "3": "Selected, Missing",
+            "tableCaption": "Count of Records missing data per field type",
+            "tooltipHeader": "Records with Missing Field"
         },
         "vocabSanHeaders": {
             "0":"Field Type",
-            "1":"Vocabulary Size"
+            "1":"Vocabulary Size",
+            "tableCaption": "Potential Controlled Vocabulary Sizes",
+            "tooltipHeader": "Vocabulary Size"
+        },
+        "visLabels" : {
+            "geo":"$t(vesper.visTitles.DWCAMapLeaflet)",
+            "impTaxonomy":"$t(vesper.visTitles.ImplicitTaxonomy)",
+            "expTaxonomy":"$t(vesper.visTitles.ExplicitTaxonomy)",
+            "times":"$t(vesper.visTitles.TimeLine)",
+            "basicTimes":"$t(vesper.visTitles.TimeLine)"
         }
     }
 }

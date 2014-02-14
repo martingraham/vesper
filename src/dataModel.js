@@ -83,12 +83,12 @@ VESPER.DWCAModel = function (metaData, data) {
 
     // Recursive count getters
     this.getDescendantCount = function (node) {
-        return node.dcount;
+        return node.dct;
     };
 
     // All synonyms in the node and node subtaxa
     this.getSynonymCount = function (node) {
-        return node.syncount || (this.getSynonyms(node) ? this.getSynonyms(node).length : 0);
+        return node.syct || (this.getSynonyms(node) ? this.getSynonyms(node).length : 0);
     };
 
     // All specimens in the node and node subtaxa
@@ -98,15 +98,15 @@ VESPER.DWCAModel = function (metaData, data) {
     };
 
     this.getObjectCount = function (node) {
-        return (node.dcount || 0) + this.getSynonymCount(node) + this.getSpecimenCount(node);
+        return (node.dct || 0) + this.getSynonymCount(node) + this.getSpecimenCount(node);
     };
 
     this.getSelectedDescendantCount = function (node) {
-        return node.Sdcount;
+        return node.Sdct;
     };
 
     this.getSelectedSynonymCount = function (node) {
-        return node.Ssyncount;
+        return node.Ssyct;
     };
 
     this.getSelectedSpecimenCount = function (node) {
@@ -114,7 +114,7 @@ VESPER.DWCAModel = function (metaData, data) {
     };
 
     this.getSelectedObjectCount = function (node) {
-        return (node.Sdcount || 0) + (node.Ssyncount || 0) + (node.Sspcount || 0);
+        return (node.Sdct || 0) + (node.Ssyct || 0) + (node.Sspcount || 0);
     };
 
     this.getLeafValue = function (node) {
@@ -233,8 +233,8 @@ VESPER.DWCAModel = function (metaData, data) {
 
 
     this.countSelectedDescNew = function (taxon, idField) {
-        this.doSelectCount (taxon, idField, "Sdcount", this.getSubTaxa, this.getDescendantCount);
-        this.doSelectCount (taxon, idField, "Ssyncount", this.getSynonyms, this.getSynonymCount);
+        this.doSelectCount (taxon, idField, "Sdct", this.getSubTaxa, this.getDescendantCount);
+        this.doSelectCount (taxon, idField, "Ssyct", this.getSynonyms, this.getSynonymCount);
         this.doSelectCount (taxon, idField, "Sspcount", this.getSpecimens, this.getSpecimenCount);
     };
 

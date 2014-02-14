@@ -99,7 +99,7 @@ VESPER.Tree = function (divid) {
 
     function logSelProp (node) {
         //var containCount = containsCount (node);
-        //var sdcount = model.getSelectedDescendantCount(node);
+        //var sdct = model.getSelectedDescendantCount(node);
         var containCount = model.getObjectCount (node);
         var sdcount = model.getSelectedObjectCount(node);
         var prop = sdcount > 0 && containCount > 0 ? Math.log (sdcount + 1) / Math.log (containCount + 1) : 0;
@@ -626,10 +626,12 @@ VESPER.Tree = function (divid) {
 		//depthCharge (root);
         setupControls ();
 
+        this.doExtra ();
 		this.update ();
 	};
 
 
+    this.doExtra = function () {};
 
     function setupControls () {
         var cpanel = d3.select(divid)
@@ -854,6 +856,11 @@ VESPER.Tree = function (divid) {
     };
 
 
+    this.getModel = function () {
+        return model;
+    };
+
+
     this.destroy = function () {
         clearMouseController (treeG.selectAll(".treeNode"));
         treeG.selectAll(".treeNode").remove();
@@ -938,15 +945,6 @@ VESPER.Tree = function (divid) {
             }
         }
     }
-
-    /*
-	function reset() {
-		d3.event.scale = 1.0;
-		d3.event.translate = [0,0];
-		zoomObj.translate([0,0]).scale(1);
-		//redraw ();
-	}
-	*/
 };
 
 VESPER.ImplicitTaxonomy = function (div) {
@@ -996,6 +994,19 @@ VESPER.ImplicitTaxonomy = function (div) {
 
         return tooltipStr;
     };
+
+    tree.doExtra = function () {
+        var cpanel = d3.select(div+"controls");
+        console.log ("XPANEL", cpanel, div+"controls");
+        cpanel.append("button")
+            .text ($.t("tree.flagKnownRankLabel"))
+            .on ("click", function() {
+                VESPER.Filters.standardRankFilter (tree.getModel());
+            })
+        ;
+    };
+
+
     return tree;
 };
 

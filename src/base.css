@@ -59,6 +59,12 @@ DIV .vis {
     position: absolute;
     left:10px;
     top:30px;
+    max-width: 125px;
+}
+
+.visControl button {
+    font-size: 10pt;
+    font-family: "Gill Sans MT", Georgia, Arial;
 }
 
 .visControl DIV.section {

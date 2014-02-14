@@ -4,6 +4,11 @@
     background: #cfc;
 }
 
+caption.sanityCaption {
+    font-size: 12pt;
+    text-align: left;
+}
+
 tr.sanityRow:nth-child(2n+1) {
     background: #d0d0d0;
 }
@@ -29,8 +34,15 @@ td.dontShowSanityText span {
     display: inline;
 }
 
-td.showSanityText div {
+tr.sanityRow td div {
     display: block;
+    border: 1px solid grey;
+    border-top: 0;
+    border-bottom: 0;
+}
+
+.vocabSanityTests tr.sanityRow td div {
+    display: none;
 }
 
 td.value {

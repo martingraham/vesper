@@ -695,15 +695,15 @@ VESPER.DWCAParser = new function () {
             struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             VESPER.log ("root", struc.impRoot);
             if (struc.impRoot) {
-                this.recursiveCount (struc.impRoot, "dcount", undefined, 1);
-                this.recursiveCount (struc.impRoot, "syncount", VESPER.DWCAParser.SYN, 0);
+                this.recursiveCount (struc.impRoot, "dct", undefined, 1);
+                this.recursiveCount (struc.impRoot, "syct", VESPER.DWCAParser.SYN, 0);
             }
         }
 
         if (struc.expTree) {
             struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             if (struc.expRoot) {
-                this.recursiveCount (struc.expRoot, "dcount", undefined, 1);
+                this.recursiveCount (struc.expRoot, "dct", undefined, 1);
                 this.recursiveCount (struc.expRoot, "spcount", VESPER.DWCAParser.SPECS, 0);
             }
         }
@@ -991,7 +991,7 @@ VESPER.DWCAParser = new function () {
         var count = 0;
         var data = model.getData();
 
-        if (regex !== undefined && regex.length > 0) {
+        //if (regex !== undefined && regex.length > 0) {
             for (var prop in data) {
                 if (data.hasOwnProperty(prop)) {
                     var dataItem = data[prop];
@@ -1002,7 +1002,7 @@ VESPER.DWCAParser = new function () {
                     }
                 }
             }
-        }
+        //}
 
         return count;
     };
