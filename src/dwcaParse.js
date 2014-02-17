@@ -806,7 +806,9 @@ VESPER.DWCAParser = new function () {
             for (var n = 0; n < taxon[this.TAXA].length; n++) {
                 c += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
             }
-            taxon[storeField] = c;
+            if (c) {
+                taxon[storeField] = c;
+            }
         }
         c += (countField && taxon[countField] ? taxon[countField].length : 0);
 
