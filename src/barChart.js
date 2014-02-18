@@ -53,7 +53,7 @@ VESPER.BarChart = function(divid) {
         ffields.keyField = mmodel.makeIndices ([fields.identifyingField])[0];
         ffields.dateField = mmodel.makeIndices ([fields.dateField])[0];
         ffields.realField = mmodel.makeIndices ([fields.realField])[0];
-        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = [$(divid).width(), $(divid).height()]
         model = mmodel;
     };
 

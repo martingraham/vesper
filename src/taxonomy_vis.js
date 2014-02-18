@@ -60,9 +60,9 @@ VESPER.Tree = function (divid) {
     var sortOptionLabels = {"Alpha": $.t("tree.sortAlpha"), "Descendants": $.t("tree.sortDesc"),
         "Selected": $.t("tree.sortSel"), "SelectedDesc": $.t("tree.sortDescSel")};
 
+
     this.tooltipString = function () {
-        var tooltipStr = "Placeholder";
-        return tooltipStr;
+        return "Placeholder";
     };
 
 
@@ -108,8 +108,6 @@ VESPER.Tree = function (divid) {
     };
 
     function logSelProp (node) {
-        //var containCount = containsCount (node);
-        //var sdct = model.getSelectedDescendantCount(node);
         var containCount = model.getObjectCount (node);
         var sdcount = model.getSelectedObjectCount(node);
         var prop = sdcount > 0 && containCount > 0 ? Math.log (sdcount + 1) / Math.log (containCount + 1) : 0;
@@ -569,7 +567,7 @@ VESPER.Tree = function (divid) {
         keyField = ffields[0];
         rankField = ffields[1];
         //VESPER.log ("FFIELDS", ffields);
-        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = [$(divid).width(), $(divid).height()];
         model = mmodel;
     };
 

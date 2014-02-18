@@ -15,7 +15,7 @@ VESPER.VisLauncher = function (divid, options) {
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
         choiceData = fields.visChoiceData;
-        dims = MGNapier.NapVisLib.getWidthHeight (d3.select(divid).node());
+        dims = [$(divid).width(), $(divid).height()];
         model = mmodel;
     };
 

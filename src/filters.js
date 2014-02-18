@@ -98,11 +98,11 @@ VESPER.Filters = new function () {
         };
 
         model.getSelectionModel().setUpdating (true);
-        var sw = {};
-        var t = MGNapier.NapVisLib.resetStopwatch (sw);
+        //var sw = {};
+        //var t = MGNapier.NapVisLib.resetStopwatch (sw);
         var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
         //VESPER.log ("selected count", count, model.getSelectionModel().values());
-        VESPER.log ("rank match took", MGNapier.NapVisLib.elapsedStopwatch (sw), "ms for",count,"matches.");
+        //VESPER.log ("rank match took", MGNapier.NapVisLib.elapsedStopwatch (sw), "ms for",count,"matches.");
         model.invertSelection();
         model.getSelectionModel().setUpdating (false);
         return count;
