@@ -31,6 +31,9 @@ VESPER.DWCAModel = function (metaData, data) {
     var viewCount = 0;
     var sessionModelViewID = 0;
     var selectionModel = new MGNapier.SharedSelection ();
+    var parser = VESPER.DWCAParser;
+    var DCOUNT = parser.DCOUNT;
+    var TDATA = parser.TDATA;
 
     this.getSelectionModel = function () { return selectionModel; };
 
@@ -54,15 +57,15 @@ VESPER.DWCAModel = function (metaData, data) {
     };
 
     this.getExtraData = function (node) {
-        return node[VESPER.DWCAParser.EXT];
+        return node[parser.EXT];
     };
 
     this.getTaxaData = function (node) {
-        return node[VESPER.DWCAParser.TDATA];
+        return node[TDATA];
     };
 
     this.getSynonyms = function (node) {
-        return node[VESPER.DWCAParser.SYN];
+        return node[parser.SYN];
     };
 
     this.getRowData = function (node, rid) {
@@ -73,48 +76,48 @@ VESPER.DWCAModel = function (metaData, data) {
     };
 
     this.getSubTaxa = function (node) {
-        return node[VESPER.DWCAParser.TAXA];
+        return node[parser.TAXA];
     };
 
     this.getSpecimens = function (node) {
-        return node[VESPER.DWCAParser.SPECS];
+        return node[parser.SPECS];
     };
 
 
     // Recursive count getters
     this.getDescendantCount = function (node) {
-        return node.dct;
+        return node[DCOUNT];
     };
 
     // All synonyms in the node and node subtaxa
     this.getSynonymCount = function (node) {
-        return node.syct || (this.getSynonyms(node) ? this.getSynonyms(node).length : 0);
+        return node[parser.SYNCOUNT] || (this.getSynonyms(node) ? this.getSynonyms(node).length : 0);
     };
 
     // All specimens in the node and node subtaxa
     this.getSpecimenCount = function (node) {
         //console.log ("this", this);
-        return node.spcount || (this.getSpecimens(node) ? this.getSpecimens(node).length : 0);
+        return node[parser.SPECCOUNT] || (this.getSpecimens(node) ? this.getSpecimens(node).length : 0);
     };
 
     this.getObjectCount = function (node) {
-        return (node.dct || 0) + this.getSynonymCount(node) + this.getSpecimenCount(node);
+        return (node[DCOUNT] || 0) + this.getSynonymCount(node) + this.getSpecimenCount(node);
     };
 
     this.getSelectedDescendantCount = function (node) {
-        return node.Sdct;
+        return node[parser.SEL_DCOUNT];
     };
 
     this.getSelectedSynonymCount = function (node) {
-        return node.Ssyct;
+        return node[parser.SEL_SYNCOUNT];
     };
 
     this.getSelectedSpecimenCount = function (node) {
-        return node.Sspcount;
+        return node[parser.SEL_SPECCOUNT];
     };
 
     this.getSelectedObjectCount = function (node) {
-        return (node.Sdct || 0) + (node.Ssyct || 0) + (node.Sspcount || 0);
+        return (node[parser.SEL_DCOUNT] || 0) + (node[parser.SEL_SYNCOUNT] || 0) + (node[parser.SEL_SPECCOUNT] || 0);
     };
 
     this.getLeafValue = function (node) {
@@ -233,9 +236,9 @@ VESPER.DWCAModel = function (metaData, data) {
 
 
     this.countSelectedDescNew = function (taxon, idField) {
-        this.doSelectCount (taxon, idField, "Sdct", this.getSubTaxa, this.getDescendantCount);
-        this.doSelectCount (taxon, idField, "Ssyct", this.getSynonyms, this.getSynonymCount);
-        this.doSelectCount (taxon, idField, "Sspcount", this.getSpecimens, this.getSpecimenCount);
+        this.doSelectCount (taxon, idField, parser.SEL_DCOUNT, this.getSubTaxa, this.getDescendantCount);
+        this.doSelectCount (taxon, idField, parser.SEL_SYNCOUNT, this.getSynonyms, this.getSynonymCount);
+        this.doSelectCount (taxon, idField, parser.SEL_SPECCOUNT, this.getSpecimens, this.getSpecimenCount);
     };
 
     // need to figure this out...
@@ -263,6 +266,38 @@ VESPER.DWCAModel = function (metaData, data) {
         }
 
         return c || 0;
+    };
+
+    this.selectSubTree = function (node, keyField) {
+        this.getSelectionModel().clear();
+        var ids = [];
+        this.selectSubTreeR (node, ids, keyField, true);
+        this.getSelectionModel().addAllToMap(ids);
+    };
+
+    this.selectSubTreeR = function (node, ids, keyField, recurse) {
+        //var id = model.getTaxaData(node)[keyField];
+        var id = this.getIndexedDataPoint (node, keyField);
+        ids.push(id);
+
+        var taxa = this.getSubTaxa (node);
+        if (taxa) {
+            for (var n = taxa.length; --n >= 0;) {
+                this.selectSubTreeR (taxa[n], ids, keyField, recurse);
+            }
+        }
+        var specs = this.getSpecimens (node);
+        if (specs) {
+            for (var n = specs.length; --n >= 0;) {
+                this.selectSubTreeR (specs[n], ids, keyField, recurse);
+            }
+        }
+        var syns = this.getSynonyms (node);
+        if (syns) {
+            for (var n = syns.length; --n >= 0;) {
+                this.selectSubTreeR (syns[n], ids, keyField, false);
+            }
+        }
     };
 
     this.data = data;

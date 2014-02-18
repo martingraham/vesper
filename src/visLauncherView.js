@@ -30,7 +30,8 @@ VESPER.VisLauncher = function (divid, options) {
         $(function() {
             $(divid).accordion({
                 heightStyle: "content",
-                collapsible: true
+                collapsible: true,
+                active: false
             });
         });
 
@@ -245,7 +246,7 @@ VESPER.VisLauncher = function (divid, options) {
 
             addHideShowButton (buttonSpan, "#"+id);
             addKillViewButton (buttonSpan, newVis);
-            $("#"+id+"container").draggable({ handle: "div.dragbar"});
+            $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv"});
         }
     };
 
@@ -280,12 +281,12 @@ VESPER.VisLauncher = function (divid, options) {
                 );
             } )
             .attr ("title", $.t("launcher.hideTooltip"))
-            .append("svg")
-            .attr ("width", 14)
-           // .attr ("height", 13)
-                .append("polygon")
-                .attr("points", initPoly)
-                .attr("class", "showHideColours")
+                .append("svg")
+                .attr ("width", 14)
+                .attr ("height", 13)
+                    .append("polygon")
+                    .attr("points", initPoly)
+                    .attr("class", "showHideColours")
         ;
     }
 

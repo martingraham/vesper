@@ -27,8 +27,11 @@ VESPER.Tree = function (divid) {
     var exitDur = 400, updateDur = 1000, enterDur = 400;
     var keyField, rankField;
     var firstLayout = true;
-    //var color = d3.scale.category20c();
+
+    var colorScale = d3.scale.category20c();
+    var colorMode = false;
     //var colourScale = d3.scale.linear().domain([0, 1]).range(["#ffcccc", "#ff6666"]);
+
     var cstore = {}, pstore = {};
     var patternName = "hatch", patternID = "hatch";
 
@@ -96,6 +99,13 @@ VESPER.Tree = function (divid) {
         }
         return null;
     }
+
+    this.setColourDomain = function (ords) {
+        colorScale.domain (ords);
+        console.log ("color", colorScale);
+        colorMode = true;
+        reroot (curRoot);
+    };
 
     function logSelProp (node) {
         //var containCount = containsCount (node);
@@ -300,6 +310,17 @@ VESPER.Tree = function (divid) {
         booleanSelectedAttrs: function (group) {
             group
                  .attr ("class", function(d) { return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
+                /*
+                 .style ("fill", function(d) {
+                    if (!colorMode) {
+                        return null;
+                    }
+                    var node = getNode (d.id);
+                    var val = model.getIndexedDataPoint (node, rankField);
+                    console.log ("Val", val, colorScale(val));
+                    return colorScale (val);
+                })
+                */
             ;
         },
 
@@ -695,7 +716,6 @@ VESPER.Tree = function (divid) {
                // }
                 return false;
             })
-            .html (function(d) { return d.key; })
         ;
         lHolders.append ("label")
             .attr("for", function(d) { return noHashID+ d.key; })
@@ -721,14 +741,13 @@ VESPER.Tree = function (divid) {
                // }
                 return false;
             })
-            .html (function(d) { return d.key; })
         ;
         sHolders.append ("label")
             .attr("for", function(d) { return noHashID+ d.key; })
             .html (function(d) { return sortOptionLabels[d.key]; })
         ;
 
-        $(divid+"controls").draggable({"containment":divid});
+        $(divid+"controls").draggable({handle:"div.dragHandle", containment:divid});
     }
 
 
@@ -907,43 +926,11 @@ VESPER.Tree = function (divid) {
         })
         .on("contextmenu", function(d) {
             //handle right click
-            selectSubTree (getNode (d.id));
+            model.selectSubTree (getNode (d.id), keyField);
             //stop showing browser menu
             d3.event.preventDefault();
         });
 
-    }
-
-    function selectSubTree (node) {
-        model.getSelectionModel().clear();
-        var ids = [];
-        selectSubTreeR (node, ids, true);
-        model.getSelectionModel().addAllToMap(ids);
-    }
-
-    function selectSubTreeR (node, ids, recurse) {
-        //var id = model.getTaxaData(node)[keyField];
-        var id = model.getIndexedDataPoint (node, keyField);
-        ids.push(id);
-
-        var taxa = model.getSubTaxa (node);
-        if (taxa) {
-            for (var n = taxa.length; --n >= 0;) {
-                selectSubTreeR (taxa[n], ids, recurse);
-            }
-        }
-        var specs = model.getSpecimens (node);
-        if (specs) {
-            for (var n = specs.length; --n >= 0;) {
-                selectSubTreeR (specs[n], ids, recurse);
-            }
-        }
-        var syns = model.getSynonyms (node);
-        if (syns) {
-            for (var n = syns.length; --n >= 0;) {
-                selectSubTreeR (syns[n], ids, false);
-            }
-        }
     }
 };
 
@@ -997,13 +984,36 @@ VESPER.ImplicitTaxonomy = function (div) {
 
     tree.doExtra = function () {
         var cpanel = d3.select(div+"controls");
-        console.log ("XPANEL", cpanel, div+"controls");
-        cpanel.append("button")
+
+        MGNapier.NapVisLib.makeSectionedDiv (cpanel,
+            [{"header":$.t("tree.rankLabel"), "sectionID":"Ranks"}],
+            "section");
+        var section = cpanel.select(div+"controlsRanks");
+
+        section.append("button")
             .text ($.t("tree.flagKnownRankLabel"))
             .on ("click", function() {
+                tree.getModel().getSelectionModel().clear();
                 VESPER.Filters.standardRankFilter (tree.getModel());
             })
         ;
+
+        /*
+        section.append("button")
+            .text ($.t("tree.colourRanksLabel"))
+            .on ("click", function() {
+                var index = tree.getModel().makeIndex ("taxonRank");
+                console.log ("index:", index);
+                var mdata = tree.getModel().getMetaData();
+                var rowType = mdata.fileData[index.rowType];
+                var fieldData = rowType.fieldData[index.fieldType];
+                var discretes = fieldData.discreteTermList;
+
+                console.log ("rr", rowType, fieldData, discretes);
+                tree.setColourDomain (d3.keys(discretes));
+            })
+        ;
+        */
     };
 
 

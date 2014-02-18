@@ -51,16 +51,30 @@ VESPER.Filters = new function () {
     };
 
     this.standardRankFilter = function (model) {
-        var regex = new RegExp ("^("+VESPER.DWCAParser.explicitRanks.join("|")+")");
-        console.log ("regex", regex);
-
         var metaData = model.getMetaData();
+
+        // what are the ranks currently used by this data set?
         var trIndex = model.makeIndex ("taxonRank");
         var rowDescriptor = metaData.fileData[trIndex.rowType];
         var extraRowIndex = rowDescriptor.extIndex;
         var taxonRankIndex = rowDescriptor.filteredFieldIndex[trIndex.fieldType];
+        var fieldData = rowDescriptor.fieldData[trIndex.fieldType];
+        var discretes = fieldData.discreteTermList;
+
+        // what is the intersection of these ranks with gbifs ranks - http://rs.gbif.org/vocabulary/gbif/rank.xml?
+        var acceptRanks = [];
+        VESPER.DWCAParser.GBIFRanks.forEach (function(elem) {
+            if (discretes[elem]) { acceptRanks.push (elem); }
+        });
+        VESPER.log ("aranks", acceptRanks);
+        //acceptRanks = VESPER.DWCAParser.GBIFRanks;
+
+        // make a regex to test for this selection of ranks
+        var regex = acceptRanks.length ? new RegExp ("^("+acceptRanks.join("|")+")$") : undefined;
+        VESPER.log ("regex", regex);
+
         var oneArray = [];
-        var first = true;
+        //var first = true;
         //VESPER.log ("FILTER", nameLabel, nameIndex, rowIndex);
 
         var specificFilter = function (model, taxon, regex) {
@@ -70,13 +84,6 @@ VESPER.Filters = new function () {
                 oneArray[0] = rowRecords;
                 rowRecords = oneArray;
             }
-
-            /*
-            if (first) {
-                first = false;
-                console.log ("sp 2 rr", rowRecords, rowRecords[0][taxonRankIndex], VESPER.DWCAParser.explicitRanks);
-            }
-            */
 
             if (rowRecords) {
                 for (var n = rowRecords.length; --n >= 0;) {
@@ -95,7 +102,8 @@ VESPER.Filters = new function () {
         var t = MGNapier.NapVisLib.resetStopwatch (sw);
         var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
         //VESPER.log ("selected count", count, model.getSelectionModel().values());
-        console.log ("rank match took", MGNapier.NapVisLib.elapsedStopwatch (sw), "ms.");
+        VESPER.log ("rank match took", MGNapier.NapVisLib.elapsedStopwatch (sw), "ms for",count,"matches.");
+        model.invertSelection();
         model.getSelectionModel().setUpdating (false);
         return count;
     };

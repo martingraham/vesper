@@ -21,7 +21,7 @@
             "HIBG Specimens": "Candensys, Montreal, Canada"
         },
         "loadChoices":"Load Data For",
-        "labelLabel":"Use this field as label",
+        "labelLabel":"Label Records Using",
         "allFieldsLabel":"Select All Fields",
         "clearFieldsLabel":"Clear All Fields",
         "loadLabel":"Load",
@@ -79,10 +79,12 @@
         "specSelTooltip":"(__count__ Selected)",
         "andMore":"...and __count__ more",
 
-        "flagKnownRankLabel":"Select Taxa at Standard Ranks"
+        "rankLabel":"Rank Tests",
+        "flagKnownRankLabel":"Show Non-Vocabulary Ranks",
+        "colourRanksLabel":"Colour Taxa by Rank"
     },
     "launcher": {
-        "launchHeader":"Launch Visualisation",
+        "launchHeader":"Show Another Visualisation",
         "selectHeader":"Current Selections",
         "selectSave":"Save",
         "selectInvert":"Invert Selection",

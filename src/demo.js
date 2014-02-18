@@ -72,6 +72,7 @@ VESPER.demo = function (files, exampleDivID) {
         d3.select("#filesizePlaceholder").html("...");
         d3.select("#dynamicSelectDiv").selectAll("span input").property("checked", false);
         d3.select("#loadButton").property("disabled", true);
+        //$("#tabs").tabs("option", "active", 5);
     }
 
     function setChoices (choiceData) {
@@ -181,17 +182,20 @@ VESPER.demo = function (files, exampleDivID) {
 
         DWCAHelper.addHelperButton (d3.select("#advancedSelectDiv"), checkListParent, "Remove Verbose Fields", VESPER.DWCAParser.flabbyLists.wordyList,
             false, null, "selButtonStyle listCon", function() { return getMeta(); }, selectionOptions);
+
         var excepFunc = function exceptionFunc (d, i) { return i === 0; };
         d3.select("#allButton").on("click", function() {
             DWCAHelper.setAllFields (checkListParent, true, undefined, excepFunc, getMeta(), selectionOptions);
             setVisOptionBoxes (true);
             return false;
           });
+
         d3.select("#clearButton").on("click", function() {
             DWCAHelper.setAllFields (checkListParent, false, undefined, excepFunc, getMeta(), selectionOptions);
             setVisOptionBoxes (false);
             return false;
           });
+
         var useExtBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Search DWCA Extensions", image:null}], "fieldGroup");
         useExtBox.select("input")
             .property ("checked", selectionOptions.useExtRows)
@@ -200,12 +204,14 @@ VESPER.demo = function (files, exampleDivID) {
                 refilterNameChoices (getMeta());
                 refilterVisChoices (getMeta());
         });
+
         var selectFirstOnlyBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Select First Matching Field Only", image:null}], "fieldGroup");
         selectFirstOnlyBox.select("input")
             .property ("checked", selectionOptions.selectFirstOnly)
             .on("click", function() {
                 selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly;
             });
+
         var advSelFunc = function () {
             var val = d3.select(this).property("checked") ? "block" : "none";
             DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
@@ -217,11 +223,13 @@ VESPER.demo = function (files, exampleDivID) {
 
 
 
-
-
     function proceed (zip, mdata) {
 
+        // make active tab the small one (i.e. hide any tabs with content) and then show progress bar
+        var index = $('#tabs a[href="#small"]').parent().index();
+        $("#tabs").tabs("option", "active", index);
         DWCAHelper.divDisplay(["#"+progressBarID], "block");
+
         function notifyFunc (fileName, lines) {
             d3.select("#"+progressBarID).select("p").html($.t("demo.zipProcTemplate", {"fileName":fileName, "count": lines}));
         }
@@ -288,15 +296,10 @@ VESPER.demo = function (files, exampleDivID) {
             var nameChoiceGroup = d3.select("#labelSelectDiv").selectAll("span.fieldGroup");
             var first = true;
             nameChoiceGroup.each (function() {
-                var disp = d3.select(this).style ("display");
-                if (disp !== "none" && first) {
+                if (first && d3.select(this).style ("display") !== "none") {
                     first = false;
                     var button = d3.select(this).select("input");
-                    // this is cross-browser
-                    var click_ev = document.createEvent("MouseEvent");
-                    click_ev.initEvent("click", true /* bubble */, true /* cancelable */);
-                    button.node().dispatchEvent(click_ev);
-                    //button.node().click(); // this wasn't (didn't work in safari)
+                    $(button.node()).click();   // Cross-browser JQuery way to click button
                 }
             });
 
@@ -341,6 +344,12 @@ VESPER.demo = function (files, exampleDivID) {
         DWCAHelper.reselectActiveVisChoices (visCheckBoxGroup, d3.select("#listDiv"), function() { return getMeta(); });
     }
 
-    setChoices (files);
-    setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);
+    var init = function () {
+        setChoices (files);
+        setPresets (visTiedToSpecificAttrs, VESPER.DWCAParser.labelChoiceData);
+    };
+
+    VESPER.DWCAParser.init (function () {
+        init ();
+    });
 };

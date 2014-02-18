@@ -5,18 +5,31 @@ VESPER.DWCAParser = new function () {
     this.EXT = 2;       // extra data, i.e. non-core data attachments
     this.SYN = 3;       // synonyms
     this.PID = 4;       // used when building explicit taxonomies, i.e. ones from name paths, quick ref to parent id;
-    this.COUNTS = 5;
+
     this.SPECS = "s";
 
-    this.TCOUNT = 0;
-    this.SPECCOUNT = 1;
-    this.SYNCOUNT = 2;
-    this.SELOFFSET = 3;
+
+    this.DCOUNT = "dct";
+    this.SYNCOUNT = "syct";
+    this.SPECCOUNT = "spct";
+
+    this.SEL_DCOUNT = "Sdct";
+    this.SEL_SYNCOUNT = "Ssyct";
+    this.SEL_SPECCOUNT = "Sspct";
+
+
+    /*
+    this.DCOUNT = 6;
+    this.SYNCOUNT = 8;
+    this.SPECCOUNT = 10;
+
+    this.SEL_DCOUNT = 7;
+    this.SEL_SYNCOUNT = 9;
+    this.SEL_SPECCOUNT = 11;
+    */
 
     this.SUPERROOT = "superroot";
     var superrootID = "-1000";
-
-    console.log ("This", this);
 
 	// terms from old darwin core archive format superseded by newer ones
     // http://rs.tdwg.org/dwc/terms/history/index.htm
@@ -75,6 +88,10 @@ VESPER.DWCAParser = new function () {
     // list of terms that are necessary to do the basics of particular visualisations.
     // e.g. we need latitude and longitude values to do map plots
     // It's a given that we need the id for each entry.
+    this.GBIFRanks = ["domain", "kingdom", "subkingdom", "superphylum", "phylum", "subphylum", "superclass", "class", "subclass", "supercohort",
+        "cohort", "subcohort", "superorder", "order", "suborder", "infraorder", "superfamily", "family", "subfamily", "tribe", "subtribe",
+        "genus", "subgenus", "section", "subsection", "series", "subseries", "speciesAggregate", "species", "subspecificAggregate", "subspecies",
+        "variety", "subvariety", "form", "subform", "cultivarGroup", "cultivar", "strain"];
     this.explicitRanks = ["kingdom", "phylum", "classs", "order", "family", "genus", "subgenus", "specificEpithet", "infraspecificEpithet"];
     this.neccLists = {};
     this.neccLists.geo = ["decimalLatitude", "decimalLongitude", "geodeticDatum"];
@@ -164,7 +181,7 @@ VESPER.DWCAParser = new function () {
     this.fieldAttrNames = {};
     this.xsd = null;
 
-    this.loadxsd = function (xsdFile) {
+    this.loadxsd = function (xsdFile, callback) {
         $.get(xsdFile, function(d){
             // stupid firefox reads in a BOM mark (probably stupid me somewhere else, but I ain't got time)
             //if (d.charCodeAt(0) > 65000 || d.charCodeAt(0) === 255) {
@@ -174,6 +191,7 @@ VESPER.DWCAParser = new function () {
             VESPER.DWCAParser.xsd = (typeof d == "string" ? $(MGNapier.NapVisLib.parseXML(d)) : $(d));
             VESPER.DWCAParser.makeRowTypeDefaults (VESPER.DWCAParser.xsd);
             VESPER.DWCAParser.makeFieldAttrNames (VESPER.DWCAParser.xsd);
+            if (callback) { callback(); }
         });
     };
 
@@ -695,16 +713,16 @@ VESPER.DWCAParser = new function () {
             struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             VESPER.log ("root", struc.impRoot);
             if (struc.impRoot) {
-                this.recursiveCount (struc.impRoot, "dct", undefined, 1);
-                this.recursiveCount (struc.impRoot, "syct", VESPER.DWCAParser.SYN, 0);
+                this.recursiveCount (struc.impRoot, this.DCOUNT, undefined, 1);
+                this.recursiveCount (struc.impRoot, this.SYNCOUNT, VESPER.DWCAParser.SYN, 0);
             }
         }
 
         if (struc.expTree) {
             struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
             if (struc.expRoot) {
-                this.recursiveCount (struc.expRoot, "dct", undefined, 1);
-                this.recursiveCount (struc.expRoot, "spcount", VESPER.DWCAParser.SPECS, 0);
+                this.recursiveCount (struc.expRoot, this.DCOUNT, undefined, 1);
+                this.recursiveCount (struc.expRoot, this.SPECCOUNT, VESPER.DWCAParser.SPECS, 0);
             }
         }
 
@@ -802,17 +820,15 @@ VESPER.DWCAParser = new function () {
     this.recursiveCount = function (taxon, storeField, countField, inc) {
         var c = 0;
 
-        if (taxon[this.TAXA]) {
-            for (var n = 0; n < taxon[this.TAXA].length; n++) {
-                c += this.recursiveCount (taxon[this.TAXA][n], storeField, countField, inc);
-            }
-            if (c) {
-                taxon[storeField] = c;
+        var arr = taxon[this.TAXA];
+        if (arr) {
+            for (var n = arr.length; --n >= 0;) {
+                c += this.recursiveCount (arr[n], storeField, countField, inc);
             }
         }
         c += (countField && taxon[countField] ? taxon[countField].length : 0);
 
-        if (taxon[storeField]) {
+        if (c || taxon[storeField]) {
             taxon[storeField] = c;
         }
 
@@ -991,9 +1007,9 @@ VESPER.DWCAParser = new function () {
 
     this.selectNodes = function (regex, selectorFunc, model, setSelectionFunc) {
         var count = 0;
-        var data = model.getData();
 
-        //if (regex !== undefined && regex.length > 0) {
+        if (regex !== undefined /*&& regex.length > 0*/) {
+            var data = model.getData();
             for (var prop in data) {
                 if (data.hasOwnProperty(prop)) {
                     var dataItem = data[prop];
@@ -1004,14 +1020,17 @@ VESPER.DWCAParser = new function () {
                     }
                 }
             }
-        //}
+        }
 
         return count;
     };
 
 
-    // load in xsd and populate arrays/maps from it.
-    this.loadxsd ('dwca.xsd');
+    this.init = function (callback) {
+        // load in xsd and populate arrays/maps from it.
+        this.loadxsd ('dwca.xsd', callback);
+    };
+
 
     return this;
 }();

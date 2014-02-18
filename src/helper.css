@@ -198,7 +198,7 @@ tr.col {
 
 #allVisDiv {
     margin: 0 auto;
-    width: 90%;
+    /*width: 90%;*/
     position: relative;
     clear: both;
     overflow: hidden;
@@ -241,14 +241,16 @@ div.buttonBank {
     margin-top: 3px;
     vertical-align: top;
     width: 65px;
-    text-align: right;
+    clear: both;
 }
 
 .buttonBank button[type="button"] {
     font-size: 10pt;
     height: 20px;
     width: 30px;
+    display: inline;
 }
+
 
 .showHideColours {
     stroke: #000;
@@ -278,7 +280,7 @@ div.buttonBank {
 .loadProgressDiv p, .loadProgressDiv span {
     font-size: 12pt;
     color: #333;
-    width: 100%;
+    width: 95%;
     margin: 2px 8px;
     font-weight: bold;
 }

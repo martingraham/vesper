@@ -126,7 +126,7 @@ VESPER.BarChart = function(divid) {
                 .text (function(d) { return choiceLabels [d.key]; })
             ;
 
-            $( divid+"Controls" ).draggable({"containment": divid});
+            $( divid+"Controls" ).draggable({containment: divid});
         }
 
         self.childScale.range([margin.left, dims[0] - margin.right]);

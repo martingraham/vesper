@@ -69,6 +69,13 @@ DIV .vis {
 
 .visControl DIV.section {
     margin-top: 6px;
+    border-top: none;
+}
+
+/* the tilde (~) chooses all specified elements after the tilde that follow the specified element before the tilde and have the same parent (i.e. they are siblings)*/
+/* here it chooses all DIV.sections that occur after a DIV.section. i.e. it picks out all DIV.sections except the first one */
+.visControl DIV.section ~ DIV.section {
+    border-top: 1px solid #aaa;
 }
 
 /*
