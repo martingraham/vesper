@@ -4,23 +4,28 @@
   "description": "DWCA Visual Components",
   "main": "src/demo.js",
   "dependencies": {
-    "jquery":">=2.0.3 <=2.1.0",
-    "jquery-ui":"git://github.com/jquery/jquery-ui.git#master",
-    "i18next":"~1.7.0",
-    "d3":"~3.0",
-    "leaflet":"~0.7.0",
+    "jquery": ">=2.0.3 <=2.1.0",
+    "jquery-ui": "git://github.com/jquery/jquery-ui.git#master",
+    "i18next": "~1.7.0",
+    "d3": "~3.0",
+    "leaflet": "~0.7.0",
     "leaflet-draw": "~0.2.2",
     "leaflet.markercluster": "~0.4",
-    "jszip":"git://github.com/martingraham/jszip.git#master",
-    "naplib":"git://github.com/martingraham/naplib.git#master"
+    "jszip": "git://github.com/martingraham/jszip.git#master",
+    "naplib": "git://github.com/martingraham/naplib.git#master"
   },
   "devDependencies": {
-      "grunt": "~0.4.1",
-      "grunt-contrib-uglify": "~0.2.0",
-      "grunt-contrib-concat": "~0.3.0",
-      "grunt-contrib-cssmin": "~0.7.0",
-      "grunt-contrib-copy": "~0.4.1",
-      "napa": "~0.2.0"
+    "grunt": "~0.4.1",
+    "grunt-contrib-uglify": "~0.2.0",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-cssmin": "~0.7.0",
+    "grunt-contrib-copy": "~0.4.1",
+    "napa": "~0.2.0",
+    "gulp": "~3.5.2",
+    "gulp-rename": "~1.1.0",
+    "gulp-concat": "~2.1.7",
+    "gulp-uglify": "~0.2.1",
+    "gulp-jshint": "~1.4.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -28,7 +28,7 @@ VESPER.DWCAHelper = new function () {
 
     function isCore (fd, metaData) { return fd.rowType === metaData.coreRowType; }
     function isId (fd, d) { return fd.invFieldIndex[fd.idIndex] === d; }
-    function getItemSelection (fd, d) { return fd.selectedItems[d] === true || isId(fd, d); }
+    function getItemSelection (fd, d) { return fd.selectedItems[d] == true || isId(fd, d); }
     function setItemSelection (fd, d, val) { fd.selectedItems[d] = val; }
     function getRowTypeSelection (d) { return d.selected === true; }
     function setRowTypeSelection (d, val) { d.selected = val; }

@@ -77,10 +77,23 @@ DIV .vis {
     position: absolute;
     left:10px;
     top:30px;
+    max-width: 125px;
+}
+
+.visControl button {
+    font-size: 10pt;
+    font-family: "Gill Sans MT", Georgia, Arial;
 }
 
 .visControl DIV.section {
     margin-top: 6px;
+    border-top: none;
+}
+
+/* the tilde (~) chooses all specified elements after the tilde that follow the specified element before the tilde and have the same parent (i.e. they are siblings)*/
+/* here it chooses all DIV.sections that occur after a DIV.section. i.e. it picks out all DIV.sections except the first one */
+.visControl DIV.section ~ DIV.section {
+    border-top: 1px solid #aaa;
 }
 
 /*
@@ -422,7 +435,7 @@ tr.col {
 
 #allVisDiv {
     margin: 0 auto;
-    width: 90%;
+    /*width: 90%;*/
     position: relative;
     clear: both;
     overflow: hidden;
@@ -465,14 +478,16 @@ div.buttonBank {
     margin-top: 3px;
     vertical-align: top;
     width: 65px;
-    text-align: right;
+    clear: both;
 }
 
 .buttonBank button[type="button"] {
     font-size: 10pt;
     height: 20px;
     width: 30px;
+    display: inline;
 }
+
 
 .showHideColours {
     stroke: #000;
@@ -502,7 +517,7 @@ div.buttonBank {
 .loadProgressDiv p, .loadProgressDiv span {
     font-size: 12pt;
     color: #333;
-    width: 100%;
+    width: 95%;
     margin: 2px 8px;
     font-weight: bold;
 }
@@ -521,6 +536,11 @@ div.buttonBank {
     font-size: 16pt;
     padding: 0px 2px;
     background: #cfc;
+}
+
+caption.sanityCaption {
+    font-size: 12pt;
+    text-align: left;
 }
 
 tr.sanityRow:nth-child(2n+1) {
@@ -545,10 +565,17 @@ td.showSanityText span {
 }
 
 td.dontShowSanityText span {
-    display: none;
+    display: inline;
 }
 
-td.showSanityText div {
+tr.sanityRow td div {
+    display: block;
+    border: 1px solid grey;
+    border-top: 0;
+    border-bottom: 0;
+}
+
+.vocabSanityTests tr.sanityRow td div {
     display: none;
 }
 

@@ -21,7 +21,7 @@
             "HIBG Specimens": "Candensys, Montreal, Canada"
         },
         "loadChoices":"Load Data For",
-        "labelLabel":"Use this field as label",
+        "labelLabel":"Label Records Using",
         "allFieldsLabel":"Select All Fields",
         "clearFieldsLabel":"Clear All Fields",
         "loadLabel":"Load",
@@ -45,7 +45,7 @@
             "ImplicitTaxonomy":"A view of a taxonomy produced by mapping parent ID fields to taxon IDs in the same dataset.",
             "ExplicitTaxonomy":"A view of a taxonomy based on explicit kingdom/order/family/genus etc fields in a DWCA dataset.",
             "DWCAMapLeaflet":"A leaflet.js based map that clusters and plots available longitude and latitude data.",
-            "Timeline":"This view shows a zoomable bar chart that aggregates the dates on which specimens were collected.",
+            "TimeLine":"This view shows a zoomable bar chart that aggregates the dates on which specimens were collected.",
             "Sanity":"This view produces a number of tables detailing the amount of missing data per field over the record set.",
             "RecordDetails":"This launches a small view with a text input box. Type in a DWCA ID for the dataset under view to see details of that record.",
             "TaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
@@ -77,10 +77,14 @@
         "specTooltip":"Contains __count__ specimen",
         "specTooltip_plural":"Contains __count__ specimens",
         "specSelTooltip":"(__count__ Selected)",
-        "andMore":"...and __count__ more"
+        "andMore":"...and __count__ more",
+
+        "rankLabel":"Rank Tests",
+        "flagKnownRankLabel":"Show Non-Vocabulary Ranks",
+        "colourRanksLabel":"Colour Taxa by Rank"
     },
     "launcher": {
-        "launchHeader":"Launch Visualisation",
+        "launchHeader":"Show Another Visualisation",
         "selectHeader":"Current Selections",
         "selectSave":"Save",
         "selectInvert":"Invert Selection",
@@ -105,12 +109,14 @@
         "maxPrefix":"Max: ",
         "timeMinPrefix":"From: ",
         "timeMaxPrefix":"To: ",
-        "typeLabel":"Bar Type",
-        "allLabel":"All",
-        "selLabel":"Selected",
+        "typeLabel":"Count Type",
+        "allLabel":"All records",
+        "selLabel":"Selected records",
         "taxaTooltip":"Subtaxa: __start__",
         "taxaTooltip_plural":"Subtaxa: __start__ to __end__",
-        "taxaCountLabel":"Count: __count__"
+        "taxaCountLabel":"Count: __count__",
+        "intervalLabel":"Discrete",
+        "cumulativeLabel":"Cumulative"
     },
     "search": {
         "label":"Search",
@@ -127,9 +133,11 @@
     "map": {
         "tooltipHeader":"__count__ Record",
         "tooltipHeader_plural":"__count__ Records",
-        "tooltipLatLong":"__lat__ Lat<br>__llong__ Long",
+        "tooltipCluster":"Cluster centred on<br>",
+        "tooltipID":"ID: __dwcaId__<br>",
+        "tooltipLatLong":"Lat: __lat__<br>Long: __llong__",
         "tooltipSel":"__count__ Selected<br>",
-        "tooltipIndSel":"Selected"
+        "tooltipIndSel":"Selected<br>"
     },
     "parser": {
         "zipError":"Cannot locate _file__ within zip.",
@@ -139,22 +147,36 @@
         "deadonymError":"Deadonym. No link to accepted name id __aid__ for __rec__"
     },
     "sanity": {
+        "defaultTooltipHeader":"Missing Information",
         "visSanHeaders": {
             "0":"Vis Type",
-            "1":"Partial Records",
-            "2":"No Records",
-            "3":"Selected: Part Records",
-            "4":"Selected: No Records"
+            "1":"Partially Missing",
+            "2":"All Missing",
+            "3":"Selected, Partially Missing",
+            "4":"Selected, All Missing",
+            "tableCaption": "Count of Records missing necessary fields per visualisation type",
+            "tooltipHeader": "Records with Missing Info"
         },
         "fieldSanHeaders": {
             "0":"Record Type",
             "1": "Field Type",
-            "2": "No Value",
-            "3": "Sel No Value"
+            "2": "Missing",
+            "3": "Selected, Missing",
+            "tableCaption": "Count of Records missing data per field type",
+            "tooltipHeader": "Records with Missing Field"
         },
         "vocabSanHeaders": {
             "0":"Field Type",
-            "1":"Vocabulary Size"
+            "1":"Vocabulary Size",
+            "tableCaption": "Potential Controlled Vocabulary Sizes",
+            "tooltipHeader": "Vocabulary Size"
+        },
+        "visLabels" : {
+            "geo":"$t(vesper.visTitles.DWCAMapLeaflet)",
+            "impTaxonomy":"$t(vesper.visTitles.ImplicitTaxonomy)",
+            "expTaxonomy":"$t(vesper.visTitles.ExplicitTaxonomy)",
+            "times":"$t(vesper.visTitles.TimeLine)",
+            "basicTimes":"$t(vesper.visTitles.TimeLine)"
         }
     }
 }
