@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Instructions</title>
+</head>
+<body>
+<div class="tabbedStuff">
+<H3>Browsers</H3>
+<P>VESPER is designed around cutting-edge HTML5 functionality and as such requires a modern web browser. The latest releases of <a href="www.google.com/chrome/">Chrome</a>,
+    <a href="http://www.opera.com">Opera</a> (now WebKit based), <a href="http://support.apple.com/downloads/#safari">Safari</A> (for Mac), <a href="www.mozilla.org/firefox/">Firefox</A>,
+    and <a href="http://windows.microsoft.com/en-gb/internet-explorer/download-ie">Internet Explorer</a> (9 or above) are suitable.
+</P>
+
+    <hr>
+<H3>Loading DWCA Files</H3>
+<P>
+    There are five DWCA examples supplied in the "Example Data" tab, press the respective button to choose any of these files.
+    If you’re using Chrome/Opera (which have implemented HTML5 local filesystems) the "Load Your Data" tab contains a button to load your own DWCA (a file browser should pop up).
+</P>
+
+<P>
+    After a quick initial loading to grab the DWCA's meta information, a small panel will appear detailing your next choices - it is basically a filter asking which data fields in the DWCA you'd like to analyse.
+    Pick a field you’d like to use as a “label” in the taxonomy and map components – you may not have a choice here.
+    Then pick which of the visualisations VESPER has deduced from the DWCA that the archive should be able to populate.
+</P>
+<P>
+    When you’re happy with your selected visualisations, press “Load” and wait anything from a second or two (HIBG) to 30 seconds or so (the ENA file) for parsing, and then your selected views should appear.
+</P>
+<P>
+    In the event of a fail/crash when loading data, in the first instance check your data set with GBIF's <a href=""http://tools.gbif.org/dwca-validator/">DWCA Validator</a>.
+    This will pick up problesm related to the <i>syntax</i> of the data set i.e. whether fields are in the right place etc. VESPER is designed towards testing data quality when the data is syntactically valid.
+    If your data set passes syntactic validation but still won't load in VESPER, get in touch with m.graham{at}napier.ac.uk.
+</P>
+
+    <hr>
+<H3>Basic Interaction</H3>
+<H4>Closing/Opening Views</H4>
+<P>
+    Each visualisation panel has a close button in the top-right corner to remove that particular view.
+    Pressing the close button of the “Controls" view kills all associated views for that data set.
+    This effectively ends any more interaction with that data set (unless you load it again).
+    Also, one of the headers in the "Controls" accordion contains buttons to launch new view instances.
+    The drag bar at the top of each visualisation allows it to be moved around the browser window.
+</P>
+    <H4>Selecting</H4>
+<P>
+    In all components, a left mouse-click navigates and a right mouse-click selects.
+    The map component has some extra selection options – press the circle, square, polygon icons to start selecting groups by drawing shapes around them.
+    Selections in one component are reflected in the other visible components, so a selection of a group on the map will show where these specimens occured in the timeline and in a taxonomy (assuming there is data for these views as well).
+</P>
+
+    <hr>
+<H3>Individual Views</H3>
+    <H4>Taxonomy</H4>
+    <P>
+    The taxonomy view (or tree viewer if you prefer) comes in two flavours. The <b>Reference Taxonomy</b> is calculated from parent/child ids when they are available in a data set.
+    Often these taxonomies often have a lot of synonyms added too. The <b>Specimen Taxonomy</b> is calculated from explicitly named kingdom/family/genus etc fields in the DWCA data set and the specimens
+    are added at the bottom of this structure. Apart from this difference, both taxonomies are displayed and interacted with in the same way.
+    </P>
+    <P>
+    There's a control panel with expandable sections for controlling various aspects of the taxonomy view.
+    The first section (Space Allocation) decides how space is apportioned in the tree. Either <i>Bottom-Up</i>, where each taxon has a size according to it's number of eventual leaf taxa, or <i>Top-Down</i>
+        where space is divided equally at the root between immediate sub-taxa and the process recurses down the taxonomy. In practice, the third option, <i>Bottom-Up Log</i> is often best, it gives each
+        taxon space according to its number of leaf taxa, but on a logarithmic scale. This means large taxa are still clearly shown as larger but don't squeeze smaller taxa out of space.
+    </P>
+    <P>
+        The second section controls whether the taxonomy is drawn <i>Centre-Out</i> (also known as a sunburst) or from <i>Left-to-Right</i> (a.k.a. an icicle plot).
+    </P>
+    <P>
+        The third section has various options for organising taxa at each level. Note in the centre-out view, the first taxon according to the current sort is at 12 o'clock.
+    </P>
+
+    <H4>Timeline</H4>
+        <P>
+        The timeline view is a bar chart of available data for when specimens were collected. The range slider at the bottom of the timeline allows zooming in on a particular time period, which often reveals annual trends.
+        Individual bars can be selected directly.
+        </P>
+
+    <H4>Map</H4>
+        <P>
+        The Map plots associated longitude and latitude data found for each record in the data set. The default layer is a clustered view of records which change when the map is zoomed in or out, and are coloured
+            according to the proportion of selected records in that cluster. Marker clusters can be selected directly (right mouse-click) or otherwise the circle/rectangle/polygon shape selectors used to select records within areas of the map.
+            There is a second layer of points showing every individual record position on the map that can be activated, but on this layer the individual points cannot be selected, the shape selectors must be used.
+        </P>
+
+    <H4>Taxa Distribution</H4>
+    <P>
+        The taxa distribution view is a bar chart like the timeline view. Here though the view is of the number of immediate sub-taxa of each taxon. Normally, this follows a <i>hollow curve</i> distribution:
+        most taxa have relatively few immediate sub-taxa, while a few taxa have many immediate sub-taxa. This view can show whether a catch-all taxa has been implemented within the taxonomy.
+    </P>
+
+    <H4>Missing Data Check</H4>
+    <P>
+        A simple tabular display of which fields are empty across the record set. Sub-divided into missing data by view as well, it can show if a particular type of data has been omitted.
+        Rather than numbers, it uses small bars to indicate the proportions of missing data, so a blank display with no bars means completeness.
+    </P>
+
+    <H4>Record Details</H4>
+    <P>
+        A simple input that takes a record ID and outputs the associated fields in a table. If the table contains other IDs these can be clicked to see the details for that record.
+    </P>
+
+    <H4>Search Box</H4>
+    <P>
+        Another simple input that searches the field used as the 'label' for the taxa (selected when the data set was loaded). It scans and selects every record that has a partial 'label' match with the input string
+        so can be used to find known taxa quickly. It also operates on synonyms and specimens as well. The <i>Keystroke Search</i> checkbox is best unticked in large data sets for speed reasons.
+    </P>
+
+    <H4>Controls</H4>
+    <P>
+        As well as launching other views, this widget serves a couple of special purposes accessed through its other sections.
+        The second section has options for manipulating the current selection. <i>Invert</i> and <I>Clear</I> are self-explanatory. <I>Save</I> takes advantage of the HTML5 FileWriter API <b>if present</b>
+        to output the IDs of currently selected records to another browser tab. These can then be saved for use in an external application.
+    </P>
+
+    <P>
+        The third section in this control contains a single button. Pressing it marks this taxonomy as in preparation for a name-based comparison with another taxonomy (VESPER can have several data sets open at once,
+        memory is the ultimate barrier to the number and size). In this other taxonomy's <i>Controls</i> view open the same section and select this button to compare the two. Note: this is experimental at the moment.
+    </P>
+
+    </div>
+</body>
+</html>

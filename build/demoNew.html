@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<title>Vesper Demo 0.1</title>
+
+
+<!-- loading stylesheets before javascript is meant to be quicker -->
+<!-- https://developers.google.com/speed/docs/best-practices/rtt#PutStylesBeforeScripts -->
+<!-- <link rel="stylesheet" href="vesper.min.css" type="text/css" /> -->
+<link rel="stylesheet" href="base.css" type="text/css" />
+<link rel="stylesheet" href="tree.css" type="text/css" />
+<link rel="stylesheet" href="barChart.css" type="text/css" />
+<link rel="stylesheet" href="dwcaMap.css" type="text/css" />
+<link rel="stylesheet" href="sanity.css" type="text/css" />
+<link rel="stylesheet" href="tooltip.css" type="text/css" />
+<link rel="stylesheet" href="helper.css" type="text/css" />
+<link rel="stylesheet" href="recordDetails.css" type="text/css" />
+<link rel="stylesheet" href="../lib/leafletjs/leaflet.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/markerCluster/MarkerCluster.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/markerCluster/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/draw/leaflet.draw.css" />
+<link rel="stylesheet" href="../lib/jquery-ui/jquery-ui.css">
+
+
+<!-- D3's includes -->
+<script type="text/javascript" src="../lib/d3/d3.v3.js"></script>
+
+<!-- JQuery's includes -->
+<script type="text/javascript" src="../lib/jquery/jquery-2.0.3.js"></script>
+<script type="text/javascript" src="../lib/jquery-ui/jquery-ui.js"></script>
+<script type="text/javascript" src="../lib/i18next/i18next-1.7.1.js"></script>
+
+<!-- IndexedDBShim include -->
+<!-- <script type="text/javascript" src="../lib/indexedDBShim/IndexedDBShim.js"></script> -->
+<!-- <script type="text/javascript" src="../../lib/jquery-indexeddb/jquery.indexeddb.js"></script> -->
+
+<!-- Martin's includes -->
+<script type="text/javascript" src="../lib/napier/NapVisLib.js"></script>
+<script type="text/javascript" src="../lib/napier/adaptedD3.js"></script>
+<script type="text/javascript" src="../lib/napier/sharedSelection.js"></script>
+
+<!-- <script type="text/javascript" src="vesper.min.js"></script> -->
+<script type="text/javascript" src="vesper.js"></script>
+<script type="text/javascript" src="visLauncherView.js"></script>
+<script type="text/javascript" src="demo.js"></script>
+<script type="text/javascript" src="tooltip.js"></script>
+<script type="text/javascript" src="dataModel.js"></script>
+<script type="text/javascript" src="dwcaParse.js"></script>
+<script type="text/javascript" src="dwcaHelper.js"></script>
+<script type="text/javascript" src="DWCAZipParse.js"></script>
+<script type="text/javascript" src="taxonomy_vis.js"></script>
+<script type="text/javascript" src="recordDetailView.js"></script>
+<script type="text/javascript" src="sanity.js"></script>
+<script type="text/javascript" src="barChart.js"></script>
+<script type="text/javascript" src="filters.js"></script>
+<script type="text/javascript" src="modelJoin.js"></script>
+<script type="text/javascript" src="dwcaMapLeaflet.js"></script>
+
+<!-- JSZip includes -->
+<script type="text/javascript" src="../lib/jszip/jszip.js"></script>
+<script type="text/javascript" src="../lib/jszip/jszip-inflate.js"></script>
+<script type="text/javascript" src="../lib/jszip/jszip-load.js"></script>
+<script type="text/vbscript" src="../lib/napier/iedataload.vbs"></script>
+
+<!-- Leaflet includes -->
+<script type='text/javascript' src="../lib/leafletjs/leaflet-src.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/markerCluster/leaflet.markercluster-src.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/draw/leaflet.draw-src.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/leaflet-maskcanvas-master/L.TileLayer.MaskCanvas.js"></script>
+<script type='text/javascript' src="../lib/leafletjs/plugins/leaflet-maskcanvas-master/QuadTree.js"></script>
+
+</head>
+
+<body>
+
+<div id="pageTitle">
+    <H1>Vesper</H1>
+    <H2>Client-side DWCA Visualisation</H2>
+</div>
+
+<div id="tabs">
+    <ul class="demo">
+        <li><a href="background.html"><span data-i18n="web.BackTab">-</span></a></li>
+        <li><a href="instructions.html"><span data-i18n="web.InstTab">-</span></a></li>
+        <li><a href="credits.html"><span data-i18n="web.CredTab">-</span></a></li>
+        <li><a href="#examples"><span data-i18n="web.ExamTab">-</span></a></li>
+        <li><a href="#yourData"><span data-i18n="web.YourTab">-</span></a></li>
+        <li><a href="#small"><span><svg height="20" width="60">
+            <polygon points="5,18 30,2 55,18" class="demoPageColours" />
+        </svg></span></a></li>
+    </ul>
+
+    <div id="examples" class="tabbedStuff"></div>
+    <div id="yourData" class="tabbedStuff"></div>
+    <div id="small"></div>
+</div>
+
+<div id="demoDiv"></div>
+
+
+<!--   <div style="width: 100%; clear: both;"></div> -->
+
+ <script type="text/javascript">
+     $("#tabs").tabs();
+
+     var files = [
+         {name:"ENA", file:"../data/ena2.zip"},
+         {name:"GermanSL", file:"../data/germanSLfless.zip"},
+         {name:"VAScan", file:"../data/dwca-vascan.zip"},
+         {name:"MT Specimens", file:"../data/dwca-mt-specimens.zip"},
+         {name:"HIBG Specimens", file:"../data/dwca-hibg-specimens.zip"}
+     ];
+
+     // Load in the control block html, and when that's done, initialise the i18n scripts, and when that's done
+     // launch the demo script that fills that block with buttons.
+     // (needs to be done as callbacks or stuff runs before other things finish loading and that equals crash)
+     $("#demoDiv").load ("demoControlBlock.html",
+             function() {
+                 var language = window.navigator.userLanguage || window.navigator.language;
+                 language = language.split("-")[0];
+                 i18n.init ({lng:language, fallbackLng:'en'},
+                         function () {
+                             $(".demo").i18n();
+                             $("#demoDiv").i18n();
+                             VESPER.demo (files, "#examples");
+                         }
+                 )
+             }
+     );
+
+ </script>
+
+</body>
+</html>
