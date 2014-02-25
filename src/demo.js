@@ -127,6 +127,12 @@ VESPER.demo = function (files, exampleDivID) {
                 asyncSetUpFromMeta (content);
             }
         );
+        d3.select("#localLoader")
+            .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
+            .on ("mouseover", function () {
+                VESPER.tooltip.updateText ($.t("web.YourTab"), $.t("demo.loadButtonTooltip"));
+                VESPER.tooltip.updatePosition (d3.event);
+        })
     }
 
 
@@ -159,14 +165,23 @@ VESPER.demo = function (files, exampleDivID) {
         radioChoices.forEach (function(rc) { rbdata.push ({"fieldType": rc, "rowType": undefined}); });
         var rbuttons = DWCAHelper.addRadioButtons (ldiv, rbdata, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
         DWCAHelper.configureRadioButtons (rbuttons, checkListParent,
-            function(result) {
-                // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
-                // (remember, we can have more than one dataset open at a time)
-                getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
-                reselectVisChoices();
-            },
-            function() { return getMeta(); },
-        selectionOptions);
+                function(result) {
+                    // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
+                    // (remember, we can have more than one dataset open at a time)
+                    getMeta().vesperAdds.nameLabelField = $.extend ({}, result);
+                    reselectVisChoices();
+                },
+                function() { return getMeta(); },
+            selectionOptions);
+        //ldiv.selectAll(".fieldGroup")
+        rbuttons
+            .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
+            .on ("mouseover", function (d) {
+                console.log (d);
+                VESPER.tooltip.updateText (d.fieldType, d.toString());
+                VESPER.tooltip.updatePosition (d3.event);
+            })
+        ;
 
         var setVisOptionBoxes = function (bool) {
             var cboxes = d3.select("#dynamicSelectDiv").selectAll(".fieldGroup input");

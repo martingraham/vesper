@@ -31,7 +31,8 @@
         "loadLabel":"Load",
         "zipProcTemplate":"Zip processing: __fileName__. Parsed __count__ records.",
         "initViewsMessage":"Initialising Chosen Views... Please wait...",
-        "DWCAErrorMeta":"Check DWCA meta.xml compliance."
+        "DWCAErrorMeta":"Check DWCA meta.xml compliance.",
+        "loadButtonTooltip":"Use this button to select and load a DWCA archive from your computer"
     },
     "vesper":{
         "visTitles": {
