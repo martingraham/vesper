@@ -84,10 +84,10 @@
 <div id="tabs">
     <ul class="demo">
         <li><a href="background.html"><span data-i18n="web.BackTab">-</span></a></li>
-        <li><a href="instructions.html"><span>Instructions</span></a></li>
-        <li><a href="credits.html"><span>Credits</span></a></li>
-        <li><a href="#examples"><span>Example Data</span></a></li>
-        <li><a href="#yourData"><span>Load Your Data</span></a></li>
+        <li><a href="instructions.html"><span data-i18n="web.InstTab">-</span></a></li>
+        <li><a href="credits.html"><span data-i18n="web.CredTab">-</span></a></li>
+        <li><a href="#examples"><span data-i18n="web.ExamTab">-</span></a></li>
+        <li><a href="#yourData"><span data-i18n="web.YourTab">-</span></a></li>
         <li><a href="#small"><span><svg height="20" width="60">
             <polygon points="5,18 30,2 55,18" class="demoPageColours" />
         </svg></span></a></li>
@@ -98,14 +98,7 @@
     <div id="small"></div>
 </div>
 
-
-<div id="vesperProgressBar"></div>
-
-<div id="selDiv" class="selectionWrapper">
-</div>
-
-<div id="allVisDiv"></div>
-
+<div id="demoDiv"></div>
 
 
 <!--   <div style="width: 100%; clear: both;"></div> -->
@@ -124,14 +117,18 @@
      // Load in the control block html, and when that's done, initialise the i18n scripts, and when that's done
      // launch the demo script that fills that block with buttons.
      // (needs to be done as callbacks or stuff runs before other things finish loading and that equals crash)
-     $("#selDiv").load ("demoControlBlock.html",
-             function() { i18n.init ({lng:'en'},
-                     function () {
-                         $(".demo").i18n();
-                         $("#selDiv").i18n();
-                         VESPER.demo (files, "#examples");
-                     }
-             )}
+     $("#demoDiv").load ("demoControlBlock.html",
+             function() {
+                 var language = window.navigator.userLanguage || window.navigator.language;
+                 language = language.split("-")[0];
+                 i18n.init ({lng:language, fallbackLng:'en'},
+                         function () {
+                             $(".demo").i18n();
+                             $("#demoDiv").i18n();
+                             VESPER.demo (files, "#examples");
+                         }
+                 )
+             }
      );
 
  </script>

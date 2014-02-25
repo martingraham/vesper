@@ -12,7 +12,8 @@
     "leaflet-draw": "~0.2.2",
     "leaflet.markercluster": "~0.4",
     "jszip": "git://github.com/martingraham/jszip.git#master",
-    "naplib": "git://github.com/martingraham/naplib.git#master"
+    "naplib": "git://github.com/martingraham/naplib.git#master",
+    "labjs": "git//github.com/getify/LABjs#master"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
@@ -25,7 +26,10 @@
     "gulp-rename": "~1.1.0",
     "gulp-concat": "~2.1.7",
     "gulp-uglify": "~0.2.1",
-    "gulp-jshint": "~1.4.2"
+    "gulp-jshint": "~1.4.2",
+    "gulp-cssmin": "~0.1.2",
+    "gulp-clean": "~0.2.4",
+    "gulp-debug": "~0.2.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

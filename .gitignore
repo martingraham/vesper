@@ -6,4 +6,4 @@ lib/jquery-indexeddb/
 lib/d3/d3.v3.js.old
 lib/jszip/docs/
 lib/jszip/test/
-
+lib/leafletjs/plugins/leaflet-maskcanvas-master/test/

@@ -54,7 +54,7 @@ VESPER.Tree = function (divid) {
             //console.log (a,b);
             var sel1 = model.getSelectedDescendantCount(a);
             var sel2 = model.getSelectedDescendantCount(b);
-            return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel1 - sel2)));
+            return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel2 - sel1)));
         }
 	};
     var sortOptionLabels = {"Alpha": $.t("tree.sortAlpha"), "Descendants": $.t("tree.sortDesc"),

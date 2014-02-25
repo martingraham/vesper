@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<title>Vesper Demo</title>
+
+
+<!-- loading stylesheets before javascript is meant to be quicker -->
+<!-- https://developers.google.com/speed/docs/best-practices/rtt#PutStylesBeforeScripts -->
+<link rel="stylesheet" href="vesper.min.css" type="text/css" />
+<link rel="stylesheet" href="../lib/leafletjs/leaflet.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/markerCluster/MarkerCluster.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/markerCluster/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="../lib/leafletjs/plugins/draw/leaflet.draw.css" />
+<link rel="stylesheet" href="../lib/jquery-ui/jquery-ui.css">
+
+<!-- vbscript which labjs won't load despite saying it will -->
+<script type="text/vbscript"  src="../lib/napier/iedataload.vbs"></script>
+
+<!-- LabJs include -->
+<script type="text/javascript" src="../lib/labjs/lab.src.js"></script>
+
+</head>
+
+
+<body>
+
+<div id="pageTitle">
+    <H1>Vesper</H1>
+    <H2>Client-side DWCA Visualisation</H2>
+</div>
+
+<div id="tabs">
+    <ul class="demo">
+        <li><a href="background.html"><span data-i18n="web.BackTab">-</span></a></li>
+        <li><a href="instructions.html"><span data-i18n="web.InstTab">-</span></a></li>
+        <li><a href="credits.html"><span data-i18n="web.CredTab">-</span></a></li>
+        <li><a href="#examples"><span data-i18n="web.ExamTab">-</span></a></li>
+        <li><a href="#yourData"><span data-i18n="web.YourTab">-</span></a></li>
+        <li><a href="#small"><span><svg height="20" width="60">
+            <polygon points="5,18 30,2 55,18" class="demoPageColours" />
+        </svg></span></a></li>
+    </ul>
+
+    <div id="examples" class="tabbedStuff"></div>
+    <div id="yourData" class="tabbedStuff"></div>
+    <div id="small"></div>
+</div>
+
+<div id="demoDiv"></div>
+
+
+<script>
+    $LAB
+        .script("../lib/d3/d3.v3.min.js")
+        .script ("../lib/jquery/jquery-2.0.3.min.js")
+        .wait() // cos jquery-ui and i18next depends on JQuery ('$') being defined to hook into it
+        .script ("../lib/jquery-ui/jquery-ui.min.js")
+        .script ("../lib/i18next/i18next-1.7.1.js")
+        .script ("../lib/napier/naplib.min.js")
+        .script ("vesper.min.js")
+        .script ("../lib/jszip/jszip.min.js")
+        .script ("../lib/leafletjs/leaflet.js")
+        .wait()// cos leaflet plugins depend on 'L' being defined, so wait till leaflet.js is loaded/executed before continuing
+        .script ("../lib/leafletjs/plugins/markerCluster/leaflet.markercluster-src.js")
+        .script ("../lib/leafletjs/plugins/draw/leaflet.draw-src.js")
+        .script ("../lib/leafletjs/plugins/leaflet-maskcanvas-master/L.TileLayer.MaskCanvas.js")
+        .script ("../lib/leafletjs/plugins/leaflet-maskcanvas-master/QuadTree.js")
+        .wait (function () {
+            $("#tabs").tabs();
+
+            var files = [
+                {name:"ENA", file:"../data/ena2.zip"},
+                {name:"GermanSL", file:"../data/germanSLfless.zip"},
+                {name:"VAScan", file:"../data/dwca-vascan.zip"},
+                {name:"MT Specimens", file:"../data/dwca-mt-specimens.zip"},
+                {name:"HIBG Specimens", file:"../data/dwca-hibg-specimens.zip"}
+            ];
+
+            // Load in the control block html, and when that's done, initialise the i18n scripts, and when that's done
+            // launch the demo script that fills that block with buttons.
+            // (needs to be done as callbacks or stuff runs before other things finish loading and that equals crash)
+            $("#demoDiv").load ("demoControlBlock.html",
+                function() {
+                    var language = window.navigator.userLanguage || window.navigator.language;
+                    language = language.split("-")[0];
+                    i18n.init ({lng:language, fallbackLng:'en'},
+                        function () {
+                            $(".demo").i18n();
+                            $("#demoDiv").i18n();
+                            VESPER.demo (files, "#examples");
+                        }
+                    )
+                }
+            );
+        })
+    ;
+</script>
+
+
+</body>
+</html>

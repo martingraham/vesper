@@ -1,10 +1,10 @@
 {
     "web": {
-        "BackTab":"Background",
+        "BackTab":"Fond",
         "InstTab":"Instructions",
-        "CredTab":"Credits",
-        "ExamTab":"Examples",
-        "YourTab":"Load Your Data"
+        "CredTab":"Crédits",
+        "ExamTab":"Exemples",
+        "YourTab":"Charger Vos Données"
     },
     "demo": {
         "dataHeader":"Data Set",
