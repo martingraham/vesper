@@ -44,7 +44,7 @@ VESPER.Filters = new function () {
         };
 
         model.getSelectionModel().setUpdating (true);
-        var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
+        var count = model.getParser().selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
         //VESPER.log ("selected count", count, model.getSelectionModel().values());
         model.getSelectionModel().setUpdating (false);
         return count;
@@ -63,11 +63,11 @@ VESPER.Filters = new function () {
 
         // what is the intersection of these ranks with gbifs ranks - http://rs.gbif.org/vocabulary/gbif/rank.xml?
         var acceptRanks = [];
-        VESPER.DWCAParser.GBIFRanks.forEach (function(elem) {
+        model.getParser().GBIFRanks.forEach (function(elem) {
             if (discretes[elem]) { acceptRanks.push (elem); }
         });
         VESPER.log ("aranks", acceptRanks);
-        //acceptRanks = VESPER.DWCAParser.GBIFRanks;
+        //acceptRanks = model.getParser().GBIFRanks;
 
         // make a regex to test for this selection of ranks
         var regex = acceptRanks.length ? new RegExp ("^("+acceptRanks.join("|")+")$") : undefined;
@@ -100,7 +100,7 @@ VESPER.Filters = new function () {
         model.getSelectionModel().setUpdating (true);
         //var sw = {};
         //var t = MGNapier.NapVisLib.resetStopwatch (sw);
-        var count = VESPER.DWCAParser.selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
+        var count = model.getParser().selectNodes (regex, specificFilter, model, function(obj) { model.getSelectionModel().addToMap (obj); });
         //VESPER.log ("selected count", count, model.getSelectionModel().values());
         //VESPER.log ("rank match took", MGNapier.NapVisLib.elapsedStopwatch (sw), "ms for",count,"matches.");
         model.invertSelection();

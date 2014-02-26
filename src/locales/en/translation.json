@@ -43,7 +43,8 @@
             "TimeLine":"Timeline",
             "Sanity":"Missing Data Check",
             "RecordDetails":"Record Details",
-            "TaxaDistribution":"Taxa Distribution",
+            "ImpTaxaDistribution":"Taxa Distribution",
+            "ExpTaxaDistribution":"Denormalised Taxa Distribution",
             "FilterView":"Search Box"
         },
         "visHelpTips": {
@@ -53,7 +54,8 @@
             "TimeLine":"This view shows a zoomable bar chart that aggregates the dates on which specimens were collected.",
             "Sanity":"This view produces a number of tables detailing the amount of missing data per field over the record set.",
             "RecordDetails":"This launches a small view with a text input box. Type in a DWCA ID for the dataset under view to see details of that record.",
-            "TaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
+            "ImpTaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
+            "expTaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
             "FilterView":"A small view with a text input that allows the names/labels of the current record set to be searched and selected for matches (inc. partial matches)."
         }
     },
@@ -92,7 +94,7 @@
         "launchHeader":"Show Another Visualisation",
         "selectHeader":"Current Selections",
         "selectSave":"Save",
-        "selectInvert":"Invert Selection",
+        "selectInvert":"Invert",
         "selectClear":"Clear",
         "compareHeader":"Taxonomy Comparison",
         "compareLabel":"Compare Names",
@@ -153,6 +155,7 @@
     },
     "sanity": {
         "defaultTooltipHeader":"Missing Information",
+        "fieldDescLabel":"Field Description",
         "visSanHeaders": {
             "0":"Vis Type",
             "1":"Partially Missing",

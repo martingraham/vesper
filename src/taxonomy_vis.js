@@ -35,7 +35,7 @@ VESPER.Tree = function (divid) {
     var cstore = {}, pstore = {};
     var patternName = "hatch", patternID = "hatch";
 
-    var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
+    //var allowedRanks = {"superroot": true, "ROOT": true, "FAM": true, "ORD": true, "ABT": true, "KLA": true, "GAT": true, "SPE": true};
 	var sortOptions = {
 		"Alpha": function (a,b) { var n1 = model.getLabel(a), n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
@@ -92,6 +92,7 @@ VESPER.Tree = function (divid) {
     };
     var spaceAllocationLabels = {"bottomUp": $.t("tree.sizeBottomUp"), "bottomUpLog": $.t("tree.sizeBottomUpLog"), "topDown": $.t("tree.sizeTopDown")};
 
+
     function patternFill (nodeId) {
         if (nodeId !== undefined && nodeId.charAt(0) === '*') {
             //return "#000";
@@ -100,11 +101,30 @@ VESPER.Tree = function (divid) {
         return null;
     }
 
+    function colourFill (nodeId) {
+        if (!colorMode) {
+            return null;
+        }
+        var node = getNode (nodeId);
+        var val = model.getIndexedDataPoint (node, rankField);
+        return colorScale (val);
+    }
+
+    // try pattern fill and colour fill together. Pattern fill has priority i.e. if non-null colourFill won't be asked
+    function jointFill (nodeId) {
+        return patternFill (nodeId) || colourFill (nodeId);
+    }
+
+    this.updateFills = function () {
+        layout.updateFills (treeG.selectAll(".treeNode"));
+    };
+
+
     this.setColourDomain = function (ords) {
         colorScale.domain (ords);
         console.log ("color", colorScale);
-        colorMode = true;
-        reroot (curRoot);
+        colorMode = !colorMode;
+        //reroot (curRoot);
     };
 
     function logSelProp (node) {
@@ -198,7 +218,7 @@ VESPER.Tree = function (divid) {
 
             newNodes.append ("svg:rect")
                 .call (partitionLayout.booleanSelectedAttrs)
-                .style ("fill", function(d) { return patternFill (d.id); })
+                .style ("fill", function(d) { return jointFill (d.id); })
             ;
 
             newNodes.append ("svg:rect")
@@ -238,6 +258,12 @@ VESPER.Tree = function (divid) {
                 .delay (delay)
                 .duration (updateDur)
                 .call (partitionLayout.sharedTextAttrs)
+            ;
+        },
+
+        updateFills: function (groupElems) {
+            groupElems.select("rect:not(.holdsSelected)")
+                .style ("fill", function(d) { return jointFill (d.id); })
             ;
         },
 
@@ -308,17 +334,6 @@ VESPER.Tree = function (divid) {
         booleanSelectedAttrs: function (group) {
             group
                  .attr ("class", function(d) { return model.getSelectionModel().contains(d.id) ? "selected" : "unselected"; })
-                /*
-                 .style ("fill", function(d) {
-                    if (!colorMode) {
-                        return null;
-                    }
-                    var node = getNode (d.id);
-                    var val = model.getIndexedDataPoint (node, rankField);
-                    console.log ("Val", val, colorScale(val));
-                    return colorScale (val);
-                })
-                */
             ;
         },
 
@@ -447,7 +462,7 @@ VESPER.Tree = function (divid) {
                 .attr("d", sunburstLayout.arc)
                 //.attr ("id", function(d) { return "arc"+ d.id; })
                 .call (sunburstLayout.booleanSelectedAttrs)
-                .style ("fill", function(d) { return patternFill (d.id); })
+                .style ("fill", function(d) { return jointFill (d.id); })
                 .each(sunburstLayout.cstash)
             ;
 
@@ -503,6 +518,12 @@ VESPER.Tree = function (divid) {
                 .delay (delay)
                 .duration (updateDur)
                 .each ("end", endFunc)
+            ;
+        },
+
+        updateFills: function (groupElems) {
+            groupElems.select("path:not(.holdsSelected)")
+                .style ("fill", function(d) { return jointFill (d.id); })
             ;
         },
 
@@ -630,14 +651,6 @@ VESPER.Tree = function (divid) {
 
         absRoot = root;
 
-        //var spaceAllocs = d3.values(spaceAllocationOptions);
-        /*
-        for (var n = 0; n < spaceAllocs.length; n++) {
-            var indAlloc = spaceAllocs[n];
-            //indAlloc.size ([dims[1], dims[0]]);
-            //indAlloc.size (partitionLayout.sizeBounds());
-        }
-        */
         spaceAlloc = spaceAllocationOptions.bottomUpLog;
 		curSort = sortOptions.Alpha;
         layout = layoutOptions.Sunburst;
@@ -788,7 +801,7 @@ VESPER.Tree = function (divid) {
 
         var nodeBind = treeG
             .selectAll(".treeNode")
-            .data(coordSet, function(d) { return d.id /*d[DWCAParser.TDATA][keyField]*/; })
+            .data(coordSet, function(d) { return d.id /*d[model.getParser().TDATA][keyField]*/; })
         ;
 
         layout.prep (coordSet);
@@ -817,6 +830,7 @@ VESPER.Tree = function (divid) {
         root = firstBranch (self.getRoot(model));
         reroot (root);
 	};
+
 
 
     this.getRoot = function (mod) {
@@ -915,8 +929,10 @@ VESPER.Tree = function (divid) {
             //handle mouse over
             var node = getNode (d.id) /*d*/;
             var val = self.tooltipString (node, model, ffields);
-            VESPER.tooltip.updateText (model.getLabel(node), val);
-            VESPER.tooltip.updatePosition (d3.event);
+            VESPER.tooltip
+                .updateText (model.getLabel(node), val)
+                .updatePosition (d3.event)
+            ;
         })
         .on ("mouseout", function() {
             VESPER.tooltip.setToFade();
@@ -996,22 +1012,21 @@ VESPER.ImplicitTaxonomy = function (div) {
             })
         ;
 
-        /*
-        section.append("button")
-            .text ($.t("tree.colourRanksLabel"))
+        var cboxgroup = VESPER.DWCAHelper.addCheckboxes (section, [{title:$.t("tree.colourRanksLabel")}], null)
+        cboxgroup
             .on ("click", function() {
                 var index = tree.getModel().makeIndex ("taxonRank");
-                console.log ("index:", index);
                 var mdata = tree.getModel().getMetaData();
                 var rowType = mdata.fileData[index.rowType];
                 var fieldData = rowType.fieldData[index.fieldType];
                 var discretes = fieldData.discreteTermList;
 
-                console.log ("rr", rowType, fieldData, discretes);
+                //console.log ("rr", rowType, fieldData, discretes);
                 tree.setColourDomain (d3.keys(discretes));
+                tree.updateFills ();
             })
         ;
-        */
+
     };
 
 

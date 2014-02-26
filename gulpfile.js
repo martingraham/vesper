@@ -47,7 +47,7 @@ gulp.task('concatlibs', ['clean'], function (){
 
 // here, I want to copy files from different folders (not including the relative paths) into the same folder
 gulp.task('copyres', ['clean'], function(){
-    return gulp.src (['src/dwca.xsd', 'src/demoNew*.html', 'src/demoControlBlock.html', 'src/instructions.html', 'src/credits.html', 'src/background.html', '*.md'])
+    return gulp.src (['src/dwca.xsd', 'src/dwc_occurrence.xml', 'src/demoNew*.html', 'src/demoControlBlock.html', 'src/instructions.html', 'src/credits.html', 'src/background.html', '*.md'])
         .pipe (gulp.dest(outFolder))
     ;
 });

@@ -233,9 +233,6 @@ VESPER.DWCAZipParse = new function () {
                         bigOut.push ((k >= fileData.ignoreHeaderLines) ? VESPER.DWCAZipParse.rowReader2 (out) : undefined);
                         k++;
                         out.length = 0;
-                       // if (k % 1000 == 0 && window.opera) {
-                       //     window.opera.collect();
-                      // }
                     } else if (ch !== undefined) {
                         out.push (ch);
                         if (ch2 !== undefined) {
@@ -284,7 +281,7 @@ VESPER.DWCAZipParse = new function () {
 
         }
 
-        setTimeout (doWork, 1);
+        setTimeout (doWork, 1); // first timeout call
     };
 
 

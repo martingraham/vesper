@@ -28,7 +28,7 @@ VESPER.Sanity = function(divid) {
         var tests = [], testOutputs = [];
         var dataModel = model.getData();
 
-        var lists = VESPER.DWCAParser.neccLists;
+        var lists = model.getParser().neccLists;
         for (var list in lists) {
             if (lists.hasOwnProperty(list)) {
                 var present = model.makeIndices (lists[list]);
@@ -265,10 +265,16 @@ VESPER.Sanity = function(divid) {
                     for (var n = 0; n < ordering.length; n++) {
                         str += headerText[n]+": "+d[ordering[n]] + (n < ordering.length - 1 ? "<br>" : "");
                     }
+                    var desc;
+                    if (d.name && (desc = model.getParser().descriptors[d.name])) {
+                        str += "<br><br>"+$.t("sanity.fieldDescLabel")+": "+desc;
+                    }
                     var ttheader = d3.select(this.parentNode).attr("data-tooltipHeader");
                     if (!ttheader) { ttheader = $.t("sanity.defaultTooltipHeader"); }
-                    VESPER.tooltip.updateText (ttheader, str);
-                    VESPER.tooltip.updatePosition (d3.event);
+                    VESPER.tooltip
+                        .updateText (ttheader, str)
+                        .updatePosition (d3.event)
+                    ;
                 })
             ;
 

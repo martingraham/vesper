@@ -162,10 +162,14 @@ VESPER.BarChart = function(divid) {
 
     function makeBins () {
         //var binCount = Math.ceil ((self.childScale.range()[1] - self.childScale.range()[0]) / self.minBarWidth);
-        binned = self.chunkInfo (model, model.getData(), ffields/*, undefined, binCount, true*/);
+        binned = self.chunkInfo (model, self.getModelData (model), ffields/*, undefined, binCount, true*/);
         self.childScale.domain (binned.extremes);
         VESPER.log ("bin data", binned.extremes, binned);
     }
+
+    this.getModelData = function (model) {
+        return model.getData();
+    };
 
     this.makeToNearest = function (val) {
         return Math.round (val / self.toNearest) * self.toNearest;
@@ -173,7 +177,7 @@ VESPER.BarChart = function(divid) {
 
 	this.update = function () {
 
-        selBinned = self.chunkInfo (model, model.getData(), ffields, /*undefined, binned.bins.length - 1, true,*/
+        selBinned = self.chunkInfo (model, self.getModelData (model), ffields, /*undefined, binned.bins.length - 1, true,*/
             function (key) { return model.getSelectionModel().contains (key); });
 
         var bins = binned.bins;
@@ -230,8 +234,10 @@ VESPER.BarChart = function(divid) {
                 .on ("mouseover", function(d) {
                     d3.select(this).classed("highlight", true);
                     var selected = d3.select(this).classed("selected");
-                    VESPER.tooltip.updateText($.t("barChart."+(selected ? "selLabel" : "allLabel")), self.makeTitle (d));
-                    VESPER.tooltip.updatePosition (d3.event);
+                    VESPER.tooltip
+                        .updateText($.t("barChart."+(selected ? "selLabel" : "allLabel")), self.makeTitle (d))
+                        .updatePosition (d3.event)
+                    ;
                 })
                 .on ("mouseout", function() {
                     d3.select(this).classed("highlight", false);
@@ -357,7 +363,7 @@ VESPER.BarChart = function(divid) {
 
     this.returnMatches = function (model, fields, min, max) {
         var arr = [];
-        var data = model.getData();
+        var data = self.getModelData (model);
 
         for (var key in data) {
             if (data.hasOwnProperty (key)) {
@@ -449,12 +455,21 @@ VESPER.TaxaDistribution = function (div) {
         if (realID === keyID || realID == undefined) { // don't count synonyms
             var node = model.getNodeFromID(key);
             var subTaxa = model.getSubTaxa(node);
-            //var pid = model.getDataPoint (node, {fieldType:"parentNameUsageID", rowType:model.getMetaData().coreRowType});
             return (subTaxa ? subTaxa.length : 0);
         }
         return undefined;
     };
     chart.divisions = [1,2,10,100,1000];
+
+    return chart;
+};
+
+VESPER.ExpTaxaDistribution = function (div) {
+    var chart = new VESPER.TaxaDistribution (div);
+
+    chart.getModelData = function (model) {
+        return model.getExplicitTaxonomy();
+    };
 
     return chart;
 };

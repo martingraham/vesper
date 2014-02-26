@@ -1,5 +1,7 @@
 VESPER.DWCAMapLeaflet = function (divid) {
 
+    L.Icon.Default.imagePath= "../lib/leafletjs/images/";   // set explicitly 'cos leaflet's path autodetection gets fooled by plugins like leaflet.draw
+
 	var dims;
     var self = this;
 	var dividsub = divid.substring(1);
@@ -22,14 +24,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
     var selIcon = L.icon({
         iconUrl: VESPER.imgbase+'selMarker.png',
-        shadowUrl: '../lib/leafletjs/images/marker-shadow.png',
-
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-
-        shadowAnchor: [4, 62] // the same for the shadow
+        shadowUrl: L.Icon.Default.imagePath+'marker-shadow.png'
     });
 
     var oldIcon = new L.Icon.Default();
@@ -40,12 +35,14 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var clusterMouseOverListener = function (a) {
         var sCount = a.layer.getSelectedChildCount();
         // careful with lng, as i18text interprets var with that name as changing translation language!
-        VESPER.tooltip.updateText ($.t("map.tooltipHeader", {count: a.layer.getChildCount()}),
-            (sCount > 0 ? $.t("map.tooltipSel", {count: sCount}) : "")
-            + $.t("map.tooltipCluster")
-            + $.t("map.tooltipLatLong", {lat: dFormat(a.latlng.lat), llong: dFormat(a.latlng.lng)})
-        );
-        VESPER.tooltip.updatePosition (a.originalEvent);
+        VESPER.tooltip
+            .updateText ($.t("map.tooltipHeader", {count: a.layer.getChildCount()}),
+                (sCount > 0 ? $.t("map.tooltipSel", {count: sCount}) : "")
+                + $.t("map.tooltipCluster")
+                + $.t("map.tooltipLatLong", {lat: dFormat(a.latlng.lat), llong: dFormat(a.latlng.lng)})
+            )
+            .updatePosition (a.originalEvent)
+        ;
     };
 
     // what a markercluster does when right clicked
@@ -65,12 +62,14 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var markerMouseOverListener = function (e) {
         var eid = e.target.extId;
         var node = model.getNodeFromID (eid);
-        VESPER.tooltip.updateText (model.getLabel (node),
-            (model.getSelectionModel().contains (eid) ? $.t("map.tooltipIndSel") : "")
-            + $.t("map.tooltipID", {dwcaId: eid})
-            + $.t("map.tooltipLatLong", {lat: dFormat(e.latlng.lat), llong: dFormat(e.latlng.lng)})
-        );
-        VESPER.tooltip.updatePosition (e.originalEvent);
+        VESPER.tooltip
+            .updateText (model.getLabel (node),
+                (model.getSelectionModel().contains (eid) ? $.t("map.tooltipIndSel") : "")
+                + $.t("map.tooltipID", {dwcaId: eid})
+                + $.t("map.tooltipLatLong", {lat: dFormat(e.latlng.lat), llong: dFormat(e.latlng.lng)})
+            )
+            .updatePosition (e.originalEvent)
+        ;
     };
 
     var markerSelectionListener = function (e) {
@@ -167,7 +166,6 @@ VESPER.DWCAMapLeaflet = function (divid) {
                 }
             });
             map.addControl (drawControl);
-
             map.on('draw:created', drawListener);
 
             markerGroup = new L.MarkerClusterGroup ({

@@ -16,6 +16,7 @@ VESPER.tooltip = new function () {
         ;
         tooltip.append("h2");
         tooltip.append("p");
+        return this;
     };
 
     this.setToFade = function () {
@@ -28,6 +29,7 @@ VESPER.tooltip = new function () {
                 d3.select(this).style ("visibility", "hidden");
             })
         ;
+        return this;
     };
 
     this.updateText = function (title, str) {
@@ -44,6 +46,7 @@ VESPER.tooltip = new function () {
                 self.setToFade();
             })
         ;
+        return this;
     };
 
     this.updatePosition = function (e) {
@@ -83,6 +86,7 @@ VESPER.tooltip = new function () {
                 .style ("left", newtx+"px")
             ;
         }
+        return this;
      };
 
     return this;

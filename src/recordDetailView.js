@@ -281,7 +281,19 @@ VESPER.RecordDetails = function (divID) {
 
         var cells = existOrNew.selectAll("td").data(function(d) { return d; });
         cells.enter().append("td");
-        cells.each(addHrefIfNecc).on("click", jumpToClick).style("cursor", "pointer");
+        cells.each(addHrefIfNecc)
+            .on("mouseout", function() { VESPER.tooltip.setToFade(); })
+            .on("mouseover", function(d) {
+                if (model.getParser().descriptors[d]) {
+                    VESPER.tooltip
+                        .updateText (d, model.getParser().descriptors[d])
+                        .updatePosition (d3.event)
+                    ;
+                }
+            })
+            .on("click", jumpToClick)
+            .style("cursor", "pointer")
+        ;
 
         function addHrefIfNecc (d) {
             if (d.substring && d.substring(0,7) === "http://") {

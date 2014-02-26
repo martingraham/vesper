@@ -16,25 +16,26 @@ VESPER.demo = function (files, exampleDivID) {
 
     var selectionOptions = {useExtRows: true, selectFirstOnly: true};
     var DWCAHelper = VESPER.DWCAHelper;
+    var neccLists = VESPER.DWCAParser.neccLists;
 
     var visChoiceData = [
         {type: "VisLauncher", multiple: false, attList: ["unachievable"], matchAll: true, image: VESPER.imgbase+"tree.png", height: "null", width: "200px",
             newVisFunc: function (div) { return new VESPER.VisLauncher (div, {"autoLaunch":"on"});},
             setupFunc: function () {return {"visChoiceData":visChoiceData}; }
         },
-        {type: "ImplicitTaxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
+        {type: "ImplicitTaxonomy", multiple: true, attList: neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.ImplicitTaxonomy (div);},
             setupFunc: function () {return {"rankField":"taxonRank"}; }
         },
-        {type: "ExplicitTaxonomy", multiple: true, attList: VESPER.DWCAParser.neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
+        {type: "ExplicitTaxonomy", multiple: true, attList: neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"tree.png", height: "600px",
             newVisFunc: function (div) { return new VESPER.ExplicitTaxonomy (div);},
             setupFunc: function () {return {"rankField":"taxonRank"}; }
         },
-        {type: "DWCAMapLeaflet", multiple: true, attList: VESPER.DWCAParser.neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
+        {type: "DWCAMapLeaflet", multiple: true, attList: neccLists.geo, matchAll: true, image: VESPER.imgbase+"world.png", height: "400px",
             newVisFunc: function (div) { return new VESPER.DWCAMapLeaflet (div);},
             setupFunc: function () {return {"latitude":"decimalLatitude", "longitude":"decimalLongitude"}; }
         },
-        {type: "TimeLine", multiple: true, attList: VESPER.DWCAParser.neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
+        {type: "TimeLine", multiple: true, attList: neccLists.basicTimes, matchAll: true, image: VESPER.imgbase+"calendar.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TimeLine (div);},
             //setupFunc: function (coreFieldIndex) { return {"dateField":coreFieldIndex["eventDate"]}}
             setupFunc: function () { return {"dateField":"eventDate"}; }
@@ -47,9 +48,13 @@ VESPER.demo = function (files, exampleDivID) {
             newVisFunc: function (div) { return new VESPER.RecordDetails (div);},
             setupFunc: function () { return undefined; }
         },
-        {type: "TaxaDistribution", multiple: true, attList: VESPER.DWCAParser.neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"dist.png", height: "200px",
+        {type: "ImpTaxaDistribution", multiple: true, attList: neccLists.impTaxonomy, matchAll: true, image: VESPER.imgbase+"dist.png", height: "200px",
             newVisFunc: function (div) { return VESPER.TaxaDistribution (div);},
             setupFunc: function () { return {"realField":"acceptedNameUsageID", "rankField":"taxonRank"}; }
+        },
+        {type: "ExpTaxaDistribution", multiple: true, attList: neccLists.expTaxonomy, matchAtLeast: 2, matchAll: false, image: VESPER.imgbase+"dist.png", height: "200px",
+            newVisFunc: function (div) { return VESPER.ExpTaxaDistribution (div);},
+            setupFunc: function () { return {"realField":"id", "rankField":"taxonRank"}; }
         },
         {type: "FilterView", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "150px", width: "200px",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
@@ -130,8 +135,10 @@ VESPER.demo = function (files, exampleDivID) {
         d3.select("#localLoader")
             .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
             .on ("mouseover", function () {
-                VESPER.tooltip.updateText ($.t("web.YourTab"), $.t("demo.loadButtonTooltip"));
-                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip
+                    .updateText ($.t("web.YourTab"), $.t("demo.loadButtonTooltip"))
+                    .updatePosition (d3.event)
+                ;
         })
     }
 
@@ -154,8 +161,10 @@ VESPER.demo = function (files, exampleDivID) {
         spanSelection
             .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
             .on ("mouseover", function (d) {
-                VESPER.tooltip.updateText (d.title, $.t("vesper.visHelpTips."+ d.type));
-                VESPER.tooltip.updatePosition (d3.event);
+                VESPER.tooltip
+                    .updateText (d.title, $.t("vesper.visHelpTips."+ d.type))
+                    .updatePosition (d3.event)
+                ;
             })
             .selectAll("input").on ("click", onVisOptClickFunc)
         ;
@@ -178,8 +187,13 @@ VESPER.demo = function (files, exampleDivID) {
             .on ("mouseout", function() { VESPER.tooltip.setToFade(); })
             .on ("mouseover", function (d) {
                 console.log (d);
-                VESPER.tooltip.updateText (d.fieldType, d.toString());
-                VESPER.tooltip.updatePosition (d3.event);
+                var desc = VESPER.DWCAParser.descriptors[d.fieldType];
+                if (desc) {
+                    VESPER.tooltip
+                        .updateText (d.fieldType, desc)
+                        .updatePosition (d3.event)
+                    ;
+                }
             })
         ;
 
@@ -365,6 +379,7 @@ VESPER.demo = function (files, exampleDivID) {
     };
 
     VESPER.DWCAParser.init (function () {
+        VESPER.log ("CALLBACK CALLED");
         init ();
     });
 };

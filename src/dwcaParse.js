@@ -181,17 +181,16 @@ VESPER.DWCAParser = new function () {
     this.fieldAttrNames = {};
     this.xsd = null;
 
-    this.loadxsd = function (xsdFile, callback) {
-        $.get(xsdFile, function(d){
+    this.loadxsd = function (xsdFile) {
+        return $.get(xsdFile, function(d){
             // stupid firefox reads in a BOM mark (probably stupid me somewhere else, but I ain't got time)
             //if (d.charCodeAt(0) > 65000 || d.charCodeAt(0) === 255) {
             //    d = d.slice(2);
             //}
-            VESPER.log ("XSD", d, typeof d);
+            VESPER.log ("LOADED XSD", d, typeof d);
             VESPER.DWCAParser.xsd = (typeof d == "string" ? $(MGNapier.NapVisLib.parseXML(d)) : $(d));
             VESPER.DWCAParser.makeRowTypeDefaults (VESPER.DWCAParser.xsd);
             VESPER.DWCAParser.makeFieldAttrNames (VESPER.DWCAParser.xsd);
-            if (callback) { callback(); }
         });
     };
 
@@ -1027,8 +1026,26 @@ VESPER.DWCAParser = new function () {
 
 
     this.init = function (callback) {
-        // load in xsd and populate arrays/maps from it.
-        this.loadxsd ('dwca.xsd', callback);
+        $.when (this.loadxsd ('dwca.xsd'), // load in xsd and populate arrays/maps from it.
+            $.get ('dwc_occurrence.xml', function (xml) {
+                // pull descriptions for dwca fields out of dwc_occurrence.xml file, used in tooltips
+                VESPER.log ("XML LOADED", typeof xml);
+                VESPER.DWCAParser.descriptors = {};
+                var props = $(xml).find('property');
+                VESPER.log ("props", props);
+                for (var n = props.length; --n >= 0;) {
+                    var prop = $(props[n]);
+                    VESPER.DWCAParser.descriptors[prop.attr('name')] = prop.attr('dc:description');
+                }
+                VESPER.log (VESPER.DWCAParser.descriptors);
+            })
+        )
+        .then (callback)
+            // agh. Mega important point. 'callback' passes in the callback to run after the stuff in $.when is done.
+            // but doing 'callback()' runs the callback function as soon as the interpreter reaches here, so mega fail, i.e. it runs before the xsd has loaded.
+            // (it also passes in the result of the function call to then, but it's already gone wrong enough).
+        ;
+        //this.loadxsd ('dwca.xsd', callback);
     };
 
 
