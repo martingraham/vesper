@@ -11,7 +11,7 @@ div#pageTitle {
     border: 0;
     /*border: solid 2px #8aa;*/
     background: linear-gradient(to right, #ada , #fff); /* Standard syntax */
-
+    filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1,startColorstr='#a0d0a0', endColorstr='#f0f0f0');/*For IE9*/
 }
 
 div#pageTitle H1 {

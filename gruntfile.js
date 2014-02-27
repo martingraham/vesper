@@ -41,7 +41,7 @@ module.exports = function(grunt) {
         copy: {
             main: {
                 files:[
-                    {expand: true, cwd: 'src/', src: ['dwca.xsd', 'dwc_occurrence.xml', 'demoNewMin.html', 'demoNewLab.html', 'demoControlBlock.html', 'instructions.html', 'credits.html', 'background.html'], dest: 'build/'},
+                    {expand: true, cwd: 'src/', src: ['dwca.xsd', 'dwc_occurrence.xml', '*.html'], dest: 'build/'},
                     {expand: true, cwd: 'src/', src: ['locales/**'], dest: 'build/'}
 
                     /*

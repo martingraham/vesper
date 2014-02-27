@@ -83,8 +83,19 @@
     // Load in the control block html, and when that's done, initialise the i18n scripts, and when that's done
     // launch the demo script that fills that block with buttons.
     // (needs to be done as callbacks or stuff runs before other things finish loading and that equals crash)
-    $("#demoDiv").load ("demoControlBlock.html",
+
+    // From http://stackoverflow.com/questions/9856924/jquery-when-and-multiple-load
+    // I use a when and two deferred objs because these can load in parallel (in theory) rather than have nested sequential calls
+    // to load one, then the other, then do stuff.
+
+    // Create two Deferred instances that can be handed to $.when()
+    var d1 = new $.Deferred();
+    var d2 = new $.Deferred();
+
+    // Set up the chain of events...
+    $.when(d1, d2).then(
             function() {
+                console.log ("then task starting");
                 var language = window.navigator.userLanguage || window.navigator.language;
                 language = language.split("-")[0];
                 i18n.init ({lng:language, fallbackLng:'en'},
@@ -93,9 +104,13 @@
                             $("#demoDiv").i18n();
                             VESPER.demo (files, "#examples");
                         }
-                )
+                );
             }
     );
+
+    // And finally: Make the actual ajax calls:
+    $('#demoDiv').load('demoControlBlock.html', function() { console.log ("task1 done"); d1.resolve(); });
+    $('#yourData').load('loadYourData.html #loadWrapper', function() { console.log ("task2 done"); d2.resolve(); });
 
 </script>
 

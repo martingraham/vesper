@@ -371,10 +371,10 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.addRadioButtons = function (parentSelection, cdata, klass, groupName, textFunc) {
+    this.addRadioButtons = function (parentSelection, cdata, klass, groupName, idFunc, textFunc) {
         var rbutControl = parentSelection
             .selectAll("span")
-            .data(cdata, function (d) { return textFunc(d); })
+            .data(cdata, function (d) { return idFunc(d); })
         ;
 
         if (!rbutControl.enter().empty()) {
@@ -386,15 +386,15 @@ VESPER.DWCAHelper = new function () {
             rwrapper
                 .append ("input")
                 .attr ("type", "radio")
-                .attr ("value", textFunc)
+                //.attr ("value", textFunc) // not useful for radiobuttons, and this isn't used in a submitted form
                 .attr ("name", groupName)
-                .attr ("id", function (d) { return textFunc(d)+"RBChoice"; })
+                .attr ("id", function (d) { return idFunc(d)+"RBChoice"; })
                 .property ("checked", false)
             ;
 
             rwrapper
                 .append("label")
-                .attr ("for", function(d) { return textFunc(d)+"RBChoice";})
+                .attr ("for", function(d) { return idFunc(d)+"RBChoice";})
                 .text (textFunc)
             ;
         }

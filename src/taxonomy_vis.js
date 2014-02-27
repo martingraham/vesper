@@ -115,17 +115,13 @@ VESPER.Tree = function (divid) {
         return patternFill (nodeId) || colourFill (nodeId);
     }
 
-    this.updateFills = function () {
+
+    this.colourByRanks = function (ords) {
+        colorScale.domain (ords);
+        colorMode = !colorMode;
         layout.updateFills (treeG.selectAll(".treeNode"));
     };
 
-
-    this.setColourDomain = function (ords) {
-        colorScale.domain (ords);
-        console.log ("color", colorScale);
-        colorMode = !colorMode;
-        //reroot (curRoot);
-    };
 
     function logSelProp (node) {
         var containCount = model.getObjectCount (node);
@@ -671,6 +667,7 @@ VESPER.Tree = function (divid) {
             .attr ("class", "visControl")
             .attr ("id", noHashID+"controls")
         ;
+        var idFunc = function(d) { return noHashID + d.key; };
 
         VESPER.DWCAHelper.addDragArea (cpanel);
 
@@ -679,83 +676,43 @@ VESPER.Tree = function (divid) {
                 {"header":$.t("tree.sortLabel"), sectionID:"Sort"}],
         "section");
 
-        var allocBinds = d3.select(divid+"controlsSpace").selectAll("button.allocChoice")
-            .data(d3.entries (spaceAllocationOptions), function(d) { return d.key; });
-        var aHolders = allocBinds.enter()
-            .append ("span")
-            .attr ("class", "fieldGroup")
-        ;
-        aHolders.append("input")
-            .attr ("class", "allocChoice")
-            .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashID+ d.key; })
-            .attr ("name", function() { return noHashID+"alloc"; })
+        var section = d3.select(divid+"controlsSpace");
+        VESPER.DWCAHelper.addRadioButtons (section, d3.entries (spaceAllocationOptions), "fieldGroup",
+            noHashID+"alloc", idFunc, function(d) { return spaceAllocationLabels[d.key];} );
+        section.selectAll("input")
             .property ("checked", function(d) { return spaceAlloc === d.value; })
             .on ("change", function(d) {
-               // if (spaceAlloc !== d.value) {
-                    spaceAlloc = d.value;
-                    reroot (curRoot);
-                    //thisView.update();
-               // }
+                spaceAlloc = d.value;
+                reroot (curRoot);
                 return false;
             })
         ;
-        aHolders.append("label")
-            .attr ("for", function(d) { return noHashID+ d.key; })
-            .html (function(d) { return spaceAllocationLabels[d.key]; })
-        ;
 
-        var layoutBinds = d3.select(divid+"controlsLayout").selectAll("button.layoutChoice")
-            .data(d3.entries (layoutOptions), function(d) { return d.key; });
-        var lHolders = layoutBinds.enter()
-            .append ("span")
-            .attr ("class", "fieldGroup")
-        ;
-        lHolders.append ("input")
-            .attr ("class", "layoutChoice")
-            .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashID+ d.key; })
-            .attr ("name", function() { return noHashID+"layout"; })
+        section = d3.select(divid+"controlsLayout");
+        VESPER.DWCAHelper.addRadioButtons (section, d3.entries (layoutOptions), "fieldGroup",
+            noHashID+"layout", idFunc, function(d) { return layoutOptionLabels[d.key];} );
+        section.selectAll("input")
             .property ("checked", function(d) { return layout === d.value; })
             .on ("change", function(d) {
-               // if (layout !== d.value) {
-                    layout = d.value;
-                    var nodeBind = treeG.selectAll(".treeNode");
-					clearMouseController (nodeBind);
-                    nodeBind.remove();
-                    reroot (curRoot);
-               // }
+                layout = d.value;
+                var nodeBind = treeG.selectAll(".treeNode");
+                clearMouseController (nodeBind);
+                nodeBind.remove();
+                reroot (curRoot);
                 return false;
             })
-        ;
-        lHolders.append ("label")
-            .attr("for", function(d) { return noHashID+ d.key; })
-            .html (function(d) { return layoutOptionLabels[d.key]; })
         ;
 
-        var sortBinds = d3.select(divid+"controlsSort").selectAll("button.sortChoice")
-            .data(d3.entries (sortOptions), function(d) { return d.key; });
-        var sHolders = sortBinds.enter()
-            .append ("span")
-            .attr ("class", "fieldGroup")
-        ;
-        sHolders.append ("input")
-            .attr ("class", "sortChoice")
-            .attr ("type", "radio")
-            .attr ("id", function(d) { return noHashID+ d.key; })
-            .attr ("name", function() { return noHashID+"sort"; })
+        section = d3.select(divid+"controlsSort");
+        VESPER.DWCAHelper.addRadioButtons (section, d3.entries (sortOptions), "fieldGroup",
+            noHashID+"sort", idFunc, function(d) { return sortOptionLabels[d.key];} );
+        section.selectAll("input")
             .property ("checked", function(d) { return curSort === d.value; })
             .on ("change", function(d) {
-               // if (layout !== d.value) {
-                    curSort = d.value;
-                    reroot (curRoot);
-               // }
+                curSort = d.value;
+                reroot (curRoot);
                 return false;
             })
-        ;
-        sHolders.append ("label")
-            .attr("for", function(d) { return noHashID+ d.key; })
-            .html (function(d) { return sortOptionLabels[d.key]; })
         ;
 
         $(divid+"controls").draggable({handle:"div.dragHandle", containment:divid});
@@ -951,9 +908,11 @@ VESPER.Tree = function (divid) {
 VESPER.ImplicitTaxonomy = function (div) {
     var tree = new VESPER.Tree (div);
     tree.type = "impTree";
+
     tree.getRoot = function (mod) {
         return mod.getImplicitRoot();
     };
+
     tree.tooltipString = function (node, model, ffields) {
         console.log ("tooltip node", node);
         var desc = model.getDescendantCount (node);
@@ -1012,7 +971,7 @@ VESPER.ImplicitTaxonomy = function (div) {
             })
         ;
 
-        var cboxgroup = VESPER.DWCAHelper.addCheckboxes (section, [{title:$.t("tree.colourRanksLabel")}], null)
+        var cboxgroup = VESPER.DWCAHelper.addCheckboxes (section, [{title:$.t("tree.colourRanksLabel")}], null);
         cboxgroup
             .on ("click", function() {
                 var index = tree.getModel().makeIndex ("taxonRank");
@@ -1022,13 +981,10 @@ VESPER.ImplicitTaxonomy = function (div) {
                 var discretes = fieldData.discreteTermList;
 
                 //console.log ("rr", rowType, fieldData, discretes);
-                tree.setColourDomain (d3.keys(discretes));
-                tree.updateFills ();
+                tree.colourByRanks (d3.keys(discretes));
             })
         ;
-
     };
-
 
     return tree;
 };
@@ -1036,9 +992,11 @@ VESPER.ImplicitTaxonomy = function (div) {
 VESPER.ExplicitTaxonomy = function (div) {
     var tree = new VESPER.Tree (div);
     tree.type = "expTree";
+
     tree.getRoot = function (mod) {
         return mod.getExplicitRoot();
     };
+
     tree.tooltipString = function (node, model, ffields) {
         console.log ("tooltip node", node);
         var specs = model.getSpecimens(node);
@@ -1076,7 +1034,6 @@ VESPER.ExplicitTaxonomy = function (div) {
 
         return tooltipStr;
     };
-
 
     return tree;
 };

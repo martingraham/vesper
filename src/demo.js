@@ -172,7 +172,8 @@ VESPER.demo = function (files, exampleDivID) {
         var ldiv = d3.select ("#labelSelectDiv");
         var rbdata = [];
         radioChoices.forEach (function(rc) { rbdata.push ({"fieldType": rc, "rowType": undefined}); });
-        var rbuttons = DWCAHelper.addRadioButtons (ldiv, rbdata, "fieldGroup", "nameChoice", function(d) { return d.fieldType; });
+        var jointIDTextFunc = function(d) { return d.fieldType; };
+        var rbuttons = DWCAHelper.addRadioButtons (ldiv, rbdata, "fieldGroup", "nameChoice", jointIDTextFunc, jointIDTextFunc);
         DWCAHelper.configureRadioButtons (rbuttons, checkListParent,
                 function(result) {
                     // had to make copy of result, as otherwise previous metafile objects will be pointing to the same object.
