@@ -40,8 +40,8 @@ VESPER.Tree = function (divid) {
 		"Alpha": function (a,b) { var n1 = model.getLabel(a), n2 = model.getLabel(b);
 								return ( n1 < n2 ) ? -1 : ( n1 > n2 ? 1 : 0 );},
 		"Descendants": function (a,b) {
-            var s1 = containsCount (a) || 0;
-            var s2 = containsCount (b) || 0;
+            var s1 = self.containsCount (a, model) || 0;
+            var s2 = self.containsCount (b, model) || 0;
             return s1 > s2 ? -1 : ((s1 < s2) ? 1 : 0);
 		},
         "Selected": function (a,b) {
@@ -70,7 +70,6 @@ VESPER.Tree = function (divid) {
     var spaceAllocationOptions = {
         bottomUp: MGNapier.AdaptedD3.bottomUp()
             .sort (null)
-            //.value(function(d) { return 1; })// having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .value(function(d) { return model.getLeafValue (d); }) // having a value for err value, makes the layout append .value fields to each node, needed when doing bottom-up layouts
             .children (function (d) { return model.getSubTaxa(d); })
             .nodeId (function (d) { return model.getIndexedDataPoint (d,keyField); })
@@ -120,6 +119,11 @@ VESPER.Tree = function (divid) {
         colorScale.domain (ords);
         colorMode = !colorMode;
         layout.updateFills (treeG.selectAll(".treeNode"));
+    };
+
+
+    this.containsCount = function (node) {
+        return (model.getDescendantCount(node) || 0);// + (model.getSynonymCount(node) || 0);
     };
 
 
@@ -550,7 +554,7 @@ VESPER.Tree = function (divid) {
 
             // hnng. 'r' is related to the difference between inner and outer radii and not just the outer radius
             // this appears to be because the text elements all start at (0,0) and are transformed from there
-            // rather than given x,y values as directa attributes
+            // rather than given x,y values as direct attributes
             var sharedClipAttrs = function (group) {
                 group
                     .attr ("cx", 0)
@@ -725,17 +729,6 @@ VESPER.Tree = function (divid) {
             node = model.getNodeFromID (id.substring(1));
         }
         return node;
-    }
-
-    function containsCount (node) {
-        var cc = (model.getDescendantCount(node) || 0);// + (model.getSynonymCount(node) || 0);
-        if (!cc) {
-            var specs = model.getSpecimens(node);
-            if (specs) {
-                cc = specs.length;
-            }
-        }
-        return cc;
     }
 
 
@@ -995,6 +988,10 @@ VESPER.ExplicitTaxonomy = function (div) {
 
     tree.getRoot = function (mod) {
         return mod.getExplicitRoot();
+    };
+
+    tree.containsCount = function (node, model) {
+        return (model.getSpecimenCount (node) || 0);
     };
 
     tree.tooltipString = function (node, model, ffields) {
