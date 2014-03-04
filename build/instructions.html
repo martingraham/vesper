@@ -28,7 +28,7 @@
 </P>
 <P>
     In the event of a fail/crash when loading data, in the first instance check your data set with GBIF's <a href=""http://tools.gbif.org/dwca-validator/">DWCA Validator</a>.
-    This will pick up problesm related to the <i>syntax</i> of the data set i.e. whether fields are in the right place etc. VESPER is designed towards testing data quality when the data is syntactically valid.
+    This will pick up problems related to the <i>syntax</i> of the data set i.e. whether fields are in the right place etc. VESPER is designed towards testing data quality when the data is syntactically valid.
     If your data set passes syntactic validation but still won't load in VESPER, get in touch with m.graham{at}napier.ac.uk.
 </P>
 
@@ -39,7 +39,7 @@
     Each visualisation panel has a close button in the top-right corner to remove that particular view.
     Pressing the close button of the “Controls" view kills all associated views for that data set.
     This effectively ends any more interaction with that data set (unless you load it again).
-    Also, one of the headers in the "Controls" accordion contains buttons to launch new view instances.
+    Also, one of the sections in the "Controls" accordion contains buttons to launch new view instances.
     The drag bar at the top of each visualisation allows it to be moved around the browser window.
 </P>
     <H4>Selecting</H4>
@@ -53,8 +53,8 @@
 <H3>Individual Views</H3>
     <H4>Taxonomy</H4>
     <P>
-    The taxonomy view (or tree viewer if you prefer) comes in two flavours. The <b>Reference Taxonomy</b> is calculated from parent/child ids when they are available in a data set.
-    Often these taxonomies often have a lot of synonyms added too. The <b>Specimen Taxonomy</b> is calculated from explicitly named kingdom/family/genus etc fields in the DWCA data set and the specimens
+    The taxonomy view (or tree viewer if you prefer) comes in two flavours. The <b>Normalised Taxonomy</b> is calculated from parent/child ids when they are available in a data set.
+    Such taxonomies often have a lot of synonyms. The <b>Denormalised Taxonomy</b> is calculated from explicitly named kingdom/family/genus etc fields in the DWCA data set and the specimens
     are added at the bottom of this structure. Apart from this difference, both taxonomies are displayed and interacted with in the same way.
     </P>
     <P>
@@ -67,7 +67,12 @@
         The second section controls whether the taxonomy is drawn <i>Centre-Out</i> (also known as a sunburst) or from <i>Left-to-Right</i> (a.k.a. an icicle plot).
     </P>
     <P>
-        The third section has various options for organising taxa at each level. Note in the centre-out view, the first taxon according to the current sort is at 12 o'clock.
+        The third section has various options for sorting taxa at each level. Note in the centre-out view, the first taxon according to the current sort is at 12 o'clock.
+    </P>
+    <P>
+        There are a final pair of controls for visualising ranks within the taxonomy if using a Normalised Taxonomy. The first is a button that selects all taxa that have ranks that are not within GBIF's
+        controlled vocabulary for ranks. The second is a checkbox that colours nodes according to their rank, this can be used to give an indication of whether ranks are used consistently or there is skipping
+        of ranks within the structure.
     </P>
 
     <H4>Timeline</H4>
@@ -92,7 +97,6 @@
     <H4>Missing Data Check</H4>
     <P>
         A simple tabular display of which fields are empty across the record set. Sub-divided into missing data by view as well, it can show if a particular type of data has been omitted.
-        Rather than numbers, it uses small bars to indicate the proportions of missing data, so a blank display with no bars means completeness.
     </P>
 
     <H4>Record Details</H4>
@@ -109,13 +113,14 @@
     <H4>Controls</H4>
     <P>
         As well as launching other views, this widget serves a couple of special purposes accessed through its other sections.
-        The second section has options for manipulating the current selection. <i>Invert</i> and <I>Clear</I> are self-explanatory. <I>Save</I> takes advantage of the HTML5 FileWriter API <b>if present</b>
+        The second section (Current Selections) has options for manipulating the current selection. <i>Invert</i> and <I>Clear</I> are self-explanatory. <I>Save</I> takes advantage of the HTML5 FileWriter API <b>if present</b>
         to output the IDs of currently selected records to another browser tab. These can then be saved for use in an external application.
     </P>
 
     <P>
-        The third section in this control contains a single button. Pressing it marks this taxonomy as in preparation for a name-based comparison with another taxonomy (VESPER can have several data sets open at once,
-        memory is the ultimate barrier to the number and size). In this other taxonomy's <i>Controls</i> view open the same section and select this button to compare the two. Note: this is experimental at the moment.
+        The third section (Taxonomy Comparison) in this control contains a single button. Pressing it marks this taxonomy as in preparation for a name-based comparison with another taxonomy (VESPER can have several data sets open at once,
+        memory is the ultimate barrier to the number and size). In the other taxonomy's <i>Controls</i> view open the same section and select this button to compare the two. It works by matching stems between the two name
+        sets, and as a result is not 100% accurate, and not to be taken as a replacement for taxonomic name reconciliation services. However, as a quick quality guide it can rapidly compare large data sets.
     </P>
 
     </div>
