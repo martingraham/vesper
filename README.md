@@ -14,6 +14,6 @@ A minimised version sits in the build dir (demoMinNew.html) and uses minimized l
 
 NPMness
 -------
-A Package.json is present, and npm install will download the appropriate modules. Unfortunately it isn't nicely browserified or anything yet, as some of the libraries are on npm, some on github, some don't have their own package.json's, there arecss and image files in the mix etc etc so I pulled everything into the lib folder for running.
+A Package.json is present, and npm install will download the appropriate modules. Unfortunately it isn't nicely browserified or anything yet, as some of the libraries are on npm, some on github, some don't have their own package.json's, there are .css and image files in the mix etc etc so I pulled everything into the lib folder for running.
 
 If you install grunt, then running the grunt file will produce the minimised vesper versions in the build folder from the src folder. Same with gulp.
