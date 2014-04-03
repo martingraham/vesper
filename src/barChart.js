@@ -14,6 +14,7 @@ VESPER.BarChart = function(divid) {
     var logCountScale = d3.scale.log();
     //var linearCountScale = d3.scale.linear();
     var currentCountScale = logCountScale;
+    var currentCountType = "interval";
 
     var domainLimits = [undefined, undefined];
     var binned, selBinned;
@@ -53,7 +54,7 @@ VESPER.BarChart = function(divid) {
         ffields.keyField = mmodel.makeIndices ([fields.identifyingField])[0];
         ffields.dateField = mmodel.makeIndices ([fields.dateField])[0];
         ffields.realField = mmodel.makeIndices ([fields.realField])[0];
-        dims = [$(divid).width(), $(divid).height()]
+        dims = [$(divid).width(), $(divid).height()];
         model = mmodel;
     };
 
@@ -91,11 +92,11 @@ VESPER.BarChart = function(divid) {
             VESPER.DWCAHelper.addDragArea (butdiv);
             MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
 
-            var choices = {interval: self.uncalcCumulative, cumulative: self.calcCumulative};
+            var choices = ["interval", "cumulative"];
             var choiceLabels = {};
-            d3.keys(choices).forEach (function(elem) {choiceLabels[elem] = $.t("barChart."+elem+"Label"); });
+            choices.forEach (function(elem) {choiceLabels[elem] = $.t("barChart."+elem+"Label"); });
             var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
-                .data (d3.entries(choices), function(d) { return d.key;})
+                .data (choices, function(d) { return d;})
             ;
 
             spans.enter()
@@ -106,24 +107,18 @@ VESPER.BarChart = function(divid) {
             // spans now has the entered spans
             spans.append("input")
                 .attr("type", "radio")
-                .attr("id", function(d) { return noHashId+ d.key; })
+                .attr("id", function(d) { return noHashId+ d; })
                 .attr("name", "chartYType")
-                .property ("checked", function(d) { return d.key === "interval"; })
+                .property ("checked", function(d) { return d === currentCountType; })
                 .on ("change", function(d) {
-                    var barDataSets = [binned.bins, selBinned.bins];
-                    var barDataTypes = ["unselected", "selected"];
-                    for (var k = 0; k < barDataSets.length; k++) {
-                        (d.value)(barDataSets[k]);
-                        self.redraw (timelineG.selectAll("."+self.barClass+"."+barDataTypes[k])
-                            .data(barDataSets[k], function(d) { return Math.floor (d.start); }),
-                            barDataSets[k]
-                        );
-                    }
+                    currentCountType = d;
+                    makeBins ();
+                    self.update();
                 })
             ;
             spans.append("label")
                 .attr("for", noHashId+"count")
-                .text (function(d) { return choiceLabels [d.key]; })
+                .text (function(d) { return choiceLabels [d]; })
             ;
 
             $( divid+"Controls" ).draggable({containment: divid});
@@ -147,12 +142,7 @@ VESPER.BarChart = function(divid) {
         rangeSlider
             .scale(self.childScale)
             .dragEndFunc (function (r, rscale) {
-                domainLimits = [
-                    self.wrapDataType (self.makeToNearest (rscale.invert (r[0]))),
-                    self.wrapDataType (self.makeToNearest (rscale.invert (r[1])))
-                ];
-                makeBins();
-                self.update();
+                self.setRangeSliderDomain (rscale.invert (r[0]), rscale.invert (r[1]));
             })
             .update()
         ;
@@ -173,6 +163,19 @@ VESPER.BarChart = function(divid) {
 
     this.makeToNearest = function (val) {
         return Math.round (val / self.toNearest) * self.toNearest;
+    };
+
+    this.setRangeSliderDomain = function (start, end) {
+        domainLimits = [
+            self.wrapDataType (self.makeToNearest (start)),
+            self.wrapDataType (self.makeToNearest (end))
+        ];
+        rangeSlider
+            .setRange (domainLimits.map (function(elem) { return rangeSlider.scale()(elem); }))
+            .update ()
+        ;
+        makeBins();
+        self.update();
     };
 
 	this.update = function () {
@@ -211,10 +214,9 @@ VESPER.BarChart = function(divid) {
                 .on ("mouseout", null)
                 .on ("mouseover", null)
                 .on ("contextmenu", null)
-                //.select("title")
-               //     .text ("")
+                .on ("click", null)
+                .remove()
             ;
-            visBins.exit().remove();
 
             self.redraw (visBins, barDataSets[k]); // redraw current selection (i.e. ones that aren't exiting/ yet to enter)
             var delay = visBins.empty() ? 0 : updateDur;
@@ -242,6 +244,9 @@ VESPER.BarChart = function(divid) {
                 .on ("mouseout", function() {
                     d3.select(this).classed("highlight", false);
                     VESPER.tooltip.setToFade();
+                })
+                .on ("click", function (d) {
+                    self.setRangeSliderDomain (d.start, d.end);
                 })
                 .transition()
                 .delay (delay)
@@ -336,25 +341,36 @@ VESPER.BarChart = function(divid) {
             }
 
             function assignDataToBin () {
-                //var t = 0;
+                var lessThan = 0;
+
                 for (var key in data) {
                     if (data.hasOwnProperty (key)) {
                         if (!includeFunc || includeFunc (key, data)) {   // only add the data if it's to be included according to includeFunc (if includeFunc exists)
                             var val = chart.getVal (model, data, key, fields);
                             if (val !== undefined) {
                                 val = chart.unwrapDataType (chart.wrapDataType (val, key));
-                                if (!isNaN(val) && val >= mind) {
-                                    var bi = Math.floor ((val - fmind) / binSize); // this means items are binned as start <= item < end for each bin (so end is that start of the next bin)
-                                    if (0 <= bi && bi <= binCount) {
-                                        bins[bi].count++;
+                                if (!isNaN(val)) {
+                                    if (val >= mind) {
+                                        var bi = Math.floor ((val - fmind) / binSize); // this means items are binned as start <= item < end for each bin (so end is that start of the next bin)
+                                        if (0 <= bi && bi <= binCount) {
+                                            bins[bi].count++;
+                                        }
+                                    } else {
+                                        lessThan++;
                                     }
                                 }
                             }
                         }
                     }
                 }
+
+                return lessThan;
             }
-            assignDataToBin ();
+            var lessThan = assignDataToBin ();
+
+            if (currentCountType === "cumulative") {
+                chart.calcCumulative (bins, lessThan);
+            }
         }
 
         return {extremes:[min,max],bins:bins};
@@ -380,9 +396,9 @@ VESPER.BarChart = function(divid) {
         return arr;
     };
 
-    this.calcCumulative = function (bins) {
+    this.calcCumulative = function (bins, startTotal) {
         VESPER.log ("Bins", bins);
-          var sofar = 0;
+          var sofar = startTotal;
           for (var n = 0; n < bins.length; n++) {
               var add = bins[n].count;
               bins[n].count += sofar;
@@ -407,15 +423,6 @@ VESPER.BarChart = function(divid) {
         return {newBinSize: binSize, newBinCount: binCount};
     };
 
-
-    this.uncalcCumulative = function (bins) {
-        var last = 0;
-        for (var n = 0; n < bins.length; n++) {
-            var sub = bins[n].count;
-            bins[n].count -= last;
-            last = sub;
-        }
-    };
 
     this.getRangeSlider = function () {
         return rangeSlider;
