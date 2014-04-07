@@ -128,16 +128,19 @@ DIV .vis {
 .selected {
     fill: #f00;
     background: #f00;
+    cursor: pointer;
 }
 
 .holdsSelected {
     fill: #f44;
     background: #f44;
+    cursor: pointer;
 }
 
 .unselected {
     fill: #aaf;
     background: #aaf;
+    cursor: pointer;
 }
 
 .highlight {
@@ -151,6 +154,7 @@ DIV .vis {
     fill: rgba(128,128,128,0.5);
     stroke: black;
     stroke-width: 1px;
+    cursor: pointer;
 }
 
 .sliderBar {
@@ -158,6 +162,7 @@ DIV .vis {
     fill: rgba(128,128,128,0.25);
     stroke: black;
     stroke-width: 1px;
+    cursor: pointer;
 }
 
 DIV.encloser {

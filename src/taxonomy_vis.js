@@ -372,12 +372,18 @@ VESPER.Tree = function (divid) {
             .startAngle(function(d) { return d.x; })
             .endAngle(function(d) { return d.x + d.dx; })
             .innerRadius(function(d) {
-                var oRad = Math.sqrt(d.y + d.dy);
-                var diff = oRad - Math.sqrt (d.y);
                 var node = getNode (d.id);
                 var prop = logSelProp (node);
+                /*
+                var oRad = Math.sqrt(d.y + d.dy);
+                var area = oRad - Math.sqrt (d.y);
                 prop *= prop; // square cos area of ring is square of radius
-                return oRad - (prop * diff);
+                var propArea = area * prop;
+                return oRad - propArea;
+                */
+
+                var x = Math.sqrt ((d.y + d.dy) - (prop * d.dy));
+                return x;
             })
             .outerRadius(function(d) {
                 return Math.sqrt(d.y + d.dy);
