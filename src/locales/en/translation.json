@@ -145,7 +145,6 @@
         "tooltipLatLong":"Lat: __lat__<br>Long: __llong__",
         "tooltipSel":"__count__ Selected<br>",
         "tooltipIndSel":"Selected<br>"
-
     },
     "parser": {
         "zipError":"Cannot locate _file__ within zip.",
