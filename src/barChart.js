@@ -32,7 +32,7 @@ VESPER.BarChart = function(divid) {
 	
 	var ffields = {};
 
-    var margin = {left: 40, right: 20, top : 15, bottom: 40};
+    var margin = {left: 55, right: 20, top : 15, bottom: 40};
 
     this.minBarWidth = 5;
     this.toNearest = 1;

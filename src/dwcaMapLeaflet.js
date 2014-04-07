@@ -256,18 +256,20 @@ VESPER.DWCAMapLeaflet = function (divid) {
 
         // mask layers
         var maskLayer = L.TileLayer.maskCanvas({opacity: 0.6,
-            radius: 5,  // radius in pixels or in meters (see useAbsoluteRadius)
+            radius: 4,  // radius in pixels or in meters (see useAbsoluteRadius)
             useAbsoluteRadius: false,  // true: r in meters, false: r in pixels
             color: '#aaf',  // the color of the layer
-            noMask: true
+            noMask: true,
+            lineColor: '#66a'
         });
         maskLayer.setData (latlngs);
 
         curSelMaskLayer = L.TileLayer.maskCanvas({opacity: 0.8,
-            radius: 5,  // radius in pixels or in meters (see useAbsoluteRadius)
+            radius: 4,  // radius in pixels or in meters (see useAbsoluteRadius)
             useAbsoluteRadius: false,  // true: r in meters, false: r in pixels
             color: '#f00',  // the color of the layer
-            noMask: true
+            noMask: true,
+            lineColor: '#a00'
         });
         curSelMaskLayer.setData ([]);
 
@@ -283,6 +285,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
 		VESPER.log ("map ", map);
 
         recalcHeightMultiplier();
+
+        self.update();
     };
 
 
