@@ -52,8 +52,8 @@ VESPER.Tree = function (divid) {
         },
         "SelectedDesc": function (a,b) {
             //console.log (a,b);
-            var sel1 = model.getSelectedDescendantCount(a);
-            var sel2 = model.getSelectedDescendantCount(b);
+            var sel1 = model.getSelectedObjectCount(a);
+            var sel2 = model.getSelectedObjectCount(b);
             return (sel1 === sel2) ? 0 :  (sel1 === undefined ? 1 : (sel2 === undefined ? -1 : (sel2 - sel1)));
         }
 	};

@@ -174,11 +174,17 @@ VESPER.DWCAMapLeaflet = function (divid) {
                     var height = 10 + (clog * heightMultiplier);
                     var selHeight = (height * Math.log (cluster.getSelectedChildCount() + 1)) / clog;
                     var unselHeight = height - selHeight;
+
+                    // roundings to avoid off by one border gaps etc
+                    selHeight = Math.round (selHeight);
                     // really small heights due to rounding errors emerge as numbers in scientific notation.
                     // this made them big in the style sheet as they took the mantissa (ooh) as the number so we squash them here.
-                    if (unselHeight < 0.5 && (cluster.getChildCount() === cluster.getSelectedChildCount ())) {
-                        unselHeight = 0;
+                    if (unselHeight < 0.5) {
+                        unselHeight = (cluster.getChildCount() === cluster.getSelectedChildCount ()) ? 0 : 1;
+                    } else {
+                        unselHeight = Math.round (unselHeight);
                     }
+                    height = selHeight + unselHeight;
 
                     return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px;">' + cluster.getChildCount() + '</div>'
                             +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
