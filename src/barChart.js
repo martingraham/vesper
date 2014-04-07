@@ -108,7 +108,7 @@ VESPER.BarChart = function(divid) {
             spans.append("input")
                 .attr("type", "radio")
                 .attr("id", function(d) { return noHashId+ d; })
-                .attr("name", "chartYType")
+                .attr("name", noHashId+"chartYType")
                 .property ("checked", function(d) { return d === currentCountType; })
                 .on ("change", function(d) {
                     currentCountType = d;
@@ -117,7 +117,7 @@ VESPER.BarChart = function(divid) {
                 })
             ;
             spans.append("label")
-                .attr("for", noHashId+"count")
+                .attr("for", function(d) { return noHashId+ d; })
                 .text (function(d) { return choiceLabels [d]; })
             ;
 
