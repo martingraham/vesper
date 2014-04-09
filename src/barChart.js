@@ -488,8 +488,10 @@ VESPER.TimeLine = function (div) {
     var timeCache = {};
     chart.childScale = d3.time.scale();
     chart.barClass = "timeBin";
-    chart.format = d3.time.format ("Y%Y"); // d3.time.format.iso;
-    chart.makeTitle = function (d) {return d.start.toString()+"<br>to "+ d.end.toString()+"<br>Records: "+d.count; };
+    chart.format = null; //d3.time.format ("Y%Y"); // d3.time.format.iso;
+    chart.rsformat = d3.time.format ("%a, %d %B %Y");
+    chart.ttformat = d3.time.format ("%a, %d %B %Y, %H:%M");
+    chart.makeTitle = function (d) {return chart.ttformat (d.start)+"<br>to "+ chart.ttformat(d.end)+"<br>Records: "+d.count; };
     chart.wrapDataType = function (d, key) {
         var val = (key === undefined ? undefined : timeCache[key]);
         return (val === undefined ? new Date (d) : val);
@@ -507,8 +509,8 @@ VESPER.TimeLine = function (div) {
         timeCache = {};     // clear time cache
     };
     chart.getRangeSlider().tooltipTemplates ({
-        "min": function (r,s) { return $.t("barChart.timeMinPrefix")+chart.wrapDataType (chart.makeToNearest (s.invert (r[0]))); },
-        "max": function (r,s) { return $.t("barChart.timeMaxPrefix")+chart.wrapDataType (chart.makeToNearest (s.invert (r[1]))); },
+        "min": function (r,s) { return chart.rsformat (chart.wrapDataType (chart.makeToNearest (s.invert (r[0])))); },
+        "max": function (r,s) { return chart.rsformat (chart.wrapDataType (chart.makeToNearest (s.invert (r[1])))); },
         "bar": function () { return null; }
     });
     var oneDayInMs = 24 * 60 * 60 * 1000;

@@ -112,10 +112,10 @@
         }
     },
     "barChart": {
-        "minPrefix":"Min: ",
-        "maxPrefix":"Max: ",
-        "timeMinPrefix":"From: ",
-        "timeMaxPrefix":"To: ",
+        "minPrefix":"",
+        "maxPrefix":"",
+        "timeMinPrefix":"",
+        "timeMaxPrefix":"",
         "typeLabel":"Count Type",
         "allLabel":"All records",
         "selLabel":"Selected records",
