@@ -524,14 +524,15 @@ VESPER.DWCAParser = new function () {
                             // test if this name has already been attached to something that wasn't the last rank used here
                             // this indicates the same name being used at different points in the taxonomy, i.e. two genus's called "Carex" under different families
                             // it's perfectly valid, but it knackers a simple id scheme
-                            if (treeObj[id] && lastData) {
-                                var lid = lastData[this.TDATA][idx];
+                            if (treeObj[id] /*&& lastData*/) {  // commented out lastData as this caused error when taxa name was reused and had no parent
+                                var lid = lastData ? lastData[this.TDATA][idx] : superrootID;   // instead make the last id superrootid if no lastData
                                 var pid = treeObj[id][this.PID];
                                 if (lid !== pid) {
                                     // aargh. name clash.
                                     id = lid+id;
                                     if (!treeObj[id]) {
                                         VESPER.log ("Introducing new id", id);
+                                        //console.log (id, lid, pid, treeObj[id]);
                                     }
                                 }
                             }
@@ -551,7 +552,7 @@ VESPER.DWCAParser = new function () {
                                 }
 
                                 // add parent id property used in resolving name clashes
-                                obj[this.PID] = (lastData ? lastData[this.TDATA][idx] : -10);
+                                obj[this.PID] = (lastData ? lastData[this.TDATA][idx] : superrootID);
                             }
 
                             if (!lastData) {
@@ -770,12 +771,9 @@ VESPER.DWCAParser = new function () {
 			return jsonObj[roots[0]];
 		}
 
-        var nameField = fieldIndexer[metaData.vesperAdds.nameLabelField.fieldType];
         var idName = fileData.invFieldIndex[fieldIndexer["id"]];
-        var nameName = fileData.invFieldIndex[nameField];
-
 		var hidx = fieldIndexer["parentNameUsageID"];
-		var srData = {
+		var srFields = {
             //id: superrootID,
             acceptedNameUsageID: superrootID,
             parentNameUsageID: superrootID,
@@ -783,8 +781,11 @@ VESPER.DWCAParser = new function () {
             taxonRank: VESPER.DWCAParser.SUPERROOT,
             nameAccordingTo: "dwcaParse.js"
 		};
-        srData[nameName] = VESPER.DWCAParser.SUPERROOT;
-        srData[idName] = superrootID;
+        srFields[metaData.vesperAdds.nameLabelField.fieldType] = VESPER.DWCAParser.SUPERROOT;
+        srFields[idName] = superrootID;
+        VESPER.log ("SR", srFields);
+
+
 		var srObj = {};
 	
 		srObj[this.TAXA] = [];
@@ -794,10 +795,10 @@ VESPER.DWCAParser = new function () {
 		}
 		
 		srObj[VESPER.DWCAParser.TDATA] = [];
-		for (var prop in srData) {
-			if (srData.hasOwnProperty (prop)) {
+		for (var prop in srFields) {
+			if (srFields.hasOwnProperty (prop)) {
                 if (fieldIndexer[prop] !== undefined) {
-				    srObj[VESPER.DWCAParser.TDATA][fieldIndexer[prop]] = srData[prop];
+				    srObj[VESPER.DWCAParser.TDATA][fieldIndexer[prop]] = srFields[prop];
                 }
 			}
 		}
