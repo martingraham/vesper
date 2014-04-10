@@ -9,6 +9,8 @@ VESPER.BarChart = function(divid) {
 	var dims;
 
     this.format = undefined;
+    this.rsminformat = d3.format (",");
+    this.rsmaxformat = this.rsminformat;
     this.barClass = "countBin";
     this.childScale = d3.scale.linear();
     var logCountScale = d3.scale.log();
@@ -18,14 +20,17 @@ VESPER.BarChart = function(divid) {
 
     var domainLimits = [undefined, undefined];
     var binned, selBinned;
+
+    var self;
+
     var rangeSlider = MGNapier.NapVisLib.rangeSlider();
     rangeSlider.tooltipTemplates ({
-        "min": function (r,s) { return $.t("barChart.minPrefix")+self.wrapDataType (self.makeToNearest (s.invert (r[0]))); },
-        "max": function (r,s) { return $.t("barChart.maxPrefix")+self.wrapDataType (self.makeToNearest (s.invert (r[1]))); },
+        "min": function (r,s) { return self.rsminformat (self.wrapDataType (self.makeToNearest (s.invert (r[0])))); },
+        "max": function (r,s) { return self.rsmaxformat (self.wrapDataType (self.makeToNearest (s.invert (r[1])))); },
         "bar": function () { return null; }
     });
 	
-	var self;
+
     var model;
 
 	var exitDur = 400, updateDur = 500, enterDur = 500;
@@ -489,7 +494,8 @@ VESPER.TimeLine = function (div) {
     chart.childScale = d3.time.scale();
     chart.barClass = "timeBin";
     chart.format = null; //d3.time.format ("Y%Y"); // d3.time.format.iso;
-    chart.rsformat = d3.time.format ("%a, %d %B %Y");
+    chart.rsminformat = d3.time.format ("%a, %d %B %Y");
+    chart.rsmaxformat = d3.time.format ("%Y %B %d, %a");    // Reversed so year is most prominent next to max thumb
     chart.ttformat = d3.time.format ("%a, %d %B %Y, %H:%M");
     chart.makeTitle = function (d) {return chart.ttformat (d.start)+"<br>to "+ chart.ttformat(d.end)+"<br>Records: "+d.count; };
     chart.wrapDataType = function (d, key) {
@@ -508,11 +514,6 @@ VESPER.TimeLine = function (div) {
         chart.baseDestroy ();
         timeCache = {};     // clear time cache
     };
-    chart.getRangeSlider().tooltipTemplates ({
-        "min": function (r,s) { return chart.rsformat (chart.wrapDataType (chart.makeToNearest (s.invert (r[0])))); },
-        "max": function (r,s) { return chart.rsformat (chart.wrapDataType (chart.makeToNearest (s.invert (r[1])))); },
-        "bar": function () { return null; }
-    });
     var oneDayInMs = 24 * 60 * 60 * 1000;
     chart.toNearest = oneDayInMs * 7; // to nearest week
     // approx divisions for one day, week, season, year, decade. Not exactly aligned fanks to leap years.
