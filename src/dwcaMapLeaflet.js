@@ -30,6 +30,11 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var oldIcon = new L.Icon.Default();
 
     var dFormat = d3.format(".6r");
+    var thouFormat = d3.format (",");
+
+    var doThouFormat = function (val) {
+        return isNaN (val) ? val : thouFormat (val);
+    };
 
     // what a markercluster does when the mouse is over it
     var clusterMouseOverListener = function (a) {
@@ -186,8 +191,8 @@ VESPER.DWCAMapLeaflet = function (divid) {
                     }
                     height = selHeight + unselHeight;
 
-                    return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px;">' + cluster.getChildCount() + '</div>'
-                            +'<div class="selected" style="height:'+selHeight+'px">' + cluster.getSelectedChildCount()+ '</div>',
+                    return new L.DivIcon({ html: '<div class="unselected" style="height:'+unselHeight+'px;">' + doThouFormat (cluster.getChildCount()) + '</div>'
+                            +'<div class="selected" style="height:'+selHeight+'px">' + doThouFormat (cluster.getSelectedChildCount())+ '</div>',
                         className: 'vesperMapIcon',
                         iconSize: new L.Point(40, height)
                     });

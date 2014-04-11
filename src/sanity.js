@@ -11,7 +11,7 @@ VESPER.Sanity = function(divid) {
 
 	//var exitDur = 400, updateDur = 1000, enterDur = 400;
     var maxBarWidth = 100;
-
+    var thouFormat = d3.format(",");
 
     this.set = function (fields, mmodel) {
         model = mmodel;
@@ -154,6 +154,10 @@ VESPER.Sanity = function(divid) {
         return model.getSelectionModel().contains (id);
     };
 
+    var doThouFormat = function (val) {
+        return (isNaN (val)) ? val : thouFormat (val);
+    };
+
 
 	this.update = function () {
         var divSel = d3.select(divid);
@@ -196,7 +200,7 @@ VESPER.Sanity = function(divid) {
 
         divSel.select("div.sanityHeader")
             .select("p")
-            .text (oc+" Records"+(selectedSize > 0 ? ", "+selectedSize+" Selected" : ""))
+            .text (doThouFormat(oc)+" Records"+(selectedSize > 0 ? ", "+doThouFormat (selectedSize)+" Selected" : ""))
         ;
 
         function createTable (klass, headings, caption, tooltipHeader) {
@@ -263,7 +267,7 @@ VESPER.Sanity = function(divid) {
                     headers.each (function(d) { headerText.push (d); });
                     var str = "";
                     for (var n = 0; n < ordering.length; n++) {
-                        str += headerText[n]+": "+d[ordering[n]] + (n < ordering.length - 1 ? "<br>" : "");
+                        str += headerText[n]+": "+doThouFormat (d[ordering[n]]) + (n < ordering.length - 1 ? "<br>" : "");
                     }
                     var desc;
                     if (d.name && (desc = model.getParser().descriptors[d.name])) {
@@ -285,7 +289,7 @@ VESPER.Sanity = function(divid) {
 
             function dstring (d,i) {
                 var pcVal = (processors[i].func ? processors[i].func(d.value) : d.value);
-                return d.value.toString() + (isNaN(d.value) || pcVal === d.value ? "" : " ("+ pcFormat (pcVal)+ ")") ;
+                return doThouFormat(d.value) + (isNaN(d.value) || pcVal === d.value ? "" : " ("+ pcFormat (pcVal)+ ")") ;
             }
 
 
