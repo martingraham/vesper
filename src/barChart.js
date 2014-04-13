@@ -152,6 +152,17 @@ VESPER.BarChart = function(divid) {
             .update()
         ;
 
+        // right clicking range slider selects every visible item
+        var rslider = rangeg.select("rect.sliderBar");
+        console.log ("RSLIDER", rslider);
+        rslider
+            .on ("contextmenu", function() {
+                selectRange (binned.bins[0].start, binned.bins[binned.bins.length - 1].end);
+                //stop showing browser menu
+                d3.event.preventDefault();
+            })
+        ;
+
 		self.update ();
 	};
 
@@ -181,6 +192,12 @@ VESPER.BarChart = function(divid) {
         ;
         makeBins();
         self.update();
+    };
+
+    var selectRange = function (start, end) {
+        model.getSelectionModel().clear();
+        var arr = self.returnMatches (model, ffields, start, end);
+        model.getSelectionModel().addAllToMap (arr);
     };
 
 	this.update = function () {
@@ -232,9 +249,7 @@ VESPER.BarChart = function(divid) {
                 .style ("opacity", 0)
                 .on("contextmenu", function(d) {
                     //handle right click
-                    model.getSelectionModel().clear();
-                    var arr = self.returnMatches (model, ffields, d.start, d.end);
-                    model.getSelectionModel().addAllToMap (arr);
+                    selectRange (d.start, d.end);
                     //stop showing browser menu
                     d3.event.preventDefault();
                 })
