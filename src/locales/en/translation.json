@@ -123,7 +123,9 @@
         "taxaTooltip_plural":"Subtaxa: __start__ to __end__",
         "taxaCountLabel":"Count: __count__",
         "intervalLabel":"Discrete",
-        "cumulativeLabel":"Cumulative"
+        "cumulativeLabel":"Cumulative",
+        "rangeSliderBarHeader":"Range Slider",
+        "rangeSliderBarText":"Change current range by dragging with left click<br>Select current range with right click"
     },
     "search": {
         "label":"Search",

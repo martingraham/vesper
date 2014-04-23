@@ -474,7 +474,9 @@ VESPER.DWCAHelper = new function () {
             .on ("mouseover", null)
             .on ("mousedown", null)
             .on ("mouseup", null)
+            .on ("mousemove", null)
             .on ("click", null)
+            .on ("dblclick", null)
             .on ("contextmenu", null)
         ;
 
