@@ -137,30 +137,31 @@ VESPER.DWCAZipParse = new function () {
         pTime = startt;
         var segmentLengthMs = 200;
 
-        function matchEol (c, buf, off) {
-            var fcmatch = (lineDelimVal === c);
-
-            if (lineDelimLength === 1) { // if EOL is single char
-                return fcmatch;
-            } else if (fcmatch) {
-                if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
-                    for (var l = lineDelimiter.length; --l >= 1;) { // 1 'cos first char matched remember (fcmatch)
-                        if (lineDelimiter.charCodeAt(l) !== buf[off+l]) {
-                            return false;
-                        }
-                    }
-                    j += lineDelimiter.length - 1;  // move along over these read bytes
-                    return true;
-                } else { // eol string (obv >1 character) is divided between this buffer and the next
-                    utfwrap = i - j;
-                    j = i;
-                    ch = undefined;
-                }
-            }
-            return false;
-        }
 
         function doWork () {
+
+            function matchEol (c, buf, off) {
+                var fcmatch = (lineDelimVal === c);
+
+                if (lineDelimLength === 1) { // if EOL is single char
+                    return fcmatch;
+                } else if (fcmatch) {
+                    if (off + lineDelimLength <= buf.length) {  // <= rather than < cos off may already be the first char in linedelimiter
+                        for (var l = lineDelimiter.length; --l >= 1;) { // 1 'cos first char matched remember (fcmatch)
+                            if (lineDelimiter.charCodeAt(l) !== buf[off+l]) {
+                                return false;
+                            }
+                        }
+                        j += lineDelimiter.length - 1;  // move along over these read bytes
+                        return true;
+                    } else { // eol string (obv >1 character) is divided between this buffer and the next
+                        utfwrap = i - j;
+                        j = i;
+                        ch = undefined;
+                    }
+                }
+                return false;
+            }
 
             var mt = MGNapier.NapVisLib.makeTime();
             while ((MGNapier.NapVisLib.makeTime() - mt < segmentLengthMs) && (i = inflateFunc (buff, utfwrap, blength - utfwrap)) > 0) {
@@ -253,6 +254,8 @@ VESPER.DWCAZipParse = new function () {
                 }
             }
 
+            //matchEol = undefined;
+
             if (notifyFunc) {
                 notifyFunc (VESPER.DWCAZipParse.zipStreamSVParser2.fileName, lineNo);
             }
@@ -277,6 +280,9 @@ VESPER.DWCAZipParse = new function () {
                 for (var cb = callbacks.length; --cb >= 0;) {
                     callbacks[cb](bigOut);
                 }
+
+                out.length = 0;
+                bigOut.length = 0;
             }
 
         }

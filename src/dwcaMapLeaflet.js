@@ -364,7 +364,15 @@ VESPER.DWCAMapLeaflet = function (divid) {
         markerGroup.eachLayer (function(layer) {
             layer.removeEventListener();
         });
+        markerGroup.clearAllChildClusters ();
         markerGroup.clearLayers();
+        /*
+        markerGroup
+            .off('clustermouseover', clusterMouseOverListener)
+            .off('clustermouseout', null)
+            .off('clustercontextmenu', clusterSelectionListener)
+        ;
+        */
 
         maskGroup.eachLayer (function(layer) {
             layer.removeEventListener();
@@ -423,6 +431,10 @@ VESPER.DWCAMapLeaflet = function (divid) {
             //mjg
             setAllSelectedChildCounts: function (selectionModel) {
                 return this._topClusterLevel.setAllSelectedChildCounts (selectionModel);
+            },
+
+            clearAllChildClusters: function () {
+                this._topClusterLevel.clearChildClusters();
             }
         }
     );
@@ -455,6 +467,14 @@ VESPER.DWCAMapLeaflet = function (divid) {
             //mjg
             getSelectedChildCount: function () {
                 return this._selChildCount;
+            },
+
+            clearChildClusters: function () {
+                //console.log ("clearing markergroup", this);
+                for (var i = this._childClusters.length; --i >= 0;) {
+                    this._childClusters[i].clearChildClusters ();
+                }
+                this._childClusters.length = 0;
             }
         }
     );
