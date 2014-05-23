@@ -61,6 +61,7 @@ VESPER.Tree = function (divid) {
         "Selected": $.t("tree.sortSel"), "SelectedDesc": $.t("tree.sortDescSel")};
 
 
+    this.ttipNumFormat = d3.format (",");
     this.tooltipString = function () {
         return "Placeholder";
     };

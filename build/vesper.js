@@ -2131,10 +2131,15 @@ VESPER.DWCAMapLeaflet = function (divid) {
     var maxIconHeight = 60;
     var heightMultiplier = 5;
 
+    var selIcon = new L.Icon.Default();
+    selIcon.options.iconUrl = VESPER.imgbase+'selMarker.png';
+    selIcon.options.shadowUrl = L.Icon.Default.imagePath+'marker-shadow.png';
+    /*
     var selIcon = L.icon({
         iconUrl: VESPER.imgbase+'selMarker.png',
         shadowUrl: L.Icon.Default.imagePath+'marker-shadow.png'
     });
+    */
 
     var oldIcon = new L.Icon.Default();
 
@@ -4784,6 +4789,7 @@ VESPER.Tree = function (divid) {
         "Selected": $.t("tree.sortSel"), "SelectedDesc": $.t("tree.sortDescSel")};
 
 
+    this.ttipNumFormat = d3.format (",");
     this.tooltipString = function () {
         return "Placeholder";
     };
