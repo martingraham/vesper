@@ -139,7 +139,8 @@ VESPER.demo = function (files, exampleDivID) {
                     .updateText ($.t("web.YourTab"), $.t("demo.loadButtonTooltip"))
                     .updatePosition (d3.event)
                 ;
-        })
+            })
+        ;
     }
 
 
@@ -233,14 +234,16 @@ VESPER.demo = function (files, exampleDivID) {
                 selectionOptions.useExtRows = !selectionOptions.useExtRows;
                 refilterNameChoices (getMeta());
                 refilterVisChoices (getMeta());
-        });
+            })
+        ;
 
         var selectFirstOnlyBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Select First Matching Field Only", image:null}], "fieldGroup");
         selectFirstOnlyBox.select("input")
             .property ("checked", selectionOptions.selectFirstOnly)
             .on("click", function() {
                 selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly;
-            });
+            })
+        ;
 
         var advSelFunc = function () {
             var val = d3.select(this).property("checked") ? "block" : "none";

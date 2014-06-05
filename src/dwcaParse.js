@@ -230,7 +230,10 @@ VESPER.DWCAParser = new function () {
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
             zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
+
         });
+        zip.zipEntries.reader.stream = null;    // clear compressed zip data
+        console.log ("zip", zip.zipEntries);
 
         if (VESPER.alerts) { alert ("mem monitor point 1"); }
     }
@@ -441,11 +444,11 @@ VESPER.DWCAParser = new function () {
         }
 		
 		var roots = this.findRoots (jsonObj, idx, fieldIndexer);
-		this.createSuperroot (jsonObj, roots, fileData, metaData, fieldIndexer);
+		var sroot = this.createSuperroot (jsonObj, roots, fileData, metaData, fieldIndexer);
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
-		return jsonObj; // basically the record set here is the tree (taxonomy)
+		return {"tree":jsonObj, "root":sroot}; // basically the record set here is the tree (taxonomy)
 	};
 
     function isSynonym (id, aid) {
@@ -532,7 +535,6 @@ VESPER.DWCAParser = new function () {
                                     id = lid+id;
                                     if (!treeObj[id]) {
                                         VESPER.log ("Introducing new id", id);
-                                        //console.log (id, lid, pid, treeObj[id]);
                                     }
                                 }
                             }
@@ -577,11 +579,12 @@ VESPER.DWCAParser = new function () {
         }
 
         var roots = d3.keys (rootObjs);
-        this.createSuperroot (treeObj, roots, fileData, metaData, fieldIndexer);
+        var sroot = this.createSuperroot (treeObj, roots, fileData, metaData, fieldIndexer);
         VESPER.log ("roots", roots);
 
         VESPER.log ("json", jsonObj, "tree", treeObj);
-        return treeObj;
+        console.log ("root", sroot);
+        return {"tree":treeObj, "root":sroot};
     };
 
 
@@ -709,27 +712,21 @@ VESPER.DWCAParser = new function () {
 		var struc = this.makeTreeFromAllFileRows (theFileRows, metaData);
         if (VESPER.alerts) { alert ("mem monitor point 2"); }
 
-        if (struc.impTree) {
-            struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
+        if (struc.impTree && struc.impTree.root) {
             VESPER.log ("root", struc.impRoot);
-            if (struc.impRoot) {
-                this.recursiveCount (struc.impRoot, this.DCOUNT, undefined, 1);
-                this.recursiveCount (struc.impRoot, this.SYNCOUNT, VESPER.DWCAParser.SYN, 0);
-            }
+            this.recursiveCount (struc.impTree.root, this.DCOUNT, undefined, 1);
+            this.recursiveCount (struc.impTree.root, this.SYNCOUNT, VESPER.DWCAParser.SYN, 0);
         }
 
-        if (struc.expTree) {
-            struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
-            if (struc.expRoot) {
-                this.recursiveCount (struc.expRoot, this.DCOUNT, undefined, 1);
-                this.recursiveCount (struc.expRoot, this.SPECCOUNT, VESPER.DWCAParser.SPECS, 0);
-            }
+        if (struc.expTree && struc.expTree.root) {
+            this.recursiveCount (struc.expTree.root, this.DCOUNT, undefined, 1);
+            this.recursiveCount (struc.expTree.root, this.SPECCOUNT, VESPER.DWCAParser.SPECS, 0);
         }
 
         VESPER.log ("STRUC", struc);
 
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        VESPER.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
+        VESPER.log ("root", struc.impTree, struc.expTree);
         return struc;
 	};
 	
@@ -767,11 +764,12 @@ VESPER.DWCAParser = new function () {
 		}
 		
 		if (roots.length === 1) {
-            jsonObj[superrootID] = jsonObj[roots[0]];
+            //jsonObj[superrootID] = jsonObj[roots[0]];
 			return jsonObj[roots[0]];
 		}
 
-        var idName = fileData.invFieldIndex[fieldIndexer["id"]];
+        //var idName = fileData.invFieldIndex[fieldIndexer["id"]];
+        var idName = fileData.invFieldIndex[fileData.idIndex];
 		var hidx = fieldIndexer["parentNameUsageID"];
 		var srFields = {
             //id: superrootID,

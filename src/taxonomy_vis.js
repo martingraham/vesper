@@ -732,7 +732,7 @@ VESPER.Tree = function (divid) {
 
 	function getNode (id) {
         var node = model.getNodeFromID (id);
-        if (node == undefined) {
+        if (node == undefined && id) {
             node = model.getNodeFromID (id.substring(1));
         }
         return node;

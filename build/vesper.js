@@ -937,13 +937,13 @@ VESPER.Model = function (metaData, data) {
 
 VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
-    // In an implicit taxonomy, data.records and data.impTree are the same object, so getData and getImplicitTaxonomy return the same
+    // In an implicit taxonomy, data.records and data.impTree.tree are the same object, so getData and getImplicitTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
     this.getData = function (){ return this.data.records; };
-    this.getImplicitTaxonomy = function () { return this.data.impTree; };
-    this.getImplicitRoot = function (){ return this.data.impRoot; };
-    this.getExplicitTaxonomy = function () { return this.data.expTree; };
-    this.getExplicitRoot = function (){ return this.data.expRoot; };
+    this.getImplicitTaxonomy = function () { return this.data.impTree.tree; };
+    this.getImplicitRoot = function (){ return this.data.impTree.root; };
+    this.getExplicitTaxonomy = function () { return this.data.expTree.tree; };
+    this.getExplicitRoot = function (){ return this.data.expTree.root; };
 
     var viewCount = 0;
     var sessionModelViewID = 0;
@@ -1221,6 +1221,9 @@ VESPER.DWCAModel = function (metaData, data) {
         }
     };
 
+    // add empty objects as properties if undefined. Avoids checks like: return this.data.impTree ? this.data.impTree.tree : undefined;
+    data.impTree = data.impTree || {};
+    data.expTree = data.expTree || {};
     this.data = data;
     this.metaData = metaData;
 };
@@ -1366,7 +1369,8 @@ VESPER.demo = function (files, exampleDivID) {
                     .updateText ($.t("web.YourTab"), $.t("demo.loadButtonTooltip"))
                     .updatePosition (d3.event)
                 ;
-        })
+            })
+        ;
     }
 
 
@@ -1460,14 +1464,16 @@ VESPER.demo = function (files, exampleDivID) {
                 selectionOptions.useExtRows = !selectionOptions.useExtRows;
                 refilterNameChoices (getMeta());
                 refilterVisChoices (getMeta());
-        });
+            })
+        ;
 
         var selectFirstOnlyBox = DWCAHelper.addCheckboxes (d3.select("#advancedSelectDiv"), [{title:"Select First Matching Field Only", image:null}], "fieldGroup");
         selectFirstOnlyBox.select("input")
             .property ("checked", selectionOptions.selectFirstOnly)
             .on("click", function() {
                 selectionOptions.selectFirstOnly = !selectionOptions.selectFirstOnly;
-            });
+            })
+        ;
 
         var advSelFunc = function () {
             var val = d3.select(this).property("checked") ? "block" : "none";
@@ -2826,7 +2832,10 @@ VESPER.DWCAParser = new function () {
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
             zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
+
         });
+        zip.zipEntries.reader.stream = null;    // clear compressed zip data
+        console.log ("zip", zip.zipEntries);
 
         if (VESPER.alerts) { alert ("mem monitor point 1"); }
     }
@@ -3037,11 +3046,11 @@ VESPER.DWCAParser = new function () {
         }
 		
 		var roots = this.findRoots (jsonObj, idx, fieldIndexer);
-		this.createSuperroot (jsonObj, roots, fileData, metaData, fieldIndexer);
+		var sroot = this.createSuperroot (jsonObj, roots, fileData, metaData, fieldIndexer);
 		VESPER.log ("roots", roots);
 	
 		VESPER.log ("JSON", jsonObj[1], jsonObj);
-		return jsonObj; // basically the record set here is the tree (taxonomy)
+		return {"tree":jsonObj, "root":sroot}; // basically the record set here is the tree (taxonomy)
 	};
 
     function isSynonym (id, aid) {
@@ -3128,7 +3137,6 @@ VESPER.DWCAParser = new function () {
                                     id = lid+id;
                                     if (!treeObj[id]) {
                                         VESPER.log ("Introducing new id", id);
-                                        //console.log (id, lid, pid, treeObj[id]);
                                     }
                                 }
                             }
@@ -3173,11 +3181,12 @@ VESPER.DWCAParser = new function () {
         }
 
         var roots = d3.keys (rootObjs);
-        this.createSuperroot (treeObj, roots, fileData, metaData, fieldIndexer);
+        var sroot = this.createSuperroot (treeObj, roots, fileData, metaData, fieldIndexer);
         VESPER.log ("roots", roots);
 
         VESPER.log ("json", jsonObj, "tree", treeObj);
-        return treeObj;
+        console.log ("root", sroot);
+        return {"tree":treeObj, "root":sroot};
     };
 
 
@@ -3305,27 +3314,21 @@ VESPER.DWCAParser = new function () {
 		var struc = this.makeTreeFromAllFileRows (theFileRows, metaData);
         if (VESPER.alerts) { alert ("mem monitor point 2"); }
 
-        if (struc.impTree) {
-            struc.impRoot = struc.impTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
+        if (struc.impTree && struc.impTree.root) {
             VESPER.log ("root", struc.impRoot);
-            if (struc.impRoot) {
-                this.recursiveCount (struc.impRoot, this.DCOUNT, undefined, 1);
-                this.recursiveCount (struc.impRoot, this.SYNCOUNT, VESPER.DWCAParser.SYN, 0);
-            }
+            this.recursiveCount (struc.impTree.root, this.DCOUNT, undefined, 1);
+            this.recursiveCount (struc.impTree.root, this.SYNCOUNT, VESPER.DWCAParser.SYN, 0);
         }
 
-        if (struc.expTree) {
-            struc.expRoot = struc.expTree[superrootID]; //this.createSuperroot (struc, this.findRoots (struc, fieldIndex), fieldIndex);
-            if (struc.expRoot) {
-                this.recursiveCount (struc.expRoot, this.DCOUNT, undefined, 1);
-                this.recursiveCount (struc.expRoot, this.SPECCOUNT, VESPER.DWCAParser.SPECS, 0);
-            }
+        if (struc.expTree && struc.expTree.root) {
+            this.recursiveCount (struc.expTree.root, this.DCOUNT, undefined, 1);
+            this.recursiveCount (struc.expTree.root, this.SPECCOUNT, VESPER.DWCAParser.SPECS, 0);
         }
 
         VESPER.log ("STRUC", struc);
 
         if (VESPER.alerts) { alert ("mem monitor point 3"); }
-        VESPER.log ("root", struc.impRoot, struc.expRoot, struc.expTree);
+        VESPER.log ("root", struc.impTree, struc.expTree);
         return struc;
 	};
 	
@@ -3363,11 +3366,12 @@ VESPER.DWCAParser = new function () {
 		}
 		
 		if (roots.length === 1) {
-            jsonObj[superrootID] = jsonObj[roots[0]];
+            //jsonObj[superrootID] = jsonObj[roots[0]];
 			return jsonObj[roots[0]];
 		}
 
-        var idName = fileData.invFieldIndex[fieldIndexer["id"]];
+        //var idName = fileData.invFieldIndex[fieldIndexer["id"]];
+        var idName = fileData.invFieldIndex[fileData.idIndex];
 		var hidx = fieldIndexer["parentNameUsageID"];
 		var srFields = {
             //id: superrootID,
@@ -5460,7 +5464,7 @@ VESPER.Tree = function (divid) {
 
 	function getNode (id) {
         var node = model.getNodeFromID (id);
-        if (node == undefined) {
+        if (node == undefined && id) {
             node = model.getNodeFromID (id.substring(1));
         }
         return node;

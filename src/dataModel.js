@@ -20,13 +20,13 @@ VESPER.Model = function (metaData, data) {
 
 VESPER.DWCAModel = function (metaData, data) {
     this.getMetaData = function (){ return this.metaData; };
-    // In an implicit taxonomy, data.records and data.impTree are the same object, so getData and getImplicitTaxonomy return the same
+    // In an implicit taxonomy, data.records and data.impTree.tree are the same object, so getData and getImplicitTaxonomy return the same
     // In an explicit taxonomy i.e. a tree of specimens, data.records is the specimens, and data.tree is the taxonomy we generated on top.
     this.getData = function (){ return this.data.records; };
-    this.getImplicitTaxonomy = function () { return this.data.impTree; };
-    this.getImplicitRoot = function (){ return this.data.impRoot; };
-    this.getExplicitTaxonomy = function () { return this.data.expTree; };
-    this.getExplicitRoot = function (){ return this.data.expRoot; };
+    this.getImplicitTaxonomy = function () { return this.data.impTree.tree; };
+    this.getImplicitRoot = function (){ return this.data.impTree.root; };
+    this.getExplicitTaxonomy = function () { return this.data.expTree.tree; };
+    this.getExplicitRoot = function (){ return this.data.expTree.root; };
 
     var viewCount = 0;
     var sessionModelViewID = 0;
@@ -304,6 +304,9 @@ VESPER.DWCAModel = function (metaData, data) {
         }
     };
 
+    // add empty objects as properties if undefined. Avoids checks like: return this.data.impTree ? this.data.impTree.tree : undefined;
+    data.impTree = data.impTree || {};
+    data.expTree = data.expTree || {};
     this.data = data;
     this.metaData = metaData;
 };
