@@ -18,7 +18,7 @@ VESPER.BarChart = function(divid) {
     var currentCountScale = logCountScale;
     var currentCountType = "interval";
 
-    var superscript = "0123456789",
+    var superscript = "⁰¹²³⁴⁵⁶⁷⁸⁹",
     formatPower = function(d) { return (d + "").split("").map(function(c) { return c == "-" ? c : superscript[c]; }).join(""); };
 
     var domainLimits = [undefined, undefined];
@@ -51,8 +51,8 @@ VESPER.BarChart = function(divid) {
         group
             .attr("x", function(d) { return self.childScale (d.start); })
             .attr("width", function (d) { return self.childScale (d.end) -  self.childScale (d.start); })
-            .attr ("y", function(d) { return currentCountScale (d.count); })
-            .attr ("height", function(d) { return wh - currentCountScale (d.count); })
+            .attr ("y", function(d) { return d.count ? currentCountScale (d.count) : wh; })
+            .attr ("height", function(d) { return d.count ? wh - currentCountScale (d.count) : 0; })
             .style ("opacity", 1)
         ;
     };
@@ -299,7 +299,7 @@ VESPER.BarChart = function(divid) {
         exists2.call(xaxis
             .scale(currentCountScale)
             .orient("left")
-            .ticks (5, d3.format(",d"))
+            .ticks (6, d3.format(",d"))
             .tickFormat(function(d) {
                 var k = Math.log(d) / Math.LN10;
                 var rk = Math.round (k);
@@ -307,7 +307,7 @@ VESPER.BarChart = function(divid) {
                 if (Math.abs (k - rk) < 0.001) {
                     return rk > 3 ? "10"+formatPower(rk) : Math.round(d);
                 }
-            });
+            })
         );
 
         currentDataSelection

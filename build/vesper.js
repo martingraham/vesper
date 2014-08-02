@@ -387,10 +387,13 @@ VESPER.BarChart = function(divid) {
     this.rsmaxformat = this.rsminformat;
     this.barClass = "countBin";
     this.childScale = d3.scale.linear();
-    var logCountScale = d3.scale.log();
+    var logCountScale = d3.scale.log().base(10);
     //var linearCountScale = d3.scale.linear();
     var currentCountScale = logCountScale;
     var currentCountType = "interval";
+
+    var superscript = "⁰¹²³⁴⁵⁶⁷⁸⁹",
+    formatPower = function(d) { return (d + "").split("").map(function(c) { return c == "-" ? c : superscript[c]; }).join(""); };
 
     var domainLimits = [undefined, undefined];
     var binned, selBinned;
@@ -422,8 +425,8 @@ VESPER.BarChart = function(divid) {
         group
             .attr("x", function(d) { return self.childScale (d.start); })
             .attr("width", function (d) { return self.childScale (d.end) -  self.childScale (d.start); })
-            .attr ("y", function(d) { return currentCountScale (d.count + 1); })
-            .attr ("height", function(d) { return wh - currentCountScale (d.count + 1); })
+            .attr ("y", function(d) { return d.count ? currentCountScale (d.count) : wh; })
+            .attr ("height", function(d) { return d.count ? wh - currentCountScale (d.count) : 0; })
             .style ("opacity", 1)
         ;
     };
@@ -588,7 +591,7 @@ VESPER.BarChart = function(divid) {
         var maxh = d3.max(bins, function(d) { return d.count + 1; });
         VESPER.log ("Max height", maxh);
         var wh = dims[1] - margin.bottom;
-        currentCountScale.domain([1, maxh]).range ([wh, margin.top]).nice();
+        currentCountScale.domain([0.1, maxh]).range ([wh, margin.top]).nice();
 
         var exists = timelineG.select("g.valueAxis");
         if (exists.empty()) {
@@ -670,7 +673,15 @@ VESPER.BarChart = function(divid) {
         exists2.call(xaxis
             .scale(currentCountScale)
             .orient("left")
-            .ticks (5, d3.format(",d"))
+            .ticks (6, d3.format(",d"))
+            .tickFormat(function(d) {
+                var k = Math.log(d) / Math.LN10;
+                var rk = Math.round (k);
+                //console.log (d, k, Math.abs (k - rk));
+                if (Math.abs (k - rk) < 0.001) {
+                    return rk > 3 ? "10"+formatPower(rk) : Math.round(d);
+                }
+            })
         );
 
         currentDataSelection
