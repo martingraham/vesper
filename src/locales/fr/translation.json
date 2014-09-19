@@ -20,9 +20,9 @@
         "origins": {
             "ENA":"EBI, Cambridge, UK",
             "GermanSL": "GBIF, Copenhagen, Denmark",
-            "VAScan": "Candensys, Montreal, Canada",
-            "MT Specimens": "Candensys, Montreal, Canada",
-            "HIBG Specimens": "Candensys, Montreal, Canada"
+            "VAScan": "Canadensys, Montreal, Canada",
+            "MT Specimens": "Canadensys, Montreal, Canada",
+            "HIBG Specimens": "Canadensys, Montreal, Canada"
         },
         "loadChoices":"Load Data For",
         "labelLabel":"Label Records Using",
