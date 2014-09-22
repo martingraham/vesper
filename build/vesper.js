@@ -1322,11 +1322,16 @@ VESPER.demo = function (files, exampleDivID) {
     }
 
     function setChoices (choiceData) {
-        var descriptions = $.t("demo.descriptions", {"returnObjectTrees":true});
-        var origins = $.t("demo.origins", {"returnObjectTrees":true});
+
+        // append data to choice object using fields in the text description files
+        var demoDescriptorFields = ["description", "origin", "DOI"];
+        var demoDescriptorData = demoDescriptorFields.map (function (field) {
+            return $.t("demo."+field+"s", {"returnObjectTrees":true});
+        });
         for (var n = choiceData.length; --n >= 0;) {
-            choiceData[n].description = descriptions[files[n].name];
-            choiceData[n].origin = origins[files[n].name];
+            for (var m = 0; m < demoDescriptorData.length; m++) {
+                choiceData[n][demoDescriptorFields[m]] = demoDescriptorData[m][files[n].name];
+            }
         }
 
 
@@ -1334,7 +1339,8 @@ VESPER.demo = function (files, exampleDivID) {
         if (table.empty()) {
             table = d3.select(exampleDivID).append("table");
             var headerRow = table.append("tr");
-            var headerText = [$.t("demo.dataHeader"), $.t("demo.descHeader"), $.t("demo.origHeader")];
+            var headerText = [$.t("demo.dataHeader")];
+            demoDescriptorFields.forEach (function(field) { headerText.push ($.t("demo."+field+"sHeader")); });
             var headers = headerRow.selectAll("th").data(headerText);
             headers.enter().append("th").text(function(d) { return d; });
         }
@@ -1361,8 +1367,17 @@ VESPER.demo = function (files, exampleDivID) {
             })
         ;
 
-        rows.append("td").text(function(d) { return d.description; });
-        rows.append("td").text(function(d) { return d.origin; });
+        demoDescriptorFields.forEach (function (field) {
+            rows.append("td").html(function(d) {
+                var str = d[field];
+                if (d[field] && d[field].slice(0,7) === "http://") {
+                    str = "<a href=\""+str+"\">"+str+"</a>";
+                }
+                return str;
+            });
+        });
+        //rows.append("td").text(function(d) { return d.description; });
+        //rows.append("td").text(function(d) { return d.origin; });
 
         // make progress bar
         DWCAHelper.makeProgressBar (undefined, progressBarID, "loadProgressDiv");
