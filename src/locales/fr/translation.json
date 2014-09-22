@@ -8,8 +8,9 @@
     },
     "demo": {
         "dataHeader":"Data Set",
-        "descHeader":"Description",
-        "origHeader":"Originator",
+        "descriptionsHeader":"Description",
+        "originsHeader":"Originator",
+        "DOIsHeader":"DOI",
         "descriptions" : {
             "ENA":"Large Reference Taxonomy of almost a million taxa.",
             "GermanSL": "German Standard List for Plants. Example taxonomy of 13,000 taxa (and many more synonyms)",
@@ -24,6 +25,11 @@
             "MT Specimens": "Canadensys, Montreal, Canada",
             "HIBG Specimens": "Canadensys, Montreal, Canada"
         },
+        "DOIs": {
+            "VASCAN": "http://dx.doi.org/10.5886/1bft7W5f",
+            "MT Specimens": "http://dx.doi.org/10.5886/rzav8bu2",
+            "HIBG Specimens": "http://dx.doi.org/10.5886/5shhh7wb"
+        },
         "loadChoices":"Load Data For",
         "labelLabel":"Label Records Using",
         "allFieldsLabel":"Select All Fields",
@@ -31,7 +37,8 @@
         "loadLabel":"Load",
         "zipProcTemplate":"Zip processing: __fileName__. Parsed __count__ records.",
         "initViewsMessage":"Initialising Chosen Views... Please wait...",
-        "DWCAErrorMeta":"Check DWCA meta.xml compliance."
+        "DWCAErrorMeta":"Check DWCA meta.xml compliance.",
+        "loadButtonTooltip":"Use this button to select and load a DWCA archive from your computer"
     },
     "vesper":{
         "visTitles": {
@@ -42,7 +49,8 @@
             "TimeLine":"Timeline",
             "Sanity":"Missing Data Check",
             "RecordDetails":"Record Details",
-            "TaxaDistribution":"Taxa Distribution",
+            "ImpTaxaDistribution":"Taxa Distribution",
+            "ExpTaxaDistribution":"Denormalised Taxa Distribution",
             "FilterView":"Search Box"
         },
         "visHelpTips": {
@@ -52,7 +60,8 @@
             "TimeLine":"This view shows a zoomable bar chart that aggregates the dates on which specimens were collected.",
             "Sanity":"This view produces a number of tables detailing the amount of missing data per field over the record set.",
             "RecordDetails":"This launches a small view with a text input box. Type in a DWCA ID for the dataset under view to see details of that record.",
-            "TaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
+            "ImpTaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
+            "expTaxaDistribution":"A zoomable bar chart that shows the distribution of the number of immediate sub-taxa of each taxon. Large, outlying numbers of immediate child taxa can be a quality concern.",
             "FilterView":"A small view with a text input that allows the names/labels of the current record set to be searched and selected for matches (inc. partial matches)."
         }
     },
@@ -91,7 +100,7 @@
         "launchHeader":"Show Another Visualisation",
         "selectHeader":"Current Selections",
         "selectSave":"Save",
-        "selectInvert":"Invert Selection",
+        "selectInvert":"Invert",
         "selectClear":"Clear",
         "compareHeader":"Taxonomy Comparison",
         "compareLabel":"Compare Names",
@@ -109,10 +118,10 @@
         }
     },
     "barChart": {
-        "minPrefix":"Min: ",
-        "maxPrefix":"Max: ",
-        "timeMinPrefix":"From: ",
-        "timeMaxPrefix":"To: ",
+        "minPrefix":"",
+        "maxPrefix":"",
+        "timeMinPrefix":"",
+        "timeMaxPrefix":"",
         "typeLabel":"Count Type",
         "allLabel":"All records",
         "selLabel":"Selected records",
@@ -120,7 +129,9 @@
         "taxaTooltip_plural":"Subtaxa: __start__ to __end__",
         "taxaCountLabel":"Count: __count__",
         "intervalLabel":"Discrete",
-        "cumulativeLabel":"Cumulative"
+        "cumulativeLabel":"Cumulative",
+        "rangeSliderBarHeader":"Range Slider",
+        "rangeSliderBarText":"Change current range by dragging with left click<br>Select current range with right click"
     },
     "search": {
         "label":"Search",
@@ -152,6 +163,7 @@
     },
     "sanity": {
         "defaultTooltipHeader":"Missing Information",
+        "fieldDescLabel":"Field Description",
         "visSanHeaders": {
             "0":"Vis Type",
             "1":"Partially Missing",

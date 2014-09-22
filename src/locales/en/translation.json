@@ -8,8 +8,9 @@
     },
     "demo": {
         "dataHeader":"Data Set",
-        "descHeader":"Description",
-        "origHeader":"Originator",
+        "descriptionsHeader":"Description",
+        "originsHeader":"Originator",
+        "DOIsHeader":"DOI",
         "descriptions" : {
             "ENA":"Large Reference Taxonomy of almost a million taxa.",
             "GermanSL": "German Standard List for Plants. Example taxonomy of 13,000 taxa (and many more synonyms)",
@@ -23,6 +24,11 @@
             "VASCAN": "Canadensys, Montreal, Canada",
             "MT Specimens": "Canadensys, Montreal, Canada",
             "HIBG Specimens": "Canadensys, Montreal, Canada"
+        },
+        "DOIs": {
+            "VASCAN": "http://dx.doi.org/10.5886/1bft7W5f",
+            "MT Specimens": "http://dx.doi.org/10.5886/rzav8bu2",
+            "HIBG Specimens": "http://dx.doi.org/10.5886/5shhh7wb"
         },
         "loadChoices":"Load Data For",
         "labelLabel":"Label Records Using",
