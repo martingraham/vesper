@@ -96,14 +96,33 @@ VESPER.BarChart = function(divid) {
                 .attr("id", noHashId+"Controls")
             ;
 
-            //MGNapier.NapVisLib.addHRGrooves (butdiv);
             VESPER.DWCAHelper.addDragArea (butdiv);
-            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
+
+            var accPanel = butdiv.append("div").attr("id", noHashId+"accordion");
+
+            var headers = [$.t("barChart.typeLabel")];
+            accPanel.selectAll("h3").data(headers)
+                .enter()
+                .append ("h3")
+                .text (function(d) { return d; })
+            ;
+
+            accPanel.selectAll("div.accordSection").data(["Totals"])
+                .enter()
+                .insert ("div", function(d,i) {
+                    // from d3 docs: the before selector may be specified as a selector string or a function which returns a *DOM element* (not d3 selection)
+                    return accPanel.select("h3:nth-of-type("+(i + 2)+")").node();
+                })
+                .attr ("class", "accordSection")
+                .attr ("id", function(d) { return noHashId+"Controls"+d;  })
+            ;
+
+            //MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
 
             var choices = ["interval", "cumulative"];
             var choiceLabels = {};
             choices.forEach (function(elem) {choiceLabels[elem] = $.t("barChart."+elem+"Label"); });
-            var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
+            var spans = accPanel.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
                 .data (choices, function(d) { return d;})
             ;
 
@@ -129,7 +148,12 @@ VESPER.BarChart = function(divid) {
                 .text (function(d) { return choiceLabels [d]; })
             ;
 
-            $( divid+"Controls" ).draggable({containment: divid});
+            $(divid+"accordion").accordion({
+                heightStyle: "content",
+                collapsible: true,
+                active: false
+            });
+            $(divid+"Controls").draggable({containment: divid});
         }
 
         self.childScale.range([margin.left, dims[0] - margin.right]);
@@ -469,6 +493,7 @@ VESPER.BarChart = function(divid) {
         var visBins = timelineG.selectAll(self.barClass);
         visBins.remove();
 
+        $(divid+"accordion").accordion("destroy");
         $(divid+"Controls").draggable("destroy");
 
         model.removeView (self);

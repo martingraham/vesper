@@ -470,14 +470,33 @@ VESPER.BarChart = function(divid) {
                 .attr("id", noHashId+"Controls")
             ;
 
-            //MGNapier.NapVisLib.addHRGrooves (butdiv);
             VESPER.DWCAHelper.addDragArea (butdiv);
-            MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
+
+            var accPanel = butdiv.append("div").attr("id", noHashId+"accordion");
+
+            var headers = [$.t("barChart.typeLabel")];
+            accPanel.selectAll("h3").data(headers)
+                .enter()
+                .append ("h3")
+                .text (function(d) { return d; })
+            ;
+
+            accPanel.selectAll("div.accordSection").data(["Totals"])
+                .enter()
+                .insert ("div", function(d,i) {
+                    // from d3 docs: the before selector may be specified as a selector string or a function which returns a *DOM element* (not d3 selection)
+                    return accPanel.select("h3:nth-of-type("+(i + 2)+")").node();
+                })
+                .attr ("class", "accordSection")
+                .attr ("id", function(d) { return noHashId+"Controls"+d;  })
+            ;
+
+            //MGNapier.NapVisLib.makeSectionedDiv (butdiv, [{"header":$.t("barChart.typeLabel"), "sectionID":"Totals"}],"section");
 
             var choices = ["interval", "cumulative"];
             var choiceLabels = {};
             choices.forEach (function(elem) {choiceLabels[elem] = $.t("barChart."+elem+"Label"); });
-            var spans = butdiv.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
+            var spans = accPanel.select(divid+"ControlsTotals").selectAll("span.fieldGroup")
                 .data (choices, function(d) { return d;})
             ;
 
@@ -503,7 +522,12 @@ VESPER.BarChart = function(divid) {
                 .text (function(d) { return choiceLabels [d]; })
             ;
 
-            $( divid+"Controls" ).draggable({containment: divid});
+            $(divid+"accordion").accordion({
+                heightStyle: "content",
+                collapsible: true,
+                active: false
+            });
+            $(divid+"Controls").draggable({containment: divid});
         }
 
         self.childScale.range([margin.left, dims[0] - margin.right]);
@@ -843,6 +867,7 @@ VESPER.BarChart = function(divid) {
         var visBins = timelineG.selectAll(self.barClass);
         visBins.remove();
 
+        $(divid+"accordion").accordion("destroy");
         $(divid+"Controls").draggable("destroy");
 
         model.removeView (self);
@@ -5430,6 +5455,8 @@ VESPER.Tree = function (divid) {
 
     this.doExtra = function () {};
 
+
+
     function setupControls () {
         var cpanel = d3.select(divid)
             .append("div")
@@ -5440,10 +5467,24 @@ VESPER.Tree = function (divid) {
 
         VESPER.DWCAHelper.addDragArea (cpanel);
 
-        MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":$.t("tree.sizeLabel"), "sectionID":"Space"},{"header":$.t("tree.layoutLabel"), "sectionID":"Layout"},
-                {"header":$.t("tree.sortLabel"), sectionID:"Sort"}],
-        "section");
+        var accPanel = cpanel.append("div").attr("id", noHashID+"accordion");
+
+        var headers = [$.t("tree.sizeLabel"),$.t("tree.layoutLabel"),$.t("tree.sortLabel")];
+        accPanel.selectAll("h3").data(headers)
+            .enter()
+            .append ("h3")
+            .text (function(d) { return d; })
+        ;
+
+        accPanel.selectAll("div.accordSection").data(["Space", "Layout", "Sort"])
+            .enter()
+            .insert ("div", function(d,i) {
+                // from d3 docs: the before selector may be specified as a selector string or a function which returns a *DOM element* (not d3 selection)
+                return accPanel.select("h3:nth-of-type("+(i + 2)+")").node();
+            })
+            .attr ("class", "accordSection")
+            .attr ("id", function(d) { return noHashID+"controls"+d;  })
+        ;
 
         var section = d3.select(divid+"controlsSpace");
         VESPER.DWCAHelper.addRadioButtons (section, d3.entries (spaceAllocationOptions), "fieldGroup",
@@ -5483,6 +5524,12 @@ VESPER.Tree = function (divid) {
                 return false;
             })
         ;
+
+        $(divid+"accordion").accordion({
+            heightStyle: "content",
+            collapsible: true,
+            active: false
+        });
 
         $(divid+"controls").draggable({handle:"div.dragHandle", containment:divid});
     }
@@ -5611,6 +5658,7 @@ VESPER.Tree = function (divid) {
         clearMouseController (treeG.selectAll(".treeNode"));
         treeG.selectAll(".treeNode").remove();
         $(divid+"controls").draggable("destroy");
+        $(divid+"accordion").accordion("destroy");
         model.removeView (self);
         // null model and roots, basically any var that points to the data. Help GC along.
         // Google chrome profiler says it does so ner
@@ -5715,11 +5763,15 @@ VESPER.ImplicitTaxonomy = function (div) {
 
     tree.doExtra = function () {
         var cpanel = d3.select(div+"controls");
+        var accPanel = cpanel.select("div"+div+"accordion");
 
-        MGNapier.NapVisLib.makeSectionedDiv (cpanel,
-            [{"header":$.t("tree.rankLabel"), "sectionID":"Ranks"}],
-            "section");
-        var section = cpanel.select(div+"controlsRanks");
+        accPanel.append ("h3")
+            .text ($.t("tree.rankLabel"))
+        ;
+        var section = accPanel.append ("div")
+            .attr ("class", "accordSection")
+            .attr ("id", div.substring(1)+"controlsRanks")
+        ;
 
         section.append("button")
             .text ($.t("tree.flagKnownRankLabel"))
@@ -5742,10 +5794,20 @@ VESPER.ImplicitTaxonomy = function (div) {
                 tree.colourByRanks (d3.keys(discretes));
             })
         ;
+
+        // re-apply accordion
+        $(div+"accordion").accordion ("destroy");
+        $(div+"accordion").accordion ({
+            heightStyle: "content",
+            collapsible: true,
+            active: false
+        });
     };
 
     return tree;
 };
+
+
 
 VESPER.ExplicitTaxonomy = function (div) {
     var tree = new VESPER.Tree (div);

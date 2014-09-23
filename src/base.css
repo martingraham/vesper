@@ -28,7 +28,7 @@ DIV .vis {
 .ui-accordion DIV.ui-accordion-content {
     font-family: "Gill Sans MT",Georgia,Arial;
     padding: 10px 5px;
-    text-align: center;
+    text-align: left;
 }
 
 .ui-accordion DIV.ui-accordion-content button {
@@ -219,3 +219,8 @@ button.safetyGap {
 ::-moz-placeholder { color:#aaa; font-style: italic; } /* firefox 19+ */
 :-ms-input-placeholder { color:#aaa; font-style: italic; } /* ie */
 input:-moz-placeholder { color:#aaa; font-style: italic; }
+
+DIV.accordSection {
+    background: rgba(255,255,255,0.5);
+}
+
