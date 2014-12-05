@@ -282,7 +282,7 @@ VESPER.DWCAZipParse = new function () {
                 }
 
                 out.length = 0;
-                bigOut.length = 0;
+                //bigOut.length = 0; don't do this here, as if we load another part of the zip this makes the last parsed data disappear
             }
 
         }
