@@ -318,7 +318,7 @@ VESPER.DWCAZipParse = new function () {
                 }
 
                 out.length = 0;
-                bigOut.length = 0;
+                //bigOut.length = 0; don't do this here, as if we load another part of the zip this makes the last parsed data disappear
             }
 
         }
@@ -2877,13 +2877,15 @@ VESPER.DWCAParser = new function () {
 
 
 
-    function afterFilterReadZipEntries (zip, mdata, selectedStuff) {
+    function cleanUpUnzippedDataRefs (zip, mdata, selectedStuff, fileRows) {
         // Aid GC by removing links to data from outside DWCAParse i.e. in the zip entries
         $.each (selectedStuff, function (key) {
             var fileData = mdata.fileData[key];
             var fileName = zip.dwcaFolder + fileData.fileName;
+            // the two properties below are pointing to the same data, need rid of both
             zip.zipEntries.getLocalFile(fileName).uncompressedFileData = null; // Remove link from zip
-
+            fileRows[fileData.rowType].length = 0;
+            fileRows[fileData.rowType] = null;
         });
         zip.zipEntries.reader.stream = null;    // clear compressed zip data
         console.log ("zip", zip.zipEntries);
@@ -2924,12 +2926,13 @@ VESPER.DWCAParser = new function () {
 
             var onLoad = function () {
                 fileRows[fileData.rowType] = zip.zipEntries.getLocalFile(fileName).uncompressedFileData;
-                VESPER.DWCAParser.updateFilteredLists (fileData, readFields);
+                VESPER.DWCAParser.updateFilteredLists (fileData, readFields, zip.zipEntries.getLocalFile(fileName));
+
                 // final file dealt with
                 if (i === entries.length - 1) {
-                    afterFilterReadZipEntries (zip, mdata, selectedStuff);
                     // make taxonomy (or list)
                     doneCallback (new VESPER.DWCAModel (mdata, VESPER.DWCAParser.setupStrucFromRows (fileRows, mdata)));
+                    cleanUpUnzippedDataRefs (zip, mdata, selectedStuff, fileRows);
                 }
 
                 streamFunc.callbackQ.length = 0;
@@ -3362,6 +3365,7 @@ VESPER.DWCAParser = new function () {
 	
 	this.setupStrucFromRows = function (theFileRows, metaData) {
         console.log ("METADATA", metaData);
+
 		var struc = this.makeTreeFromAllFileRows (theFileRows, metaData);
         if (VESPER.alerts) { alert ("mem monitor point 2"); }
 
