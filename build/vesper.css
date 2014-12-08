@@ -169,7 +169,8 @@ DIV .vis {
 .sliderThumb {
     height: 16px;
     width: 16px;
-    fill: rgba(128,128,128,0.5);
+    fill: #888;
+    fill-opacity: 0.5;
     stroke: black;
     stroke-width: 1px;
     cursor: pointer;
@@ -177,7 +178,8 @@ DIV .vis {
 
 .sliderBar {
     height: 12px;
-    fill: rgba(128,128,128,0.25);
+    fill: #888;
+    fill-opacity: 0.25;
     stroke: black;
     stroke-width: 1px;
     cursor: pointer;
