@@ -562,6 +562,9 @@ VESPER.TimeLine = function (div) {
         var val = model.getIndexedDataPoint(data[key], fields.dateField);
         if (!timeCache[key] && val !== undefined) {
             timeCache[key] = new Date (val);
+            if (val.length < 6) {   // i.e. if just year given
+                timeCache[key].setHours (23, 59);   // then set the time to the last minute of the day... stops it getting rounded into previous year by leap year stuff. This is a hack.
+            }
         }
         return val;
     };
