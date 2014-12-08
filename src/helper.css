@@ -217,7 +217,9 @@ tr.col {
 
 .visWrapper {
     position: relative;
+    /*position: absolute;*/
     float: left;
+    overflow: hidden;
 }
 
 .visWrapper div.dragbar {

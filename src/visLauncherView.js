@@ -218,7 +218,8 @@ VESPER.VisLauncher = function (divid, options) {
 
         if (d3.select("#"+id).empty()) {
             var newDiv = d3.select("#allVisDiv")
-                .append("div")
+                //.append("div")
+                .insert("div", "br")
                 .attr("class", "visWrapper")
                 .attr ("id", id+"container")
                 .style("width", details.width ? details.width : "50%")

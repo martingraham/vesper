@@ -246,7 +246,7 @@ VESPER.Sanity = function(divid) {
 
         var pcFormat = d3.format (".2%");
 
-        function fillCells (d, i) {
+        function fillCells (d) {
             var arr = [];
             var ordering = [];
             // google chrome doesn't do returning object properties in the order they were added.

@@ -16,18 +16,6 @@
     text-anchor: start;
 }
 
-.taxaControlsSpaceAlloc {
-    display: visible;
-}
-
-.taxaControlsLayout {
-    display: visible;
-}
-
-.taxaControlsSort {
-    display: visible;
-}
-
 .indHatch {
     /*fill: #888;*/
     /*fill-opacity: 0.25;*/

@@ -4662,7 +4662,7 @@ VESPER.Sanity = function(divid) {
 
         var pcFormat = d3.format (".2%");
 
-        function fillCells (d, i) {
+        function fillCells (d) {
             var arr = [];
             var ordering = [];
             // google chrome doesn't do returning object properties in the order they were added.
@@ -6181,7 +6181,8 @@ VESPER.VisLauncher = function (divid, options) {
 
         if (d3.select("#"+id).empty()) {
             var newDiv = d3.select("#allVisDiv")
-                .append("div")
+                //.append("div")
+                .insert("div", "br")
                 .attr("class", "visWrapper")
                 .attr ("id", id+"container")
                 .style("width", details.width ? details.width : "50%")
