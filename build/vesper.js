@@ -864,7 +864,7 @@ VESPER.BarChart = function(divid) {
     this.baseDestroy = function () {
         VESPER.DWCAHelper.recurseClearEvents (d3.select(divid));
 
-        var visBins = timelineG.selectAll(self.barClass);
+        var visBins = timelineG.selectAll("."+self.barClass);   // forgot "."+ needed to match by class 08/12/14
         visBins.remove();
 
         $(divid+"accordion").accordion("destroy");
