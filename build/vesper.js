@@ -1313,7 +1313,7 @@ VESPER.demo = function (files, exampleDivID) {
             newVisFunc: function (div) { return new VESPER.Sanity (div);},
             setupFunc: function () { return undefined; }
         },
-        {type: "RecordDetails", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "500px",
+        {type: "RecordDetails", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"comment.png", height: "auto", width: "auto",
             newVisFunc: function (div) { return new VESPER.RecordDetails (div);},
             setupFunc: function () { return undefined; }
         },
@@ -1325,7 +1325,7 @@ VESPER.demo = function (files, exampleDivID) {
             newVisFunc: function (div) { return VESPER.ExpTaxaDistribution (div);},
             setupFunc: function () { return {"realField":"id", "rankField":"taxonRank"}; }
         },
-        {type: "FilterView", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "150px", width: "200px",
+        {type: "FilterView", multiple: true, attList: [], matchAll: false, image: VESPER.imgbase+"search.png", height: "null", width: "auto",
             newVisFunc: function (div) { return new VESPER.FilterView (div);},
             setupFunc: function () { return {} ;}
         }
@@ -1340,8 +1340,8 @@ VESPER.demo = function (files, exampleDivID) {
 
 
     function showPanelsOnLoad (d) {
-        DWCAHelper.divDisplay(["#showOnZipLoadDiv"], "none");
-        DWCAHelper.divDisplay(["#selDiv"], "block");
+        d3.select("#showOnZipLoadDiv").style("display", "none");
+        d3.select("#selDiv").style("display", "block");
         d3.select("#filenamePlaceholder").html(d.name);
         d3.select("#filesizePlaceholder").html("...");
         d3.select("#dynamicSelectDiv").selectAll("span input").property("checked", false);
@@ -1531,7 +1531,7 @@ VESPER.demo = function (files, exampleDivID) {
 
         var advSelFunc = function () {
             var val = d3.select(this).property("checked") ? "block" : "none";
-            DWCAHelper.divDisplay(["#advancedSelectDiv", "#listDiv"], val);
+            d3.selectAll("#advancedSelectDiv", "#listDiv").style("display", val);
             return false;
         };
         var advCheckbox = DWCAHelper.addCheckboxes (d3.select("#advRevealPlaceholder"), [{title:"Advanced Options", image: null}], "showAdv");
@@ -1545,7 +1545,7 @@ VESPER.demo = function (files, exampleDivID) {
         // make active tab the small one (i.e. hide any tabs with content) and then show progress bar
         var index = $('#tabs a[href="#small"]').parent().index();
         $("#tabs").tabs("option", "active", index);
-        DWCAHelper.divDisplay(["#"+progressBarID], "block");
+        d3.select("#"+progressBarID).style("display", "block");
 
         function notifyFunc (fileName, lines) {
             d3.select("#"+progressBarID).select("p").html($.t("demo.zipProcTemplate", {"fileName":fileName, "count": lines}));
@@ -1565,8 +1565,8 @@ VESPER.demo = function (files, exampleDivID) {
         VESPER.log ("MODEL", model);
         if (VESPER.alerts) { alert ("mem monitor point X"); }
 
-        DWCAHelper.divDisplay(["#selDiv"], "none");
-        DWCAHelper.divDisplay(["#allVisDiv"], "block");
+        d3.select("#selDiv").style("display", "none");
+        d3.select("#allVisDiv").style("display", "block");
         d3.select("#"+progressBarID).select("p").html($.t("demo.initViewsMessage"));
 
         // Do a set timeout so the progressbar is updated with the above message before the views start initialising
@@ -1575,7 +1575,7 @@ VESPER.demo = function (files, exampleDivID) {
                 // the replace regex rips out nonalphanueric strings as dots and hashes cause trouble when passing the name as an id to d3selectors
                 model.name = d3.select("#filenamePlaceholder").text().replace(/\W/g, '');
                 (new VESPER.VisLauncher()).makeVis (visChoiceData[0], model);
-                DWCAHelper.divDisplay(["#"+progressBarID], "none");
+                d3.select("#"+progressBarID).style("display", "none");
 
                 // Aid G.C.
                 model = null;
@@ -1620,7 +1620,7 @@ VESPER.demo = function (files, exampleDivID) {
                 }
             });
 
-            DWCAHelper.divDisplay (["#showOnZipLoadDiv"], "block");
+            d3.select ("#showOnZipLoadDiv").style("display", "block");
         } else {
             alert (meta.error+" "+$.t("demo.DWCAErrorMeta"));
             // flash up something to say not a dwca file (one we can read at least)
@@ -2121,13 +2121,6 @@ VESPER.DWCAHelper = new function () {
         if (parentD3Elem) {
             var id = parentD3Elem.attr("id");
             parentD3Elem.append("div").attr("class", "dragHandle").attr("id", id+"dragger");
-        }
-    };
-
-
-    this.divDisplay = function (divArray, displayStatus) {
-        for (var n = 0; n < divArray.length; n++) {
-            d3.select(divArray[n]).style("display", displayStatus);
         }
     };
 
@@ -4042,6 +4035,7 @@ VESPER.FilterView = function (divID) {
         var textSearch = d3.select(divID).append("span");
         textSearch.append("label")
             .attr("for", tid)
+            .attr("class", "recordEntryLabel")
             .text ($.t("search.label"))
         ;
         textSearch.append("input")
@@ -4128,6 +4122,7 @@ VESPER.RecordDetails = function (divID) {
         var iid = divSel.attr("id")+"textinput";
         recordInput.append("label")
             .attr("for", iid)
+            .attr("class", "recordEntryLabel")
             .text ($.t("search.findLabel"))
         ;
         recordInput.append("input")
@@ -4136,7 +4131,7 @@ VESPER.RecordDetails = function (divID) {
             .attr("placeholder", $.t("search.findPlaceholderText"))
         ;
         recordInput.append("span")
-            .attr ("class", "vesperWarning")
+            .attr ("class", "vesperWarning recordEntryLabel")
             .text($.t("search.noResult"))
             .style("display", "none")
         ;
@@ -6174,25 +6169,30 @@ VESPER.VisLauncher = function (divid, options) {
     }
 
     this.makeVis = function (details, aModel) {
-        var id = aModel.name + "view" + (details.multiple ? aModel.getNextSessionModelViewID() : "");
-        id = id.replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
+        var index = aModel.getNextSessionModelViewID();
+        var id = aModel.name + "view" + (details.multiple ? index : "");
+        id = id.replace(/\s+[a-z]/g, function(x) { return x.toUpperCase(); }).replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
         var title = VESPER.titles [details.type];
         var vid = title + " " + aModel.name;
 
+        var pcent = ((index % 10) * 10) +"%";
         if (d3.select("#"+id).empty()) {
             var newDiv = d3.select("#allVisDiv")
-                //.append("div")
-                .insert("div", "br")
+                .append("div")
                 .attr("class", "visWrapper")
                 .attr ("id", id+"container")
-                .style("width", details.width ? details.width : "50%")
+                .style("width", details.width ? details.width : "40%")
+                .style ("left", pcent)
+                .style ("top", pcent)
+                .style ("right", "auto")
+                .style ("bottom", "auto")
             ;
 
             var topBar = newDiv.append("div").attr("class","dragbar").attr("id", id+"dragBar");
             var buttonSpan = topBar.append("div").attr("class", "buttonBank");
             topBar.append("div").attr("class", "visTitle").text(vid);
 
-            /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
+            /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "auto");
 
             var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
@@ -6210,7 +6210,7 @@ VESPER.VisLauncher = function (divid, options) {
 
             addHideShowButton (buttonSpan, "#"+id);
             addKillViewButton (buttonSpan, newVis);
-            $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv"});
+            $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv", stack: ".visWrapper"});
         }
     };
 
@@ -6223,14 +6223,13 @@ VESPER.VisLauncher = function (divid, options) {
                 d3.select(d3.event.target).on ("click", null); // remove event from this very button to avoid dom holding refs to data
             } )
             .attr ("title", $.t("launcher.closeTooltip"))
-            .append ("img")
-            .attr ("src", VESPER.imgbase+"close.png")
+            .append ("span")
+            .text ("X")
             .attr ("alt", "Close")
         ;
     }
 
     function addHideShowButton (where, toggleThisID) {
-        var initPoly = "1,1 12,1";
         where.append("button")
             .attr("type", "button")
             .on ("click", function() {
@@ -6238,19 +6237,14 @@ VESPER.VisLauncher = function (divid, options) {
                 var dstate = vdiv.style("display");
                 //dstate is current vis display state, not the one we are switching it into...
                 vdiv.style("display", dstate === "none" ? null : "none");
-                //var svg = d3.select(this).select("svg polygon");
-                d3.select(this).select("svg polygon")
-                    .attr("points", dstate === "none" ?
-                         initPoly : "1,1 12,1 12,12 1,12"
-                );
+                d3.select(this).select("span")
+                    .text(dstate === "none" ? "\u203e" : "\u27c2")
+                ;
             } )
             .attr ("title", $.t("launcher.hideTooltip"))
-                .append("svg")
-                .attr ("width", 14)
-                .attr ("height", 13)
-                    .append("polygon")
-                    .attr("points", initPoly)
-                    .attr("class", "showHideColours")
+            .append("span")
+            .text ("\u203e")
+            .attr("class", "showHideColours")
         ;
     }
 

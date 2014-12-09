@@ -13,6 +13,7 @@ DIV {
 
 /* individual div for each visualisation */
 DIV .vis {
+    position: relative; /* cos it may include a draggable control */
 	margin: 0px;
 	padding: 0;
 	border: 0px solid black;
@@ -45,6 +46,32 @@ DIV .vis {
 	overflow: hidden;
 }
 
+
+.visWrapper {
+    /*position: relative;*/
+    position: absolute;
+    /*float: left;*/
+    overflow: hidden;
+    background: #eee;
+    border: 1px solid #bbb;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.visWrapper div.dragbar {
+    background: #88a url('../img/bumpPat.png') 100% 100% repeat;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    padding: 0px 8px 0px 8px;
+    height: auto;
+    cursor: move;
+}
+
+.visWrapper div.dragbar:hover {
+    background: #aad url('../img/bumpPat.png') 100% 100% repeat;
+}
+
+
 .visControl {
     border: 1px solid gray;
     -moz-border-radius: 5px;
@@ -54,7 +81,7 @@ DIV .vis {
     /*padding-top: 10px;*/
     position: absolute;
     left:10px;
-    top:30px;
+    top:10px;
     max-width: 125px;
 }
 
@@ -65,9 +92,16 @@ DIV .vis {
     cursor: move;
 }
 
+.visControl DIV.dragHandle:hover {
+    background: #ccc url('../img/bumpPat.png') 100% 100% repeat;
+}
+
+
 .visControl input {
     display: inline-block;
 }
+
+
 
 /*
 .selected {

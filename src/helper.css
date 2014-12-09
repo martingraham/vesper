@@ -203,6 +203,7 @@ tr.col {
     clear: both;
     overflow: hidden;
     display: none;
+    height: 100vh;
 }
 
 
@@ -215,21 +216,6 @@ tr.col {
     display: inline-block;
 }
 
-.visWrapper {
-    position: relative;
-    /*position: absolute;*/
-    float: left;
-    overflow: hidden;
-}
-
-.visWrapper div.dragbar {
-    background: #88a url('../img/bumpPat.png') 100% 100% repeat;
-    -moz-border-radius: 5px;
-    border-radius: 5px;
-    padding: 0px 8px 0px 8px;
-    height: auto;
-    cursor: move;
-}
 
 div.visTitle {
     float: none;

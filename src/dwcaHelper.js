@@ -451,13 +451,6 @@ VESPER.DWCAHelper = new function () {
     };
 
 
-    this.divDisplay = function (divArray, displayStatus) {
-        for (var n = 0; n < divArray.length; n++) {
-            d3.select(divArray[n]).style("display", displayStatus);
-        }
-    };
-
-
     this.twiceUpRemove = function (divid) {
         var node = d3.select(divid).node();
         var containerNode = node.parentElement;

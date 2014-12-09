@@ -16,6 +16,7 @@ VESPER.FilterView = function (divID) {
         var textSearch = d3.select(divID).append("span");
         textSearch.append("label")
             .attr("for", tid)
+            .attr("class", "recordEntryLabel")
             .text ($.t("search.label"))
         ;
         textSearch.append("input")
@@ -102,6 +103,7 @@ VESPER.RecordDetails = function (divID) {
         var iid = divSel.attr("id")+"textinput";
         recordInput.append("label")
             .attr("for", iid)
+            .attr("class", "recordEntryLabel")
             .text ($.t("search.findLabel"))
         ;
         recordInput.append("input")
@@ -110,7 +112,7 @@ VESPER.RecordDetails = function (divID) {
             .attr("placeholder", $.t("search.findPlaceholderText"))
         ;
         recordInput.append("span")
-            .attr ("class", "vesperWarning")
+            .attr ("class", "vesperWarning recordEntryLabel")
             .text($.t("search.noResult"))
             .style("display", "none")
         ;

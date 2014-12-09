@@ -211,25 +211,30 @@ VESPER.VisLauncher = function (divid, options) {
     }
 
     this.makeVis = function (details, aModel) {
-        var id = aModel.name + "view" + (details.multiple ? aModel.getNextSessionModelViewID() : "");
-        id = id.replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
+        var index = aModel.getNextSessionModelViewID();
+        var id = aModel.name + "view" + (details.multiple ? index : "");
+        id = id.replace(/\s+[a-z]/g, function(x) { return x.toUpperCase(); }).replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
         var title = VESPER.titles [details.type];
         var vid = title + " " + aModel.name;
 
+        var pcent = ((index % 10) * 10) +"%";
         if (d3.select("#"+id).empty()) {
             var newDiv = d3.select("#allVisDiv")
-                //.append("div")
-                .insert("div", "br")
+                .append("div")
                 .attr("class", "visWrapper")
                 .attr ("id", id+"container")
-                .style("width", details.width ? details.width : "50%")
+                .style("width", details.width ? details.width : "40%")
+                .style ("left", pcent)
+                .style ("top", pcent)
+                .style ("right", "auto")
+                .style ("bottom", "auto")
             ;
 
             var topBar = newDiv.append("div").attr("class","dragbar").attr("id", id+"dragBar");
             var buttonSpan = topBar.append("div").attr("class", "buttonBank");
             topBar.append("div").attr("class", "visTitle").text(vid);
 
-            /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "100%");
+            /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "auto");
 
             var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
@@ -247,7 +252,7 @@ VESPER.VisLauncher = function (divid, options) {
 
             addHideShowButton (buttonSpan, "#"+id);
             addKillViewButton (buttonSpan, newVis);
-            $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv"});
+            $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv", stack: ".visWrapper"});
         }
     };
 
@@ -260,14 +265,13 @@ VESPER.VisLauncher = function (divid, options) {
                 d3.select(d3.event.target).on ("click", null); // remove event from this very button to avoid dom holding refs to data
             } )
             .attr ("title", $.t("launcher.closeTooltip"))
-            .append ("img")
-            .attr ("src", VESPER.imgbase+"close.png")
+            .append ("span")
+            .text ("X")
             .attr ("alt", "Close")
         ;
     }
 
     function addHideShowButton (where, toggleThisID) {
-        var initPoly = "1,1 12,1";
         where.append("button")
             .attr("type", "button")
             .on ("click", function() {
@@ -275,19 +279,14 @@ VESPER.VisLauncher = function (divid, options) {
                 var dstate = vdiv.style("display");
                 //dstate is current vis display state, not the one we are switching it into...
                 vdiv.style("display", dstate === "none" ? null : "none");
-                //var svg = d3.select(this).select("svg polygon");
-                d3.select(this).select("svg polygon")
-                    .attr("points", dstate === "none" ?
-                         initPoly : "1,1 12,1 12,12 1,12"
-                );
+                d3.select(this).select("span")
+                    .text(dstate === "none" ? "\u203e" : "\u27c2")
+                ;
             } )
             .attr ("title", $.t("launcher.hideTooltip"))
-                .append("svg")
-                .attr ("width", 14)
-                .attr ("height", 13)
-                    .append("polygon")
-                    .attr("points", initPoly)
-                    .attr("class", "showHideColours")
+            .append("span")
+            .text ("\u203e")
+            .attr("class", "showHideColours")
         ;
     }
 
