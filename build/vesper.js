@@ -6177,15 +6177,16 @@ VESPER.VisLauncher = function (divid, options) {
 
         var pcent = ((index % 10) * 10) +"%";
         if (d3.select("#"+id).empty()) {
+            var containerID = id+"container";
             var newDiv = d3.select("#allVisDiv")
                 .append("div")
                 .attr("class", "visWrapper")
-                .attr ("id", id+"container")
+                .attr ("id", containerID)
                 .style("width", details.width ? details.width : "40%")
                 .style ("left", pcent)
                 .style ("top", pcent)
-                .style ("right", "auto")
-                .style ("bottom", "auto")
+                //.style ("right", "auto")
+                //.style ("bottom", "auto")
             ;
 
             var topBar = newDiv.append("div").attr("class","dragbar").attr("id", id+"dragBar");
@@ -6208,7 +6209,7 @@ VESPER.VisLauncher = function (divid, options) {
             newVis.go (aModel);
 
 
-            addHideShowButton (buttonSpan, "#"+id);
+            addHideShowButton (buttonSpan, "#"+id, "#"+containerID);
             addKillViewButton (buttonSpan, newVis);
             $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv", stack: ".visWrapper"});
         }
@@ -6229,14 +6230,16 @@ VESPER.VisLauncher = function (divid, options) {
         ;
     }
 
-    function addHideShowButton (where, toggleThisID) {
+    function addHideShowButton (where, toggleThisID, containerID) {
         where.append("button")
             .attr("type", "button")
             .on ("click", function() {
                 var vdiv = d3.select(toggleThisID);
                 var dstate = vdiv.style("display");
                 //dstate is current vis display state, not the one we are switching it into...
+                d3.select(containerID).style("height", "auto"); // cos draggable sets it to a specific height in FF, which doesnt seem to get recalced on the display hide here
                 vdiv.style("display", dstate === "none" ? null : "none");
+
                 d3.select(this).select("span")
                     .text(dstate === "none" ? "\u203e" : "\u27c2")
                 ;
