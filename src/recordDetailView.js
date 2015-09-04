@@ -80,7 +80,7 @@ VESPER.modelBag = [];
 
 VESPER.RecordDetails = function (divID) {
 
-    var idField = "mappedRowType";
+    var idField = "fileName";
     var extDetailTable = "extDetailTable";
     var detailTable = "detailTable";
 
@@ -130,6 +130,10 @@ VESPER.RecordDetails = function (divID) {
         ;
     };
 
+    function makeTableLabel (fileDatum) {
+        return fileDatum.mappedRowType+":"+fileDatum.fileName;
+    }
+
 
     this.update = function () {
         var divSel = d3.select(divID);
@@ -141,9 +145,9 @@ VESPER.RecordDetails = function (divID) {
             var node = model.getNodeFromID (curID);
 
             // Set up taxon data table
-            var tableSel = makeTableAndHeader (divSel, detailTable, [$.t("search.fieldLabel"), $.t("search.valueLabel")]);
+            var tableSel = makeTableAndHeader (divSel, detailTable, [$.t("search.fieldLabel"), $.t("search.valueLabel")], makeTableLabel(fileData["core"]));
             var tableData = [];
-            var tInvFields = fileData[metaData.coreRowType].filteredInvFieldIndex;
+            var tInvFields = VESPER.DWCAParser.getFileDatum(metaData,true).filteredInvFieldIndex;
             var tdata = model.getTaxaData(node);
             for (var n = 0; n < tdata.length; n++) {
                 if (tdata[n]) {
@@ -166,8 +170,7 @@ VESPER.RecordDetails = function (divID) {
 
 
             var extKeys = d3.keys (model.getExtraData(node));
-            var extTablesSel = divSel.selectAll("table."+extDetailTable);
-            var extTablesBind = extTablesSel.data (extKeys);
+            var extTablesBind = divSel.selectAll("table."+extDetailTable).data (extKeys, function(d) { return d; });
 
             extTablesBind
                 .exit()
@@ -178,22 +181,18 @@ VESPER.RecordDetails = function (divID) {
                 .enter ()
                 .append ("table")
                 .attr ("class", extDetailTable)
-                .attr ("id", function (d) { return d+"Table"; })
+                .attr ("id", makeExtTableID)
             ;
 
-            var rowTypeMap = {};
-            for (var i = 0; i < metaData.extRowTypes.length; i++) {
-                var rowType = metaData.extRowTypes[i];
-                rowTypeMap [fileData[rowType][idField]] = rowType;
-            }
-
             for (var n = 0; n < extKeys.length; n++) {
-                addExtHeader (model.getExtraData(node), extKeys[n], rowTypeMap[extKeys[n]], divID);
-                addExtData (model.getExtraData(node), extKeys[n], rowTypeMap[extKeys[n]], divID);
+                var extIndex = extKeys[n];
+                var extFileDatumID = "ext" + extIndex;
+                addExtHeader (model.getExtraData(node), extKeys[n], extFileDatumID, divID);
+                addExtData (model.getExtraData(node), extKeys[n], extFileDatumID, divID);
             }
 
             // Synonymy table
-            var synTablesSel = makeTableAndHeader (divSel, "synTable", [$.t("search.recordSyn")]);
+            var synTablesSel = makeTableAndHeader (divSel, "synTable", [$.t("search.recordSyn")], "Synonymy");
             var syns = model.getSynonyms(node);
             tableData = [];
             if (syns) {
@@ -220,13 +219,12 @@ VESPER.RecordDetails = function (divID) {
 
 
             // Specimens table
-            var specTablesSel = makeTableAndHeader (divSel, "specTable", [$.t("search.recordSpec")]);
+            var specTablesSel = makeTableAndHeader (divSel, "specTable", [$.t("search.recordSpec")], "Specimens Table");
             var specs = model.getSpecimens(node);
             tableData = [];
             if (specs) {
                 for (var n = 0; n < specs.length; n++) {
-                    var spec = specs[n];
-                    tableData.push ([model.getIndexedDataPoint(spec, keyField)]);
+                    tableData.push ([model.getIndexedDataPoint(specs[n], keyField)]);
                 }
             }
             specTablesSel.style("display", specs ? null : "none");
@@ -250,17 +248,28 @@ VESPER.RecordDetails = function (divID) {
 
     this.updateVals = this.update;
 
-    function makeTableAndHeader (under, tableClass, headerArray) {
+    function makeTableAndHeader (under, tableClass, headerArray, captionLabel) {
         var tableSel = under.select("."+tableClass);
         if (tableSel.empty()) {
             d3.select(divID).append("table")
                 .attr("class", tableClass)
             ;
             tableSel = d3.select(divID).select("."+tableClass);
+            addCaption (tableSel, captionLabel);
             var headers = tableSel.append("tr").selectAll("th").data(headerArray);
             headers.enter().append("th").text(function(d) { return d; });
         }
         return tableSel;
+    }
+
+    function addCaption (tableSel, captionLabel) {
+        var caption = tableSel.selectAll("caption").data([captionLabel]);
+        caption.enter().append("caption");
+        caption.text(function(d) { return d; });
+    }
+
+    function makeExtTableID (val) {
+        return "ext"+val+"Table";
     }
 
     function newID (val) {
@@ -314,10 +323,15 @@ VESPER.RecordDetails = function (divID) {
     }
 
 
-    function addExtHeader (ext, tableID, fileDataRowType, div) {
+    function addExtHeader (ext, tableIndex, fileDatumID, div) {
         var fileData = model.getMetaData().fileData;
-        VESPER.log ("table", div, "#"+tableID+"Table", fileDataRowType);
-        var extTable = d3.select(div).select("#"+tableID+"Table");
+        var validTableID = makeExtTableID (tableIndex);
+        VESPER.log ("table", div, "#"+validTableID, fileDatumID);
+        var extTable = d3.select(div).select("#"+validTableID);
+        var fileDatum = fileData[fileDatumID];
+
+        addCaption (extTable, makeTableLabel(fileDatum));
+
         var hrow = extTable.selectAll("tr.hrow");
         var hRowBind = hrow.data ([0]); // a dummy 1 element array for 1 header row
 
@@ -327,7 +341,7 @@ VESPER.RecordDetails = function (divID) {
             .attr ("class", "hrow")
         ;
 
-        var invFields = fileData[fileDataRowType].filteredInvFieldIndex;
+        var invFields = fileData[fileDatumID].filteredInvFieldIndex;
         hrow = extTable.selectAll("tr.hrow");
         var headerCellBind = hrow.selectAll("th")
             .data (invFields);
@@ -344,11 +358,12 @@ VESPER.RecordDetails = function (divID) {
     }
 
 
-    function addExtData (ext, tableID, fileDataRowType, div) {
-        var extProp = tableID;
+    function addExtData (ext, tableIndex, fileDatumID, div) {
+        var extProp = tableIndex;
         //var fileData = model.getMetaData().fileData;
         //VESPER.log ("extData", ext, extProp);
-        var extTable = d3.select(div).select("#"+tableID+"Table");
+        var validTableID = makeExtTableID (tableIndex);
+        var extTable = d3.select(div).select("#"+validTableID);
         var rowSel = extTable.selectAll ("tr.drow");
         var rowBind = rowSel.data (ext[extProp]);
 
@@ -358,12 +373,12 @@ VESPER.RecordDetails = function (divID) {
         rowBind.enter()
             .append ("tr")
             .attr ("class", "drow")
-            .attr ("id", function(d, i) { return tableID + i; })
+            .attr ("id", function(d, i) { return validTableID + i; })
         ;
 
         for (var n = 0; n < ext[extProp].length; n++) {
             var extEntry = ext[extProp][n];
-            var indRowSel = extTable.select("#"+tableID+n).selectAll("td");
+            var indRowSel = extTable.select("#"+validTableID+n).selectAll("td");
             var indRowBind = indRowSel.data (extEntry);
 
             indRowBind

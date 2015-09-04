@@ -591,7 +591,9 @@ VESPER.Tree = function (divid) {
     var layoutOptionLabels = {Icicle:$.t("tree.layoutIcicle"), Sunburst: $.t("tree.layoutSunburst")};
 
     this.set = function (fields, mmodel) {
+
         ffields = mmodel.makeIndices ([fields.identifyingField, fields.rankField]);
+        VESPER.log ("FIELDS", fields, mmodel, ffields);
         keyField = ffields[0];
         rankField = ffields[1];
         //VESPER.log ("FFIELDS", ffields);

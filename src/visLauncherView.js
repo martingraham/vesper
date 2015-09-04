@@ -237,14 +237,14 @@ VESPER.VisLauncher = function (divid, options) {
 
             /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "auto");
 
-            var coreType = aModel.getMetaData().coreRowType;
+            //var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
-           // var coreFieldIndex = fileData[coreType].filteredFieldIndex;
+            // var coreFieldIndex = fileData[coreType].filteredFieldIndex;
 
             var newVis = details.newVisFunc ("#"+id);
             VESPER.log ("newvis", newVis, newVis.set);
             var fields = details.setupFunc () || {};
-            var keyFieldName = fileData[coreType].filteredInvFieldIndex [aModel.getParser().getFilteredIdIndex (aModel.getMetaData())];
+            var keyFieldName = fileData["core"].filteredInvFieldIndex [aModel.getParser().getFilteredIdIndex (aModel.getMetaData())];
             fields.identifyingField = keyFieldName;
             newVis.set (fields, aModel);
             aModel.addView (newVis);

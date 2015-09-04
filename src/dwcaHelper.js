@@ -26,7 +26,7 @@ VESPER.DWCAHelper = new function () {
         elem.style ("background", check ? "" : back);
     }
 
-    function isCore (fd, metaData) { return fd.rowType === metaData.coreRowType; }
+    //function isCore (fd, metaData) { return fd.rowType === metaData.coreRowType; }
     function isId (fd, d) { return fd.invFieldIndex[fd.idIndex] === d; }
     function getItemSelection (fd, d) { return fd.selectedItems[d] == true || isId(fd, d); }
     function setItemSelection (fd, d, val) { fd.selectedItems[d] = val; }
@@ -63,14 +63,15 @@ VESPER.DWCAHelper = new function () {
         ;
     }
 
+
     this.makeFieldSelectionBoxes = function (metaData, parentSelection) {
-        setRowTypeSelection (metaData.fileData[metaData.coreRowType], true);
+        //setRowTypeSelection (metaData.fileData[metaData.coreRowType], true);
+        setRowTypeSelection (VESPER.DWCAParser.getFileDatum(metaData,true), true);
 
         VESPER.log ("meta", metaData);
         var boxData = d3.entries (metaData.fileData);
         for (var n = 0; n < boxData.length; n++) {
             boxData[n].value.selectedItems = boxData[n].value.selectedItems || {};
-            //var pid =
         }
         var divs = parentSelection.selectAll("div.selectBox")
             .data (boxData, function (d) { return d.key; })
@@ -87,11 +88,16 @@ VESPER.DWCAHelper = new function () {
             .attr ("class", "selectBox")
             .append ("table")
         ;
+        var makeId = function (fileDatumEntry) {
+            var value = fileDatumEntry.value || fileDatumEntry;
+            return value.mappedRowType+"_"+value.fileName;
+        };
+
         divs
             .style ("width", width+"%")
             .select("table")
-                .attr ("class", function (d) { return d.key === metaData.coreRowType ? "coreTable" : null; })
-                .attr ("id", function (d) { return d.value.mappedRowType; })
+                .attr ("class", function (d) { return d.key === "core" ? "coreTable" : null; })
+                .attr ("id", makeId)
         ;
 
         var headers = newTables
@@ -101,11 +107,11 @@ VESPER.DWCAHelper = new function () {
         headers.append ("input")
             .attr ("type", "checkbox")
             .attr ("class", "extensionFile")
-            .attr ("id", function(d) { return "cbox"+d.value.mappedRowType;})
+            .attr ("id", function(d) { return "cbox" + makeId(d);})
             .property ("checked", function(d) { return getRowTypeSelection (d.value); })
-            .attr ("value", function(d) { return d.value.rowType; })
-            .attr ("name", function(d) { return d.value.mappedRowType;})
-            .attr ("disabled", function(d) { return d.key === metaData.coreRowType ? "disabled" : null; })
+            .attr ("value", makeId)
+            .attr ("name", makeId)
+            .attr ("disabled", function(d) { return d.key === "core" ? "disabled" : null; })
             .on ("click", function (d, i) {
                 var check = this.checked;
                 VESPER.log ("check", check, this);
@@ -116,7 +122,7 @@ VESPER.DWCAHelper = new function () {
             .each (setBackground)
         ;
         headers.append ("label")
-            .attr ("for", function(d) { return "cbox"+d.value.mappedRowType;})
+            .attr ("for", function(d) { return "cbox" + makeId(d);})
             .text (function(d) { return d.value.mappedRowType; })
         ;
 
@@ -181,10 +187,10 @@ VESPER.DWCAHelper = new function () {
         var fd = metaData.fileData;
         for (var prop in fd) {
             if (fd.hasOwnProperty (prop)) {
-                var rowType = fd[prop];
+                var fileDatum = fd[prop];
 
-                if (rowType.selected) {
-                    var selItems = rowType.selectedItems;
+                if (fileDatum.selected) {
+                    var selItems = fileDatum.selectedItems;
                     VESPER.log ("selected items", selItems);
                     var nums = {};
                     var l = 0;
@@ -197,7 +203,7 @@ VESPER.DWCAHelper = new function () {
 
                     if (l) {
                         //var idd = (metaData.coreRowType === prop) ? "id" : "coreid";
-                        var idd = rowType.invFieldIndex [rowType.idIndex];
+                        var idd = fileDatum.invFieldIndex [fileDatum.idIndex];
                         nums[idd] = true;
                         struc[prop] = nums;
                     }
@@ -227,7 +233,8 @@ VESPER.DWCAHelper = new function () {
         var fd = metaData.fileData;
         // make array ordered with core row type as first entry
         var fdArray = d3.entries(fd).sort(function(a,b) {
-            return isCore (a.value, metaData) ? -1 : (isCore (b.value, metaData) ? 1: 0);
+            //return isCore (a.value, metaData) ? -1 : (isCore (b.value, metaData) ? 1: 0);
+            return (a.key === "core" ? -1 : (b.key === "core" ? 1: 0));
         });
 
         var nullableList = (list ? list.slice(0) : undefined); // list we can safely null values in with no side-effects (possible since list is passed in as a parameter)
@@ -240,7 +247,8 @@ VESPER.DWCAHelper = new function () {
                 for (var m = 0; m < llist.length; m++) {
                     var i = llist[m];
                     if (f.fieldIndex[i]) {
-                        si[i] = (isCore (f, metaData) || includeExtFiles) ? ((exceptionFunc ? exceptionFunc (f, i) : false) || torf) : false;
+                        //si[i] = (isCore (f, metaData) || includeExtFiles) ? ((exceptionFunc ? exceptionFunc (f, i) : false) || torf) : false;
+                        si[i] = (n === 0 || includeExtFiles) ? ((exceptionFunc ? exceptionFunc (f, i) : false) || torf) : false;
                         if (torf && selectFirstOnly && nullableList) {
                             nullableList[m] = null;
                         }
@@ -254,7 +262,8 @@ VESPER.DWCAHelper = new function () {
             }
         }
 
-	    setRowTypeSelection (metaData.fileData[metaData.coreRowType], true); // make sure core extension file is selected
+	    //setRowTypeSelection (metaData.fileData[metaData.coreRowType], true); // make sure core extension file is selected
+        setRowTypeSelection (VESPER.DWCAParser.getFileDatum (metaData, true), true); // make sure core extension file is selected
 
         tables.each (
             function (d) {
@@ -276,7 +285,7 @@ VESPER.DWCAHelper = new function () {
         for (var prop in meta.fileData) {
             if (meta.fileData.hasOwnProperty (prop)) {
                 var row = meta.fileData[prop];
-                if (checkExtRows || isCore (row, meta)) {
+                if (checkExtRows || prop === "core") {
                     for (var m = 0; m < row[fieldCheck].length; m++) {
                         var fieldName = row[fieldCheck][m];
                         if (listSet.has (fieldName)) {

@@ -23,6 +23,10 @@ VESPER.Sanity = function(divid) {
 		this.update ();
 	};
 
+    var makeId = function (d) {
+        var fileDatumVal = d.value || d;
+        return fileDatumVal.mappedRowType+":"+ fileDatumVal.fileName;
+    };
 
     var calcVisBasedSanity = function (filter) {
         var tests = [], testOutputs = [];
@@ -77,7 +81,7 @@ VESPER.Sanity = function(divid) {
         var results = {};
         for (var n = 0; n < fdEntries.length; n++) {
             var fIndex = fdEntries[n].value.filteredInvFieldIndex;
-            var shortName = fdEntries[n].value.mappedRowType;
+            var shortName = makeId (fdEntries[n]);
             results[shortName] = {};
             for (var f = 0; f < fIndex.length; f++) {
                 results[shortName][fIndex[f]] = {"recordType":shortName, "name": fIndex[f], "count": 0};
@@ -90,13 +94,13 @@ VESPER.Sanity = function(divid) {
             if (dataModel.hasOwnProperty(obj)) {
                 if (!filter || filter (model, obj)) {
                     for (var n = 0; n < activefdEntries.length; n++) {
-                        var fdata = activefdEntries[n].value;
-                        var fIndex = fdata.filteredInvFieldIndex;
-                        var tdat = model.getRowData (dataModel[obj], fdata.extIndex);
-                        if (tdat && fdata.extIndex) {
+                        var fileDatum = activefdEntries[n].value;
+                        var fIndex = fileDatum.filteredInvFieldIndex;
+                        var tdat = model.getRowData (dataModel[obj], fileDatum.extIndex);
+                        if (tdat && fileDatum.extIndex != undefined) {
                             tdat = tdat[0];
                         }
-                        var shortName = fdata.mappedRowType;
+                        var shortName = makeId (fileDatum);
                         for (var f = 0; f < fIndex.length; f++) {
                             var fName = fIndex[f];
                             if (tdat == undefined || tdat[f] == undefined) {
