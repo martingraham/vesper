@@ -213,7 +213,8 @@ VESPER.VisLauncher = function (divid, options) {
     this.makeVis = function (details, aModel) {
         var index = aModel.getNextSessionModelViewID();
         var id = aModel.name + "view" + (details.multiple ? index : "");
-        id = id.replace(/\s+[a-z]/g, function(x) { return x.toUpperCase(); }).replace(/\s+/g, '');    // Spaces not allowed in html5 ID's
+        // Spaces not allowed in html5 ID's. They can start with a number but that knackers css style selection so begin with a D
+        id = "D" + id.replace(/\s+[a-z]/g, function(x) { return x.toUpperCase(); }).replace(/\s+/g, '');
         var title = VESPER.titles [details.type];
         var vid = title + " " + aModel.name;
 
