@@ -137,7 +137,7 @@ VESPER.RecordDetails = function (divID) {
 
     this.update = function () {
         var divSel = d3.select(divID);
-
+       
         if (curID !== undefined) {
             //VESPER.log ("METADATA", metaData);
             var metaData = model.getMetaData();

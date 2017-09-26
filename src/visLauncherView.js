@@ -72,7 +72,10 @@ VESPER.VisLauncher = function (divid, options) {
             .attr ("class", "visChoice")
             .attr ("type", "button")
             .on ("click", function(d) {
-                self.makeVis (d, model);
+                var d3Sel = self.makeVis (d, model);
+                if (d3Sel) {    // bring new vis to top if made
+                    d3Sel.style("z-index", 100);
+                }
                 return false;
             })
             .on ("mouseover", function(d) {
@@ -254,8 +257,20 @@ VESPER.VisLauncher = function (divid, options) {
 
             addHideShowButton (buttonSpan, "#"+id, "#"+containerID);
             addKillViewButton (buttonSpan, newVis);
-            $("#"+id+"container").draggable({ handle: "div.dragbar", containment: "#allVisDiv", stack: ".visWrapper"});
+            $("#"+id+"container").draggable({ 
+                handle: "div.dragbar", 
+                containment: "#allVisDiv", 
+                stack: ".visWrapper",
+                stop: function() {
+                    return $(this).css({
+                      height: 'auto'
+                    });
+                },
+            });
+            
+            return newDiv;
         }
+        return null;
     };
 
     // where and div are d3 single selections, view is a view object
