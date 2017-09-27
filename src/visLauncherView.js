@@ -279,7 +279,6 @@ VESPER.VisLauncher = function (divid, options) {
             })
             .resizable({
                 stop: function () {
-                    console.log ("newVis", newVis);
                     if (newVis.resized) {
                         newVis.resized();   // not necessary for html / map vis's, but svg based views need to be told what to do
                     }

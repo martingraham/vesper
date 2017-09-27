@@ -1,3 +1,4 @@
+/*jslint browser: true, devel: true, white: true, bitwise: true, plusplus: true, sloppy: true, stupid: true, sub: false*/
 // TimeLine
 
 VESPER.BarChart = function(divid) {
@@ -37,6 +38,7 @@ VESPER.BarChart = function(divid) {
     var model;
 
 	var exitDur = 400, updateDur = 500, enterDur = 500;
+ var lastSelDomain;
 	
 	var ffields = {};
 
@@ -69,13 +71,14 @@ VESPER.BarChart = function(divid) {
     this.resized = function () {
         dims = [$(divid).width(), $(divid).height()];
                      
-        console.log ("CCR", this.childScale.range(), this.childScale.domain());
         this.childScale.range([margin.left, dims[0] - margin.right]);
-        console.log ("CR", this.childScale.range(), this.childScale.domain());
 
         rangeSlider
             .scale(this.childScale)
-            //.setRange (this.childScale.domain())
+            .setRange (lastSelDomain 
+                ? lastSelDomain.map (function(d) { return this.childScale(d);}, this) 
+                : this.childScale.range()
+            )
             .update ()
         ;
         this.update();
@@ -189,8 +192,10 @@ VESPER.BarChart = function(divid) {
         rangeSlider
             .scale(self.childScale)
             .dragEndFunc (function (r, rscale) {
-                console.log ("r", r, rscale, rscale.domain(), rscale.range(), rscale.invert (r[0]), rscale.invert (r[1]));
-                self.setRangeSliderDomain (rscale.invert (r[0]), rscale.invert (r[1]));
+                var invert = r.map (function (d) {
+                    return rscale.invert (d);
+                });
+                self.setRangeSliderDomain (invert[0], invert[1]);
             })
             .update()
         ;
@@ -216,7 +221,9 @@ VESPER.BarChart = function(divid) {
     function makeBins () {
         //var binCount = Math.ceil ((self.childScale.range()[1] - self.childScale.range()[0]) / self.minBarWidth);
         binned = self.chunkInfo (model, self.getModelData (model), ffields/*, undefined, binCount, true*/);
-        self.childScale.domain (binned.extremes);
+        if (self.childScale.domain()[1] === 1) {
+            self.childScale.domain (binned.extremes);
+        }
         VESPER.log ("bin data", binned.extremes, binned);
     }
 
@@ -233,8 +240,10 @@ VESPER.BarChart = function(divid) {
             self.wrapDataType (self.makeToNearest (start)),
             self.wrapDataType (self.makeToNearest (end))
         ];
+        lastSelDomain = domainLimits;
+        var rangeScale = domainLimits.map (function(elem) { return rangeSlider.scale()(elem); });
         rangeSlider
-            .setRange (domainLimits.map (function(elem) { return rangeSlider.scale()(elem); }))
+            .setRange (rangeScale)
             .update ()
         ;
         makeBins();
