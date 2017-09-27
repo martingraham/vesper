@@ -135,13 +135,14 @@ VESPER.Tree = function (divid) {
         return prop;
     }
 
+    var margin = 20;
 
     var partitionLayout = {
 
         cutoffVal: 4,
 
         sizeBounds: function () {
-            return [dims[1], dims[0]];
+            return [dims[1] - margin, dims[0] - margin];
         },
 
         booleanSelectedAttrs: function (group) {
@@ -200,7 +201,7 @@ VESPER.Tree = function (divid) {
         },
 
         prep: function (coordSet) {
-            treeG.attr("transform", "translate(0,0)");
+            treeG.attr("transform", "translate("+margin/2+","+margin/2+")");
             partitionLayout.makeTextClips (coordSet);
         },
 
@@ -670,6 +671,13 @@ VESPER.Tree = function (divid) {
         this.doExtra ();
 		this.update ();
 	};
+    
+    
+    this.resized = function () {
+        d3.select(divid).style("height", "95%");
+        dims = [$(divid).width(), $(divid).height()];
+        reroot(curRoot);
+    };
 
 
     this.doExtra = function () {};

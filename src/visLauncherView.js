@@ -11,6 +11,7 @@ VESPER.VisLauncher = function (divid, options) {
     var model;
     var self = this;
     var keyField, dims, choiceData;
+    var heightCache = {};
 
     this.set = function (fields, mmodel) {
         keyField = fields.identifyingField;
@@ -239,7 +240,16 @@ VESPER.VisLauncher = function (divid, options) {
             var buttonSpan = topBar.append("div").attr("class", "buttonBank");
             topBar.append("div").attr("class", "visTitle").text(vid);
 
-            /*var indVisDiv = */newDiv.append("div").attr("class", "vis").attr("id", id).style("height", details.height != "null" ? details.height : "auto");
+            /*var indVisDiv = */newDiv.append("div")
+                .attr("class", "vis")
+                .attr("id", id)
+                .style("height", details.height != "null" ? details.height : "auto")
+            ;
+            
+            newDiv
+                .style("min-height", "200px")
+                .style("min-width", "200px")
+            ; // stop being able to do silly small resizes
 
             //var coreType = aModel.getMetaData().coreRowType;
             var fileData = aModel.getMetaData().fileData;
@@ -257,16 +267,27 @@ VESPER.VisLauncher = function (divid, options) {
 
             addHideShowButton (buttonSpan, "#"+id, "#"+containerID);
             addKillViewButton (buttonSpan, newVis);
-            $("#"+id+"container").draggable({ 
+            $("#"+containerID).draggable({ 
                 handle: "div.dragbar", 
                 containment: "#allVisDiv", 
                 stack: ".visWrapper",
                 stop: function() {
-                    return $(this).css({
-                      height: 'auto'
-                    });
+                    //return $(this).css({
+                    //  height: 'auto'
+                    //});
                 },
-            });
+            })
+            .resizable({
+                stop: function () {
+                    console.log ("newVis", newVis);
+                    if (newVis.resized) {
+                        newVis.resized();   // not necessary for html / map vis's, but svg based views need to be told what to do
+                    }
+                },
+            })
+            ;
+            
+            newDiv.style("position", "absolute");   // bugfix for resizable setting it to relative and causing issues
             
             return newDiv;
         }
@@ -293,18 +314,29 @@ VESPER.VisLauncher = function (divid, options) {
             .attr("type", "button")
             .on ("click", function() {
                 var vdiv = d3.select(toggleThisID);
+                var cdiv = d3.select(containerID);
                 var dstate = vdiv.style("display");
+                var isCurNone = dstate === "none";
+            
+                if (!isCurNone) {
+                    heightCache[toggleThisID] = cdiv.style("height");
+                }
+                cdiv
+                    .style("min-height", isCurNone ? "200px" : null)
+                    .style("height", isCurNone ? heightCache[toggleThisID] : cdiv.select(".dragbar").style("height"))
+                ;
+            
                 //dstate is current vis display state, not the one we are switching it into...
-                d3.select(containerID).style("height", "auto"); // cos draggable sets it to a specific height in FF, which doesnt seem to get recalced on the display hide here
-                vdiv.style("display", dstate === "none" ? null : "none");
+                //d3.select(containerID).style("height", "auto"); // cos draggable sets it to a specific height in FF, which doesnt seem to get recalced on the display hide here
+                vdiv.style("display", isCurNone ? null : "none");
 
                 d3.select(this).select("span")
-                    .text(dstate === "none" ? "\u203e" : "\u27c2")
+                    .text(isCurNone ? "▲" : "▼")
                 ;
             } )
             .attr ("title", $.t("launcher.hideTooltip"))
             .append("span")
-            .text ("\u203e")
+            .text ("▲")
             .attr("class", "showHideColours")
         ;
     }

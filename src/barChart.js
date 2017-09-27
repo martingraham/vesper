@@ -40,7 +40,7 @@ VESPER.BarChart = function(divid) {
 	
 	var ffields = {};
 
-    var margin = {left: 55, right: 20, top : 15, bottom: 40};
+    var margin = {left: 55, right: 45, top : 15, bottom: 40};
 
     this.minBarWidth = 5;
     this.toNearest = 1;
@@ -65,6 +65,21 @@ VESPER.BarChart = function(divid) {
         dims = [$(divid).width(), $(divid).height()];
         model = mmodel;
     };
+    
+    this.resized = function () {
+        dims = [$(divid).width(), $(divid).height()];
+                     
+        console.log ("CCR", this.childScale.range(), this.childScale.domain());
+        this.childScale.range([margin.left, dims[0] - margin.right]);
+        console.log ("CR", this.childScale.range(), this.childScale.domain());
+
+        rangeSlider
+            .scale(this.childScale)
+            //.setRange (this.childScale.domain())
+            .update ()
+        ;
+        this.update();
+    },
 
 
     this.go = function () {
@@ -174,6 +189,7 @@ VESPER.BarChart = function(divid) {
         rangeSlider
             .scale(self.childScale)
             .dragEndFunc (function (r, rscale) {
+                console.log ("r", r, rscale, rscale.domain(), rscale.range(), rscale.invert (r[0]), rscale.invert (r[1]));
                 self.setRangeSliderDomain (rscale.invert (r[0]), rscale.invert (r[1]));
             })
             .update()

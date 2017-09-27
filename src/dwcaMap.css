@@ -11,3 +11,7 @@
     padding: 0px 2px 0px 2px;
     overflow: hidden;
 }
+
+.leaflet-bottom.leaflet-right {
+    right: 15px;    /* clear a gap for the resizing icon */
+}

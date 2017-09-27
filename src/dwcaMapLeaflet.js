@@ -162,7 +162,7 @@ VESPER.DWCAMapLeaflet = function (divid) {
             // create the tile layer with correct attribution
             var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
             var osmAttrib='Map data � OpenStreetMap contributors';
-            var osm = new L.TileLayer(osmUrl, {minZoom: 1, maxZoom: 19, attribution: osmAttrib});
+            var osm = new L.TileLayer(osmUrl, {minZoom: 1, maxZoom: 19, attribution: osmAttrib, attributionControl: false});
 
             d3.select(divid).style("overflow", "hidden"); // gets rid of scrollbars when the map tiles go over the edges of the display
             map = L.map(dividsub);//.setView([51.505, -0.09], 13); // set view dependent on markers now, drawControl is for draw toolbar
@@ -305,7 +305,13 @@ VESPER.DWCAMapLeaflet = function (divid) {
         var allHeight = Math.log (cc + 1);
         heightMultiplier = maxIconHeight / allHeight;
     }
-
+    
+    this.resized = function () {
+        d3.select(divid).style("height", "95%");
+        map.invalidateSize();
+        dims = MGNapier.NapVisLib.getDivDims (divid);
+        this.update();
+    },
 
 	this.update = function () {
         var vals = model.getSelectionModel().values();
