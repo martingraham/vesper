@@ -2,7 +2,7 @@ vesper
 ======
 Vesper (Visualisation of SPEcies Repositories) is a collection of visualisations for examining Darwin Core Archive files (DWCAs), including taxonomic, geographic and temporal views.
 
-A demo is available at http://www.soc.napier.ac.uk/~marting/vesperDemo/vesper/demoNew.html with instructions.
+A demo is available at http://www.vesper.org.uk/vesperDemo/vesper/demoNew.html with instructions.
 
 Libraries
 ---------
