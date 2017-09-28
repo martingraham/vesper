@@ -71,9 +71,10 @@ DIV .vis {
     /*float: left;*/
     overflow: hidden;
     background: #eee;
-    border: 1px solid #bbb;
+    border: 1px solid #888;
     -moz-border-radius: 5px;
     border-radius: 5px;
+    box-shadow: 10px 10px 5px rgba(0,0,0,0.25);
 }
 
 .visWrapper div.dragbar {
@@ -238,6 +239,10 @@ DIV.accordSection {
     font-weight: bold;
     padding: 0px 2px 0px 2px;
     overflow: hidden;
+}
+
+.leaflet-bottom.leaflet-right {
+    right: 15px;    /* clear a gap for the resizing icon */
 }
 BODY {
     position: relative;
